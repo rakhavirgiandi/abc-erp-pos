@@ -1,0 +1,2 @@
+/*! For license information please see select.bootstrap5.min.mjs.LICENSE.txt */
+import e from"jquery";import t from"datatables.net-bs5";import o from"datatables.net-select";t.select.classes.checkbox="form-check-input";export default t;

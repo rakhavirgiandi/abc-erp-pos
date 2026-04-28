@@ -1,0 +1,4 @@
+/*!
+ * Column visibility buttons for Buttons and DataTables.
+ * © SpryMedia Ltd - datatables.net/license
+ */
