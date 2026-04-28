@@ -1,0 +1,3 @@
+/*! ColReorder 2.1.1
+ * © SpryMedia Ltd - datatables.net/license
+ */

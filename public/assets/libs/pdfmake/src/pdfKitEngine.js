@@ -1,0 +1,1 @@
+"use strict";function _interopDefault(e){return e&&"object"==typeof e&&"default"in e?e.default:e}var PdfKit=_interopDefault(require("@foliojs-fork/pdfkit"));function getEngineInstance(){return PdfKit}function createPdfDocument(e){return new PdfKit(e=e||{})}module.exports={getEngineInstance:getEngineInstance,createPdfDocument:createPdfDocument};

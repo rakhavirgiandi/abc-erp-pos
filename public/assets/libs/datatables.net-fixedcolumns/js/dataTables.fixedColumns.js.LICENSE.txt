@@ -1,0 +1,7 @@
+/*! FixedColumns 5.0.4
+     * © SpryMedia Ltd - datatables.net/license
+     */
+
+/*! FixedColumns 5.0.4
+ * © SpryMedia Ltd - datatables.net/license
+ */

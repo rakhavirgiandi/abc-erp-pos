@@ -1,0 +1,2 @@
+/*! For license information please see fixedColumns.bootstrap5.min.mjs.LICENSE.txt */
+import t from"jquery";import e from"datatables.net-bs5";import o from"datatables.net-fixedcolumns";export default e;

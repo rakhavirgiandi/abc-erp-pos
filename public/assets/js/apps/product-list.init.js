@@ -1,0 +1,1 @@
+new DataTable("#datatable",{responsive:!0,paging:{firstLast:!1}});

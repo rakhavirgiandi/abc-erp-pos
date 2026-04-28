@@ -1,0 +1,1 @@
+module.exports=e=>{require("load-grunt-tasks")(e),e.initConfig({pkg:e.file.readJSON("package.json"),jshint:{options:{jshintrc:".jshintrc"},all:{src:["./js/bootstrap-datetimepicker.js"]}},versioncheck:{target:{options:{hideUpToDate:!0}}}}),e.registerTask("default",["jshint","versioncheck"])};
