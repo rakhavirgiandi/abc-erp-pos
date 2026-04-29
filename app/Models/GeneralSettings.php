@@ -2,25 +2,18 @@
 
 namespace App\Models;
 
-use DB;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 use App\Helpers\ModelHelper;
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Support\Facades\Validator;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
 /**
- * @property string name
  * @property string key
  * @property string value
- * @property string type
- * @property string description
- * @property int    is_protected
- * @property int    is_hidden
- * @property int    order
+ * @property int    deleted_at
  * @property int    created_at
  * @property int    updated_at
- * @property int    deleted_at
  */
 class GeneralSettings extends Model
 {
@@ -39,6 +32,7 @@ class GeneralSettings extends Model
      * @var string
      */
     protected $primaryKey = 'id';
+    protected $keyType = 'string';
     
     /**
      * Attributes that should be mass-assignable.
@@ -46,17 +40,12 @@ class GeneralSettings extends Model
      * @var array
      */
     protected $fillable = [
-        'name',
-		'key',
+        'id',
+        'key',
 		'value',
-		'type',
-		'description',
-		'is_protected',
-		'is_hidden',
-		'order',
+		'deleted_at',
 		'created_at',
 		'updated_at',
-		'deleted_at',
     ];
 
     /**
@@ -74,7 +63,7 @@ class GeneralSettings extends Model
      * @var array
      */
     protected $casts = [
-        'name' => 'string', 'key' => 'string', 'value' => 'string', 'type' => 'string', 'description' => 'string', 'is_protected' => 'int', 'is_hidden' => 'int', 'order' => 'int', 'created_at' => 'datetime', 'updated_at' => 'datetime', 'deleted_at' => 'datetime'
+        'key' => 'string', 'value' => 'string', 'deleted_at' => 'datetime', 'created_at' => 'datetime', 'updated_at' => 'datetime'
     ];
 
     /**
@@ -83,7 +72,7 @@ class GeneralSettings extends Model
      * @var array
      */
     protected $dates = [
-
+        'deleted_at', 'created_at', 'updated_at'
     ];
 
     /**
@@ -93,7 +82,7 @@ class GeneralSettings extends Model
      */
     public $timestamps = true;
 
-    public $incrementing = true;
+    public $incrementing = false;
 
     // Scopes...
 
@@ -107,18 +96,12 @@ class GeneralSettings extends Model
 
         return [
             'field' => [
-                'id' => ['column' => $model->table.'.id', 'alias' => 'id', 'type' => 'int'],
-				'name' => ['column' => $model->table.'.name', 'alias' => 'name', 'type' => 'string'],
+                'id' => ['column' => $model->table.'.id', 'alias' => 'id', 'type' => 'string'],
 				'key' => ['column' => $model->table.'.key', 'alias' => 'key', 'type' => 'string'],
 				'value' => ['column' => $model->table.'.value', 'alias' => 'value', 'type' => 'string'],
-				'type' => ['column' => $model->table.'.type', 'alias' => 'type', 'type' => 'string'],
-				'description' => ['column' => $model->table.'.description', 'alias' => 'description', 'type' => 'string'],
-				'is_protected' => ['column' => $model->table.'.is_protected', 'alias' => 'is_protected', 'type' => 'int'],
-				'is_hidden' => ['column' => $model->table.'.is_hidden', 'alias' => 'is_hidden', 'type' => 'int'],
-				'order' => ['column' => $model->table.'.order', 'alias' => 'order', 'type' => 'int'],
+				'deleted_at' => ['column' => $model->table.'.deleted_at', 'alias' => 'deleted_at', 'type' => 'date'],
 				'created_at' => ['column' => $model->table.'.created_at', 'alias' => 'created_at', 'type' => 'date'],
 				'updated_at' => ['column' => $model->table.'.updated_at', 'alias' => 'updated_at', 'type' => 'date'],
-				'deleted_at' => ['column' => $model->table.'.deleted_at', 'alias' => 'deleted_at', 'type' => 'date'],
             ],
             'join' => [
 
@@ -131,14 +114,14 @@ class GeneralSettings extends Model
 
     public static function datatables($start, $length, $order, $dir, $search, $filter = [])
     {
-        $schema = self::mapSchema();
-
         $totalData = self::count();
 
-        $qry = ModelHelper::select($schema['field'], null, __CLASS__);
-        ModelHelper::join($schema['join'], null, $qry);
+        $qry = ModelHelper::select(self::mapSchema()['field'], null, __CLASS__);
+        ModelHelper::join(self::mapSchema()['join'], null, $qry);
         
-        //FILTER
+        if (count($filter) > 0) {
+
+        }
 
         $totalFiltered = $qry->count();
 
@@ -154,10 +137,10 @@ class GeneralSettings extends Model
             }
 
         } else {
-            foreach (array_values($schema['field']) as $key => $val) {
+            foreach (array_values(self::mapSchema()['field']) as $key => $val) {
                 if ($key < 1) {
                     $qry->whereRaw('('.$val['column'].'::varchar(255) ILIKE \'%'.$search.'%\'');
-                } else if (count(array_values($schema['field'])) == ($key + 1)) {
+                } else if (count(array_values(self::mapSchema()['field'])) == ($key + 1)) {
                     $qry->orWhereRaw($val['column'].'::varchar(255) ILIKE \'%'.$search.'%\')');
                 } else {
                     $qry->orWhereRaw($val['column'].'::varchar(255) ILIKE \'%'.$search.'%\'');
@@ -199,8 +182,8 @@ class GeneralSettings extends Model
             unset($params['or']);
         }
 
-        $db = ModelHelper::select($schema['field'], $request, __CLASS__);
-        ModelHelper::join($schema['join'], $request, $db);
+        $db = ModelHelper::select(self::mapSchema()['field'], $request, __CLASS__);
+        ModelHelper::join(self::mapSchema()['join'], $request, $db);
 
         if ($params) {
             ModelHelper::dynamicFilterAnd($params, $request, $db, __CLASS__);
@@ -220,12 +203,10 @@ class GeneralSettings extends Model
         $models = new self;
 
         $append = [];
-
-        $schema = self::mapSchema();
         
-        $db = ModelHelper::select($schema['field'], $request, __CLASS__)->where($models->table.'.id', $id);
+        $db = ModelHelper::select(self::mapSchema()['field'], $request, __CLASS__)->where($models->table.'.id', $id);
         
-        ModelHelper::join($schema['join'], $request, $db);
+        ModelHelper::join(self::mapSchema()['join'], $request, $db);
         
         return response()->json($db->first());
     }
@@ -244,8 +225,8 @@ class GeneralSettings extends Model
             unset($params['or']);
         }
 
-        $db = ModelHelper::select($schema['field'], $request, __CLASS__);
-        ModelHelper::join($schema['join'], $request, $db);
+        $db = ModelHelper::select(self::mapSchema()['field'], $request, __CLASS__);
+        ModelHelper::join(self::mapSchema()['join'], $request, $db);
 
         if ($params) {
             ModelHelper::dynamicFilterAnd($params, $request, $db, __CLASS__);
@@ -279,8 +260,7 @@ class GeneralSettings extends Model
             
             return response()->json([
                 'status' => 'success',
-                'message' => 'Succesfully Updated Data',
-                'data' => self::getById($params['id'])->original
+                'message' => 'Succesfully Updated Data'
             ]);
         }
 
@@ -296,24 +276,11 @@ class GeneralSettings extends Model
 
     public static function deleteById($id, $params, $request)
     {
-        // $old = self::getById($id)->original;
-
         self::where('id', $id)->delete();
 
         return response()->json([
             'status' => 'success',
             'message' => 'Succesfully Deleted Data'
-        ]);
-    }
-
-    public static function approveById($id, $params, $request)
-    {
-        // $data = self::getById($id)->original;
-
-        return response()->json([
-            'status' => 'success',
-            'message' => 'Succesfully Approved Data',
-            'data' => null
         ]);
     }
 }

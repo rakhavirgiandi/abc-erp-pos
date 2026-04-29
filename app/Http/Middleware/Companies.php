@@ -1,0 +1,203 @@
+<?php
+
+namespace App\Http\Middleware;
+
+use App\Helpers\DateHelper;
+use App\Helpers\GlobalHelper;
+use App\Models\Companies\v1\Users;
+use App\Models\Companies\v1\GeneralSettings;
+use App\Models\Companies\v1\DefaultAccounts;
+use App\Models\CompanyCredentials;
+use App\Models\Users as ModelsUsers;
+use Closure;
+use Illuminate\Support\Facades\Config;
+use Illuminate\Support\Facades\DB;
+
+class Companies
+{
+    /**
+     * Handle an incoming request.
+     *
+     * @param  \Illuminate\Http\Request  $request
+     * @param  \Closure  $next
+     * @return mixed
+     */
+    public function handle($request, Closure $next)
+    {
+        $params = $request->all();
+
+        if (isset($params['company_id']) && $params['company_id'] && isset($params['is_from_mobile']) && $params['is_from_mobile'] == 'true') {
+            $company_credential = CompanyCredentials::where('company_id', $params['company_id'])->first();
+            config(['database.connections.pgsql_companies' => [
+                'driver' => 'pgsql',
+                'host' => $company_credential['db_host'],
+                'port' => $company_credential['db_port'],
+                'database' => $company_credential['db_database'],
+                'username' => $company_credential['db_username'],
+                'password' => $company_credential['db_password'],
+                'charset' => 'utf8',
+                'prefix' => '',
+                'prefix_indexes' => true,
+                'schema' => 'public',
+                'sslmode' => 'prefer',
+            ]]);
+
+            $settings = GeneralSettings::get();
+            foreach ($settings->toArray() as $row) {
+                config(['general_settings.' . $row['key'] => $row['value']]);
+            }
+
+            return $next($request);
+        }
+
+        if ($request->session()->get('_login') && $request->session()->get('_company_id') != "") {
+            $company = CompanyCredentials::select([
+                'company_credentials.db_host',
+                'company_credentials.db_port',
+                'company_credentials.db_database',
+                'company_credentials.db_username',
+                'company_credentials.db_password',
+                'companies.id as company_id',
+                'companies.user_id',
+                'companies.name',
+                'companies.address',
+                'companies.phone',
+                'companies.city',
+                'companies.email',
+                'companies.tax_id_number',
+                'companies.tax_id_address',
+                'companies.business_type',
+                'companies.main_project_quota',
+                'companies.main_lot_quota',
+                'companies.is_storefront',
+                'companies.domain',
+                'companies.subdomain',
+                'companies.storefront_project_quota',
+            ])
+            ->where('companies.id', $request->session()->get('_company_id'))
+            ->leftJoin('companies', 'company_credentials.company_id', '=', 'companies.id')
+            ->first();
+
+            config(['database.connections.pgsql_companies' => [
+                'driver' => 'pgsql',
+                'host' => $company['db_host'],
+                'port' => $company['db_port'],
+                'database' => $company['db_database'],
+                'username' => $company['db_username'],
+                'password' => $company['db_password'],
+                'charset' => 'utf8',
+                'prefix' => '',
+                'prefix_indexes' => true,
+                'schema' => 'public',
+                'sslmode' => 'prefer',
+            ]]);
+
+            $user = Users::select('users.*', 'roles.name as role_name')->where('email', $request->session()->get('_email'))->join('roles', 'roles.id', '=', 'users.role_id')->first();
+
+            if (!$user) {
+                return redirect('/choose-company');
+            } else if ($user['deleted_at']) {
+                return redirect('/choose-company');
+            }
+
+            foreach ($company->toArray() as $k_company => $v_company) {
+                config(['companies.'.$k_company => $v_company]);
+            }
+
+            $settings = GeneralSettings::get();
+
+            foreach ($settings->toArray() as $row) {
+                config(['general_settings.' . $row['key'] => $row['value']]);
+            }
+
+            $default_accounts = DefaultAccounts::get();
+
+            foreach ($default_accounts->toArray() as $row) {
+                config(['default_accounts.' . $row['key'] => $row['value']]);
+            }
+
+            config(['company_id' => $request->session()->get('_company_id')]);
+
+            if ($user) {
+                foreach ($user->toArray() as $userKey => $userVal) {
+                    config(['user_companies.' . $userKey => $userVal]);
+                }
+                config(['user_companies.details' => $user]);
+            } else {
+                return response()->json([
+                    'status' => 'error',
+                    'message' => 'Unknown Email on User Companies',
+                    'data' => null
+                ], 400);
+            }
+
+            $skip_route_names = [
+                'pos.authorize',
+                'pos.logout'
+            ];
+
+            $route_name = $request->route()->getName();
+            $route_url = $request->path();
+
+            if (!$route_name) {
+                GlobalHelper::pushLog('need_debug', 'Unknown Route Name for path /' . $route_url, null);
+                dd('no route name for /' . $route_url);
+            }
+
+            if (!in_array($route_name, $skip_route_names)) {
+                if (!$user->can($route_name)) {
+                    abort(403);
+                }
+            }
+
+            Config::set('request.method', $request->method());
+            Config::set('request.url', $request->fullUrl());
+            if (config('request.method') == 'GET' || GlobalHelper::findString('datatables', config('request.url'), 'i', '')) {
+                DB::disconnect('pgsql_companies');
+
+                return $next($request);
+            }
+
+            parse_str($request->getQueryString(), $query_string);
+            Config::set('request.host', $request->getSchemeAndHttpHost());
+            Config::set('request.header', $request->header());
+            Config::set('request.param', $query_string);
+            $content = $request->getContent();
+            if (!$content) {
+                $content = $request->all();
+                if ($content) {
+                    Config::set('request.body_request', $content);
+                }
+            } else {
+                Config::set('request.body_request', json_decode($content, true));
+            }
+            Config::set('request.ip_address', GlobalHelper::getClientIP());
+            Config::set('request.request_at', DateHelper::getCurrentDate('Y-m-d H:i:s', 'Asia/Jakarta'));
+            $path = explode('/', $route_url);
+            Config::set('request.path', $path);
+            Config::set('request.slug', $company['db_database']);
+            Config::set('request.user.email', $user['email']);
+
+            $res = $next($request);
+
+            Config::set('response.response_at', DateHelper::getCurrentDate('Y-m-d H:i:s', 'Asia/Jakarta'));
+            Config::set('response.http_status', $res->getStatusCode());
+            Config::set('response.error_message', '');
+            if (config('request.method') != 'GET') {
+                Config::set('response.body_response', $res->original);
+            }
+
+            if ($res->getStatusCode() >= 200 && $res->getStatusCode() < 400) {
+                GlobalHelper::pushLog('info', config('request'), config('response'));
+            }
+
+            DB::disconnect('pgsql_companies');
+
+            return $res;
+        } else if ($request->session()->get('_company_id') == "") {
+            return redirect('/choose-company');
+        }
+
+        return redirect('/login');
+    }
+}

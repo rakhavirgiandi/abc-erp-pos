@@ -8,7 +8,7 @@ use Illuminate\Http\Request;
 
 class ModelHasPermissionController extends Controller
 {
-    public function get(Request $request, $id = null)
+    public function get($id=null, Request $request)
     {
         $params = $request->all();
 
@@ -29,32 +29,25 @@ class ModelHasPermissionController extends Controller
         return ModelHasPermissions::createOrUpdate($params, $request->method(), $request);
     }
 
-    public function put(Request $request, $id)
+    public function put($id, Request $request)
     {
         $params = $request->all();
         $params['id'] = $id;
-        return ModelHasPermissions::createOrUpdate($params, $request->method(), $request);
+        return ModelHasPermissions::createOrUpdate($params, $request->method());
     }
 
-    public function patch(Request $request, $id)
+    public function patch($id, Request $request)
     {
         $params = $request->all();
         $params['id'] = $id;
-        return ModelHasPermissions::createOrUpdate($params, $request->method(), $request);
+        return ModelHasPermissions::createOrUpdate($params, $request->method());
     }
 
-    public function delete(Request $request, $id)
+    public function delete($id, Request $request)
     {
         $params = $request->all();
 
         return ModelHasPermissions::deleteById($id, $params, $request);
-    }
-
-    public function approve(Request $request, $id)
-    {
-        $params = $request->all();
-
-        return ModelHasPermissions::approveById($id, $params, $request);
     }
 
     public function datatables(Request $request)
@@ -62,7 +55,7 @@ class ModelHasPermissionController extends Controller
         $user = auth()->guard('sanctum')->user();
 
         $columns = [
-            'model_has_permissions.id'
+            0 => 'model_has_permissions.id'
         ];
 
         $dataOrder = [];
@@ -84,7 +77,7 @@ class ModelHasPermissionController extends Controller
 
         $search = $request->search['value'];
 
-        $filter = $request->filter;
+        $filter = $request->only(['sDate', 'eDate']);
 
         $res = ModelHasPermissions::datatables($start, $limit, $order, $dir, $search, $filter);
 
@@ -95,9 +88,9 @@ class ModelHasPermissionController extends Controller
                 $nestedData = $row;
                 $nestedData['action'] = '';
                 $nestedData['action'] .= '<div class="actions">';
-                $nestedData['action'] .= '<a href="#" class="btn btn-icon btn-warning" id="edit-data" data-id="'.$row['id'].'"><i class="fa fa-pencil"></i></a>';
+                $nestedData['action'] .= '<a href="#" class="btn btn-icon btn-warning" id="edit-data" data-id="'.$row['id'].'"><i class="fas fa-pencil-alt"></i></a>';
                 $nestedData['action'] .= '&nbsp;';
-                $nestedData['action'] .= '<a href="#" class="btn btn-icon btn-danger" id="delete-data" data-id="'.$row['id'].'"><i class="fa fa-trash-o"></i></a>';
+                $nestedData['action'] .= '<a href="#" class="btn btn-icon btn-danger" id="delete-data" data-id="'.$row['id'].'"><i class="fas fa-trash-alt-o"></i></a>';
                 $nestedData['action'] .= '</div>';
 
                 $data[] = $nestedData;

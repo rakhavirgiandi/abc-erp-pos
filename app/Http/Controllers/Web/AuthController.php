@@ -2,25 +2,72 @@
 
 namespace App\Http\Controllers\Web;
 
-use App\Http\Controllers\Controller;
-use App\Models\Users;
 use Auth;
+use Session;
+use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Session;
 
 class AuthController extends Controller
 {
-    //
-    public function index()
+    public function __construct()
     {
-        return view('auth.login');
+        if (Session::get('_login')) {
+            return redirect('/');
+        }
     }
 
-    public function authorizes(Request $request)
+    public function login()
+    {
+        $title = 'Login';
+
+        return view('auth.'.__FUNCTION__, [
+            'title' => $title
+        ]);
+    }
+
+    public function register()
+    {
+        $title = 'Register';
+
+        return view('auth.'.__FUNCTION__, [
+            'title' => $title
+        ]);
+    }
+
+    public function session(Request $request)
     {
         $params = $request->all();
 
-        return Users::authorizes($params, $request->method(), $request);
+        $request->session()->flush();
+        $request->session()->put('_login', true);
+        $request->session()->put('_id', $params['id']);
+        $request->session()->put('_access_token', $params['access_token']);
+        $request->session()->put('_name', $params['name']);
+        $request->session()->put('_email', $params['email']);
+        $request->session()->put('_phone', $params['phone']);
+
+        return response()->json([
+            'status' => 'success'
+        ]);
+    }
+
+    public function forgotPassword()
+    {
+        $title = 'Lupa Password';
+
+        return view('auth.forgot-password', [
+            'title' => $title
+        ]);
+    }
+
+    public function newPassword($code)
+    {
+        $title = 'Set Password';
+
+        return view('auth.new-password', [
+            'title' => $title,
+            'code' => $code
+        ]);
     }
 
     public function logout()
@@ -28,7 +75,11 @@ class AuthController extends Controller
         Auth::logout();
         Session::flush();
         
-        return redirect('/login');
+        return redirect('/');
     }
 
+    public function deleteRequest()
+    {
+        return view('auth.delete-request');
+    }
 }

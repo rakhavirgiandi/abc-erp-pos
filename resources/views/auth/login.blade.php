@@ -3,10 +3,17 @@
 <head>
 
     <meta charset="utf-8">
-    <title>ABC ERP LOGIN</title>
+    <title>Login - {{env('APP_NAME')}}</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="title" content="ABC ERP">
+    <meta name="description" content="ABC ERP adalah solusi ERP terintegrasi untuk membantu bisnis mengelola operasional, keuangan, stok, dan laporan dalam satu platform.">
+    <meta name="keywords" content="ERP, sistem ERP, manajemen bisnis, software akuntansi, stok, inventory">
+    <meta name="author" content="ABC ERP">
 
-    <link rel="shortcut icon" href="{{ asset('assets/images/logo-sm.png')}}">
+    <link rel="shortcut icon" href="{{ asset('assets/images/logo-sm-new.png')}}">
+    <link rel="apple-touch-icon" sizes="180x180" href="{{ asset('assets/images/favicon/apple-touch-icon.png') }}">
+    <link rel="icon" type="image/png" sizes="32x32" href="{{ asset('assets/images/logo-sm-new.png')}}">
+    <link rel="icon" type="image/png" sizes="16x16" href="{{ asset('assets/images/logo-sm-new.png')}}">
 
     <link href="{{ asset('assets/css/bootstrap.min.css')}}" rel="stylesheet">
     <link href="{{ asset('assets/css/icons.min.css')}}" rel="stylesheet">
@@ -87,17 +94,21 @@
                         Remember me
                     </label>
                 </div>
-                <a href="#" class="text-decoration-none small">Lupa password?</a>
+                <a href="{{url('/forgot-password')}}" class="text-decoration-none small">Lupa password?</a>
             </div>
 
             <button type="submit" class="btn btn-primary w-100 py-2 fw-semibold">
                 Login
             </button>
+
+            <div class="mt-2">
+                <p class="mb-0">Belum Mempunyai Akun ? <a href="{{url('/register')}}" class="fw-medium text-primary"> Daftar </a> </p>
+            </div>
         </form>
 
         <div class="text-center text-muted mt-4 small">
             © <script>document.write(new Date().getFullYear())</script> ABC ERP <br>
-            by ABC Group Teknologi Indonesia
+            by <a href="https://alimrugicreative.biz/" target="_blank">ABC Group Teknologi Indonesia</a>
         </div>
 
     </div>
@@ -127,7 +138,7 @@
             processData: false,
             dataType: 'json',
             beforeSend: function() {
-                showLoading('Harap Menunggu!', 'Sedang memproses data');
+                showLoading('Harap Menunggu!', 'Sedang memverifikasi kredensial Anda');
             },
             success: function(res) {
                 if (res.access_token) {
@@ -140,12 +151,9 @@
                             res.data.access_token = res.access_token;
                             let data = res.data;
 
-                            console.log(res.access_token);
-                            
-
                             $.ajax({
                                 type: 'post',
-                                url: BASE_URL + '/authorizes',
+                                url: BASE_URL + '/sessions',
                                 data: JSON.stringify(data),
                                 "headers": {
                                     'Content-Type': 'application/json'
@@ -155,7 +163,7 @@
                                 processData: false,
                                 dataType: 'JSON',
                                 success: function(res) {
-                                    window.location.replace(BASE_URL + '/pos/cashier');
+                                    window.location.replace(BASE_URL + '/choose-company');
                                 }
                             })
                         });

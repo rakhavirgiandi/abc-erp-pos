@@ -8,7 +8,7 @@ use Illuminate\Http\Request;
 
 class RoleHasPermissionController extends Controller
 {
-    public function get(Request $request, $id = null)
+    public function get($id=null, Request $request)
     {
         $params = $request->all();
 
@@ -29,32 +29,25 @@ class RoleHasPermissionController extends Controller
         return RoleHasPermissions::createOrUpdate($params, $request->method(), $request);
     }
 
-    public function put(Request $request, $id)
+    public function put($id, Request $request)
     {
         $params = $request->all();
         $params['id'] = $id;
-        return RoleHasPermissions::createOrUpdate($params, $request->method(), $request);
+        return RoleHasPermissions::createOrUpdate($params, $request->method());
     }
 
-    public function patch(Request $request, $id)
+    public function patch($id, Request $request)
     {
         $params = $request->all();
         $params['id'] = $id;
-        return RoleHasPermissions::createOrUpdate($params, $request->method(), $request);
+        return RoleHasPermissions::createOrUpdate($params, $request->method());
     }
 
-    public function delete(Request $request, $id)
+    public function delete($id, Request $request)
     {
         $params = $request->all();
 
         return RoleHasPermissions::deleteById($id, $params, $request);
-    }
-
-    public function approve(Request $request, $id)
-    {
-        $params = $request->all();
-
-        return RoleHasPermissions::approveById($id, $params, $request);
     }
 
     public function datatables(Request $request)
@@ -62,7 +55,7 @@ class RoleHasPermissionController extends Controller
         $user = auth()->guard('sanctum')->user();
 
         $columns = [
-            'role_has_permissions.id'
+            0 => 'role_has_permissions.id'
         ];
 
         $dataOrder = [];
@@ -84,7 +77,7 @@ class RoleHasPermissionController extends Controller
 
         $search = $request->search['value'];
 
-        $filter = $request->filter;
+        $filter = $request->only(['sDate', 'eDate']);
 
         $res = RoleHasPermissions::datatables($start, $limit, $order, $dir, $search, $filter);
 
@@ -95,9 +88,9 @@ class RoleHasPermissionController extends Controller
                 $nestedData = $row;
                 $nestedData['action'] = '';
                 $nestedData['action'] .= '<div class="actions">';
-                $nestedData['action'] .= '<a href="#" class="btn btn-icon btn-warning" id="edit-data" data-id="'.$row['id'].'"><i class="fa fa-pencil"></i></a>';
+                $nestedData['action'] .= '<a href="#" class="btn btn-icon btn-warning" id="edit-data" data-id="'.$row['id'].'"><i class="fas fa-pencil-alt"></i></a>';
                 $nestedData['action'] .= '&nbsp;';
-                $nestedData['action'] .= '<a href="#" class="btn btn-icon btn-danger" id="delete-data" data-id="'.$row['id'].'"><i class="fa fa-trash-o"></i></a>';
+                $nestedData['action'] .= '<a href="#" class="btn btn-icon btn-danger" id="delete-data" data-id="'.$row['id'].'"><i class="fas fa-trash-alt-o"></i></a>';
                 $nestedData['action'] .= '</div>';
 
                 $data[] = $nestedData;

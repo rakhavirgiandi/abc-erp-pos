@@ -2,25 +2,25 @@
 
 namespace App\Models;
 
-use DB;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 use App\Helpers\ModelHelper;
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Support\Facades\Validator;
-use Illuminate\Database\Eloquent\SoftDeletes;
 
 /**
  * @property string queue
  * @property string payload
+ * @property string slug
+ * @property string job_name
  * @property int    attempts
  * @property int    reserved_at
  * @property int    available_at
  * @property int    created_at
+ * @property int    percentages
  */
 class Jobs extends Model
 {
-    use SoftDeletes;
-
+    protected $connection = 'pgsql';
     /**
      * The database table used by the model.
      *
@@ -47,6 +47,9 @@ class Jobs extends Model
 		'reserved_at',
 		'available_at',
 		'created_at',
+		'slug',
+		'job_name',
+		'percentages',
     ];
 
     /**
@@ -64,7 +67,7 @@ class Jobs extends Model
      * @var array
      */
     protected $casts = [
-        'queue' => 'string', 'payload' => 'string', 'attempts' => 'int', 'reserved_at' => 'int', 'available_at' => 'int', 'created_at' => 'int'
+
     ];
 
     /**
@@ -81,7 +84,7 @@ class Jobs extends Model
      *
      * @var boolean
      */
-    public $timestamps = true;
+    public $timestamps = false;
 
     public $incrementing = true;
 
@@ -104,6 +107,9 @@ class Jobs extends Model
 				'reserved_at' => ['column' => $model->table.'.reserved_at', 'alias' => 'reserved_at', 'type' => 'int'],
 				'available_at' => ['column' => $model->table.'.available_at', 'alias' => 'available_at', 'type' => 'int'],
 				'created_at' => ['column' => $model->table.'.created_at', 'alias' => 'created_at', 'type' => 'int'],
+				'slug' => ['column' => $model->table.'.slug', 'alias' => 'slug', 'type' => 'string'],
+				'job_name' => ['column' => $model->table.'.job_name', 'alias' => 'job_name', 'type' => 'string'],
+				'percentages' => ['column' => $model->table.'.percentages', 'alias' => 'percentages', 'type' => 'int'],
             ],
             'join' => [
 
@@ -116,14 +122,14 @@ class Jobs extends Model
 
     public static function datatables($start, $length, $order, $dir, $search, $filter = [])
     {
-        $schema = self::mapSchema();
-
         $totalData = self::count();
 
-        $qry = ModelHelper::select($schema['field'], null, __CLASS__);
-        ModelHelper::join($schema['join'], null, $qry);
+        $qry = ModelHelper::select(self::mapSchema()['field'], null, __CLASS__);
+        ModelHelper::join(self::mapSchema()['join'], null, $qry);
         
-        //FILTER
+        if (count($filter) > 0) {
+
+        }
 
         $totalFiltered = $qry->count();
 
@@ -139,10 +145,10 @@ class Jobs extends Model
             }
 
         } else {
-            foreach (array_values($schema['field']) as $key => $val) {
+            foreach (array_values(self::mapSchema()['field']) as $key => $val) {
                 if ($key < 1) {
                     $qry->whereRaw('('.$val['column'].'::varchar(255) ILIKE \'%'.$search.'%\'');
-                } else if (count(array_values($schema['field'])) == ($key + 1)) {
+                } else if (count(array_values(self::mapSchema()['field'])) == ($key + 1)) {
                     $qry->orWhereRaw($val['column'].'::varchar(255) ILIKE \'%'.$search.'%\')');
                 } else {
                     $qry->orWhereRaw($val['column'].'::varchar(255) ILIKE \'%'.$search.'%\'');
@@ -184,8 +190,8 @@ class Jobs extends Model
             unset($params['or']);
         }
 
-        $db = ModelHelper::select($schema['field'], $request, __CLASS__);
-        ModelHelper::join($schema['join'], $request, $db);
+        $db = ModelHelper::select(self::mapSchema()['field'], $request, __CLASS__);
+        ModelHelper::join(self::mapSchema()['join'], $request, $db);
 
         if ($params) {
             ModelHelper::dynamicFilterAnd($params, $request, $db, __CLASS__);
@@ -205,12 +211,10 @@ class Jobs extends Model
         $models = new self;
 
         $append = [];
-
-        $schema = self::mapSchema();
         
-        $db = ModelHelper::select($schema['field'], $request, __CLASS__)->where($models->table.'.id', $id);
+        $db = ModelHelper::select(self::mapSchema()['field'], $request, __CLASS__)->where($models->table.'.id', $id);
         
-        ModelHelper::join($schema['join'], $request, $db);
+        ModelHelper::join(self::mapSchema()['join'], $request, $db);
         
         return response()->json($db->first());
     }
@@ -229,8 +233,8 @@ class Jobs extends Model
             unset($params['or']);
         }
 
-        $db = ModelHelper::select($schema['field'], $request, __CLASS__);
-        ModelHelper::join($schema['join'], $request, $db);
+        $db = ModelHelper::select(self::mapSchema()['field'], $request, __CLASS__);
+        ModelHelper::join(self::mapSchema()['join'], $request, $db);
 
         if ($params) {
             ModelHelper::dynamicFilterAnd($params, $request, $db, __CLASS__);
@@ -264,8 +268,7 @@ class Jobs extends Model
             
             return response()->json([
                 'status' => 'success',
-                'message' => 'Succesfully Updated Data',
-                'data' => self::getById($params['id'])->original
+                'message' => 'Succesfully Updated Data'
             ]);
         }
 
@@ -281,24 +284,11 @@ class Jobs extends Model
 
     public static function deleteById($id, $params, $request)
     {
-        // $old = self::getById($id)->original;
-
         self::where('id', $id)->delete();
 
         return response()->json([
             'status' => 'success',
             'message' => 'Succesfully Deleted Data'
-        ]);
-    }
-
-    public static function approveById($id, $params, $request)
-    {
-        // $data = self::getById($id)->original;
-
-        return response()->json([
-            'status' => 'success',
-            'message' => 'Succesfully Approved Data',
-            'data' => null
         ]);
     }
 }

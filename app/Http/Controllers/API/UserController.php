@@ -8,7 +8,7 @@ use Illuminate\Http\Request;
 
 class UserController extends Controller
 {
-    public function get(Request $request, $id = null)
+    public function get(Request $request, $id=null)
     {
         $params = $request->all();
 
@@ -33,14 +33,14 @@ class UserController extends Controller
     {
         $params = $request->all();
         $params['id'] = $id;
-        return Users::createOrUpdate($params, $request->method(), $request);
+        return Users::createOrUpdate($params, $request->method());
     }
 
     public function patch(Request $request, $id)
     {
         $params = $request->all();
         $params['id'] = $id;
-        return Users::createOrUpdate($params, $request->method(), $request);
+        return Users::createOrUpdate($params, $request->method());
     }
 
     public function delete(Request $request, $id)
@@ -50,19 +50,41 @@ class UserController extends Controller
         return Users::deleteById($id, $params, $request);
     }
 
-    public function approve(Request $request, $id)
+    public function login(Request $request)
     {
         $params = $request->all();
 
-        return Users::approveById($id, $params, $request);
+        return Users::generateToken($params, $request->method(), $request);
     }
 
+    public function customerLogin(Request $request)
+    {
+        $params = $request->all();
+
+        return Users::generateToken($params, $request->method(), $request, 'customer');
+    }
+
+    public function forgotPassword(Request $request)
+    {
+        $params = $request->all();
+
+        return Users::forgotPassword($params);
+    }
+
+    public function newPassword($code, Request $request)
+    {
+        $params = $request->all();
+        $params['code'] = $code;
+
+        return Users::newPassword($params);
+    }
+    
     public function datatables(Request $request)
     {
         $user = auth()->guard('sanctum')->user();
 
         $columns = [
-            'users.id'
+            0 => 'users.id'
         ];
 
         $dataOrder = [];
@@ -84,7 +106,7 @@ class UserController extends Controller
 
         $search = $request->search['value'];
 
-        $filter = $request->filter;
+        $filter = $request->only(['sDate', 'eDate']);
 
         $res = Users::datatables($start, $limit, $order, $dir, $search, $filter);
 
@@ -95,9 +117,9 @@ class UserController extends Controller
                 $nestedData = $row;
                 $nestedData['action'] = '';
                 $nestedData['action'] .= '<div class="actions">';
-                $nestedData['action'] .= '<a href="#" class="btn btn-icon btn-warning" id="edit-data" data-id="'.$row['id'].'"><i class="fa fa-pencil"></i></a>';
+                $nestedData['action'] .= '<a href="#" class="btn btn-icon btn-warning" id="edit-data" data-id="'.$row['id'].'"><i class="fas fa-pencil-alt"></i></a>';
                 $nestedData['action'] .= '&nbsp;';
-                $nestedData['action'] .= '<a href="#" class="btn btn-icon btn-danger" id="delete-data" data-id="'.$row['id'].'"><i class="fa fa-trash-o"></i></a>';
+                $nestedData['action'] .= '<a href="#" class="btn btn-icon btn-danger" id="delete-data" data-id="'.$row['id'].'"><i class="fas fa-trash-alt-o"></i></a>';
                 $nestedData['action'] .= '</div>';
 
                 $data[] = $nestedData;
@@ -113,5 +135,12 @@ class UserController extends Controller
         ];
 
         return json_encode($json_data);
+    }
+
+    public function postUserDeleteRequest(Request $request)
+    {
+        $params = $request->all();
+
+        return Users::deleteRuquest($params);
     }
 }
