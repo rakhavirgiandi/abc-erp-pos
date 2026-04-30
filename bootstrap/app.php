@@ -48,7 +48,7 @@ return Application::configure(basePath: dirname(__DIR__))
 
                 if (!$request) {
                     $req = request();
-                    Config::set('request.app_code', 'ABCERP');
+                    Config::set('request.app_code', 'ABCPOS');
                     Config::set('request.url', $req->fullUrl());
                     parse_str($req->getQueryString(), $query_string);
                     Config::set('request.host', $req->getSchemeAndHttpHost());
@@ -78,7 +78,7 @@ return Application::configure(basePath: dirname(__DIR__))
                 }
 
                 if (!isset($request['app_code'])) {
-                    $request = array_merge(['app_code' => 'ABCERP'], $request);
+                    $request = array_merge(['app_code' => 'ABCPOS'], $request);
                 }
 
                 $status_code = (method_exists($e, 'getStatusCode') && $e->getStatusCode() >= 200 && $e->getStatusCode() <= 599) ? $e->getStatusCode() : 500;
