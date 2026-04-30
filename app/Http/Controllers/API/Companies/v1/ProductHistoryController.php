@@ -137,7 +137,7 @@ class ProductHistoryController extends Controller
         $period = now()->format('Y-m');
 
         do {
-            $url = config('server_url') . "/api/v1/product_histories?page={$page}&per_page={$perPage}&is_simple=true&warehouse_id={$warehouse_id}&periode={$period}";
+            $url = config('services.admin_credentials.server_url') . "/api/v1/product_histories?page={$page}&per_page={$perPage}&is_simple=true&warehouse_id={$warehouse_id}&periode={$period}";
             $result = NetworkHelper::curlWithToken($url);
 
             $rows = $result['data'] ?? [];

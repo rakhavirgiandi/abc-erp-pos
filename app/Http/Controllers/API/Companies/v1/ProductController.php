@@ -124,7 +124,7 @@ class ProductController extends Controller
     public function getStockDatatable(Request $request)
     {
         if (NetworkHelper::isConnected()) {
-            $url = config('server_url') . "/api/v1/product_stock_datatables";
+            $url = config('services.admin_credentials.server_url') . "/api/v1/product_stock_datatables";
 
             $query = http_build_query([
                 'start'  => $request->start,
@@ -164,7 +164,7 @@ class ProductController extends Controller
         $perPage = 500;
 
         do {
-            $url = config('server_url') . "/api/v1/products?page={$page}&per_page={$perPage}&is_simple=true&order_by=id&sort=asc";
+            $url = config('services.admin_credentials.server_url') . "/api/v1/products?page={$page}&per_page={$perPage}&is_simple=true&order_by=id&sort=asc";
             $result = NetworkHelper::curlWithToken($url);
 
             $rows = $result['data'] ?? [];

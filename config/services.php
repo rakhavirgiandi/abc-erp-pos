@@ -38,4 +38,10 @@ return [
     'telegram-bot-api' => [
         'token' => env('TELEGRAM_BOT_TOKEN', '8714018345:AAF09kJaaMdmqFagfncGof3IHLPwr0x6ziI')
     ],
+
+    'admin_credentials' => [
+        'server_url' => 'https://app.abcerp.id',
+        'email' => 'admin@gmail.com',
+        'password' => '123abc',
+    ]
 ];
