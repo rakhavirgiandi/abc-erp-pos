@@ -297,7 +297,7 @@ class Warehouses extends Model
 
     public static function createOrUpdate($params, $method, $request)
     {
-        DB::beginTransaction();
+        DB::connection('pgsql_companies')->beginTransaction();
 
         $validation = self::validate($params);
         if ($validation !== true) {
@@ -315,7 +315,7 @@ class Warehouses extends Model
 
             $update = self::where('id', $params['id'])->update($params);
 
-            DB::commit();
+            DB::connection('pgsql_companies')->commit();
             
             return response()->json([
                 'status' => 'success',
@@ -326,7 +326,7 @@ class Warehouses extends Model
 
         $save = self::create($params);
 
-        DB::commit();
+        DB::connection('pgsql_companies')->commit();
         return response()->json([
             'status' => 'success',
             'message' => 'Succesfully Added Data',
@@ -336,11 +336,11 @@ class Warehouses extends Model
 
     public static function deleteById($id, $params, $request)
     {
-        DB::beginTransaction();
+        DB::connection('pgsql_companies')->beginTransaction();
         // $old = self::getById($id)->original;
 
         self::where('id', $id)->delete();
-        DB::commit();
+        DB::connection('pgsql_companies')->commit();
         return response()->json([
             'status' => 'success',
             'message' => 'Succesfully Deleted Data'

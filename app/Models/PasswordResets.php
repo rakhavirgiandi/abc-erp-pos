@@ -14,6 +14,7 @@ use Illuminate\Database\Eloquent\Model;
  */
 class PasswordResets extends Model
 {
+    protected $connection = 'pgsql';
     /**
      * The database table used by the model.
      *
@@ -231,7 +232,7 @@ class PasswordResets extends Model
 
     public static function createOrUpdate($params, $method, $request)
     {
-        DB::beginTransaction();
+        DB::connection('pgsql')->beginTransaction();
 
         $filename = null;
 
@@ -244,7 +245,7 @@ class PasswordResets extends Model
 
             $update = self::where('id', $params['id'])->update($params);
 
-            DB::commit();
+            DB::connection('pgsql')->commit();
             
             return response()->json([
                 'status' => 'success',
@@ -254,7 +255,7 @@ class PasswordResets extends Model
 
         $save = self::create($params);
 
-        DB::commit();
+        DB::connection('pgsql')->commit();
         return response()->json([
             'status' => 'success',
             'message' => 'Succesfully Added Data',
