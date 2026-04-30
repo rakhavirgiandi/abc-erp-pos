@@ -150,12 +150,6 @@ class Companies
 
             config(['company_id' => $request->session()->get('_company_id')]);
 
-            config([
-                'server_url' => env('SERVER_URL', 'https://abcerp.fanatech.net'),
-                'server_email'    => env('SERVER_EMAIL', 'admin@gmail.com'),
-                'server_password' => env('SERVER_PASSWORD', '123'),
-            ]);
-
             if ($user) {
                 foreach ($user->toArray() as $userKey => $userVal) {
                     config(['user_companies.' . $userKey => $userVal]);

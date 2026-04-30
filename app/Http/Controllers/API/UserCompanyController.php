@@ -17,7 +17,7 @@ class UserCompanyController extends Controller
             $res = UserCompanies::getById($id, $params, $request);
         } else if (isset($params['all']) && $params['all']) {
             if (env('IS_ONPREMISE', false) && NetworkHelper::isConnected()) {
-                $url = env('SERVER_URL') . "/api/user_companies?all=true";
+                $url = config('services.admin_credentials.server_url') . "/api/user_companies?all=true";
                 $res = NetworkHelper::curlWithToken($url, true);
             } else {
                 $res = UserCompanies::getAllResult($params, $request);

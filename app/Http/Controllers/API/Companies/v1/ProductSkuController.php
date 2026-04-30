@@ -134,7 +134,7 @@ class ProductSkuController extends Controller
         $perPage = 500;
 
         do {
-            $url = config('server_url') . "/api/v1/product_skus?page={$page}&per_page={$perPage}&is_simple=true";
+            $url = config('services.admin_credentials.server_url') . "/api/v1/product_skus?page={$page}&per_page={$perPage}&is_simple=true";
             $result = NetworkHelper::curlWithToken($url);
 
             $rows = $result['data'] ?? [];

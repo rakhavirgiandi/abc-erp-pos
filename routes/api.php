@@ -253,12 +253,6 @@ Route::middleware(['auth:api'])->group(function () {
             'default_db_user' => env('DEFAULT_DB_USERNAME', 'root'),
             'default_db_password' => env('DEFAULT_DB_PASSWORD', ''),
         ]);
-
-        config([
-            'server_url' => env('SERVER_URL', 'https://app.abcerp.id'),
-            'server_email'    => env('SERVER_EMAIL', 'admin@gmail.com'),
-            'server_password' => env('SERVER_PASSWORD', '123'),
-        ]);
     }
 
     Route::controller(CentralUserController::class)->group(function() {

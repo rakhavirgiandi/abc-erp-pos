@@ -772,11 +772,6 @@ class Companies extends Model
              * =====================================
              */
 
-            // $request->session()->put('_company_id', $params['company_id']);
-            // $request->headers->set('Authorization', 'Bearer ' . NetworkHelper::getAccessToken());
-            // $request->headers->set('company-id', $params['company_id']);
-            // $request->merge(['company_id' => $params['company_id']]);
-
             $result = Artisan::call('migrate', [ '--path' => 'database/migration_company', '--database' => 'pgsql_companies', '--force' => true]);
 
             if ($result != 0) {
@@ -828,31 +823,6 @@ class Companies extends Model
                     }
                 }
 
-                // RoleController::syncToLocal($request);
-                // AccountingMasterController::syncToLocal($request);
-                // BankAccountController::syncToLocal($request);
-                // TaxController::syncToLocal($request);
-                // UnitController::syncToLocal($request);
-                // VariantController::syncToLocal($request);
-                // VariantOptionController::syncToLocal($request);
-                // WarehouseController::syncToLocal($request);
-                // ProductCategoryController::syncToLocal($request);
-                // BranchController::syncToLocal($request);
-                // CurrencyController::syncToLocal($request);
-                // BaseUnitConversionController::syncToLocal($request);
-                // ContactController::syncToLocal($request);
-                // ContactGroupController::syncToLocal($request);
-                // ContactGroupPointRuleController::syncToLocal($request);
-                // GeneralSettingController::syncToLocal($request);
-                // DefaultAccountController::syncToLocal($request);
-                // ProductController::syncToLocal($request);
-                // MediumController::syncToLocal($request);
-                // ProductMultiPriceController::syncToLocal($request);
-                // ProductSkuController::syncToLocal($request);
-                // ProductSkuVariantController::syncToLocal($request);
-                // ProductUnitConversionController::syncToLocal($request);
-                // ProductVariantController::syncToLocal($request);
-                // RewardPointController::syncToLocal($request);
                 ModelHelper::reorderPermissionAdmin();
                 ModelHelper::adjustSequencePostgreSql();
             }

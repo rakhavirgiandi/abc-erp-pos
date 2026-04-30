@@ -37,13 +37,13 @@ class NetworkHelper
         $curl = curl_init();
 
         curl_setopt_array($curl, [
-            CURLOPT_URL => config('server_url') . '/api/login',
+            CURLOPT_URL => config('services.admin_credentials.server_url') . '/api/login',
             CURLOPT_RETURNTRANSFER => true,
             CURLOPT_TIMEOUT => 30,
             CURLOPT_POST => true,
             CURLOPT_POSTFIELDS => json_encode([
-                'email' => config('server_email'),
-                'password' => config('server_password'),
+                'email' => config('services.admin_credentials.email'),
+                'password' => config('services.admin_credentials.password'),
             ]),
             CURLOPT_HTTPHEADER => [
                 'Content-Type: application/json',
@@ -166,7 +166,7 @@ class NetworkHelper
         $curl = curl_init();
 
         curl_setopt_array($curl, [
-            CURLOPT_URL => env('SERVER_URL') . '/api/login',
+            CURLOPT_URL => config('services.admin_credentials.server_url') . '/api/login',
             CURLOPT_RETURNTRANSFER => true,
             CURLOPT_TIMEOUT => 10,
             CURLOPT_POST => true,
