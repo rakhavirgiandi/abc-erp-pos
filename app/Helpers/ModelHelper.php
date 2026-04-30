@@ -2,6 +2,11 @@
 
 namespace App\Helpers;
 
+use App\Models\Companies\v1\ModelHasRoles as V1ModelHasRoles;
+use App\Models\Companies\v1\Permissions as V1Permissions;
+use App\Models\Companies\v1\RoleHasPermissions as V1RoleHasPermissions;
+use App\Models\Companies\v1\Roles as V1Roles;
+use App\Models\Companies\v1\Users as V1Users;
 use App\Models\ModelHasRoles;
 use App\Models\Permissions;
 use App\Models\RoleHasPermissions;
@@ -499,11 +504,11 @@ class ModelHelper
     {
 		$superadmin_role_id = 1;
 		
-		RoleHasPermissions::where('role_id', $superadmin_role_id)->delete();
+		V1RoleHasPermissions::where('role_id', $superadmin_role_id)->delete();
 
 		$filtered_data = [];
 
-		$data = Permissions::get();
+		$data = V1Permissions::get();
 
 		foreach ($data as $row) {
 			$filtered_data[] = [
@@ -512,19 +517,19 @@ class ModelHelper
 			];
 		}
 
-		RoleHasPermissions::insert($filtered_data);
+		V1RoleHasPermissions::insert($filtered_data);
 
 		// $users = Users::select('id', 'role_id')->where('role_id', $superadmin_role_id)->get();
-		$users = Users::select('id', 'name', 'email', 'role_id')->get();
-		$roles = Roles::select('id', 'name')->get()->pluck('name', 'id')->toArray();
+		$users = V1Users::select('id', 'name', 'email', 'role_id')->get();
+		$roles = V1Roles::select('id', 'name')->get()->pluck('name', 'id')->toArray();
 
-		ModelHasRoles::where('model_type', 'App\Models\User')->delete();
+		V1ModelHasRoles::where('model_type', 'App\Models\User')->delete();
 
 		foreach ($users as $user) {
 			if (isset($roles[$user['role_id']])) {
-				ModelHasRoles::create([
+				V1ModelHasRoles::create([
 					'role_id' => $user['role_id'],
-					'model_type' => 'App\Models\User',
+					'model_type' => 'App\Models\Companies\v1\Users',
 					'model_id' => $user['id']
 				]);
 

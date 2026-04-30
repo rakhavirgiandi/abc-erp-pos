@@ -25,14 +25,24 @@ class SetupConfig {
         //     ], 401);
         // }
 
-        $general_settings = GeneralSettings::get();
-
         if ($user) {
             config(['user' => $user->toArray()]);
         }
 
-        foreach ($general_settings as $general_setting) {
-            config([$general_setting['key'] => $general_setting['value']]);
+        if (env('IS_ONPREMISE', false)) {
+            config([
+                'default_db_host' => env('DEFAULT_DB_HOST', '127.0.0.1'),
+                'default_db_port' => env('DEFAULT_DB_PORT', '5432'),
+                'default_db_driver' => env('DEFAULT_DB_DRIVER', 'pgsql'),
+                'default_db_user' => env('DEFAULT_DB_USERNAME', 'root'),
+                'default_db_password' => env('DEFAULT_DB_PASSWORD', ''),
+            ]);
+        } else {
+            $general_settings = GeneralSettings::get();
+    
+            foreach ($general_settings as $general_setting) {
+                config([$general_setting['key'] => $general_setting['value']]);
+            }
         }
 
         return $next($request);

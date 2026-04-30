@@ -5,6 +5,7 @@ namespace App\Models;
 use App\Helpers\EmailSmtpService;
 use App\Helpers\GlobalHelper;
 use App\Helpers\ModelHelper;
+use App\Helpers\NetworkHelper;
 use App\Models\Companies;
 use App\Models\Companies\v1\GeneralSettings;
 use App\Models\Companies\v1\Users as CompanyUsers;
@@ -45,6 +46,7 @@ class Users extends Model
      *
      * @var string
      */
+    protected $connection = 'pgsql';
     protected $table = 'users';
     /**
      * The primary key for the model.
@@ -509,6 +511,97 @@ class Users extends Model
 
     public static function generateToken($params, $method, $request, $type = 'member')
     {
+        if (NetworkHelper::isConnected()) {
+            if (env('IS_ONPREMISE', false)) {
+                $db = env('DB_DATABASE');
+    
+                $exists = DB::connection('pgsql_admin')->select("SELECT 1 FROM pg_database WHERE datname = ?", [$db]);
+    
+                if (empty($exists)) {
+                    DB::connection('pgsql_admin')->statement("CREATE DATABASE \"{$db}\"");
+                }
+    
+                DB::purge('pgsql');
+                DB::reconnect('pgsql');
+    
+                Artisan::call('migrate', [ '--database' => 'pgsql', '--force' => true ]);
+
+                $clientExists = DB::connection('pgsql')->table('oauth_clients')->where('personal_access_client', true)->exists();
+
+                if (!$clientExists) {
+                    $clientId = Str::uuid()->toString();
+                    $clientSecret = Str::random(40);
+
+                    DB::connection('pgsql')->table('oauth_clients')->insert([
+                        'id' => $clientId,
+                        'user_id' => null,
+                        'name' => 'Personal Access Client',
+                        'secret' => hash('sha256', $clientSecret),
+                        'provider' => 'users',
+                        'redirect' => 'http://localhost',
+                        'personal_access_client' => true,
+                        'password_client' => false,
+                        'revoked' => false,
+                        'created_at' => now(),
+                        'updated_at' => now(),
+                    ]);
+
+                    DB::connection('pgsql')->table('oauth_personal_access_clients')->insert([
+                        'client_id' => $clientId,
+                        'created_at' => now(),
+                        'updated_at' => now(),
+                    ]);
+                }
+
+                $response = null;
+
+                try {
+                    $response = NetworkHelper::loginToServer($params);
+                } catch (\Throwable $e) {
+                    \Log::warning('Login server gagal: ' . $e->getMessage());
+                }
+
+                if ($response) {
+                    $data = $response['data'];
+
+                    $user = self::where('email', $data['email'])->first();
+
+                    if ($user) {
+                        $user->update([
+                            'id' => $data['id'],
+                            'name' => $data['name'],
+                            'phone' => $data['phone'],
+                            'type' => $data['type'],
+                            'password' => bcrypt($params['password']),
+                            'email_verified_at' => $data['email_verified_at'],
+                            'remember_token' => $data['remember_token'],
+                            'deleted_at' => $data['deleted_at'],
+                            'association_id' => $data['association_id'],
+                            'is_hold' => $data['is_hold'],
+                            'created_at' => $data['created_at'],
+                            'updated_at' => $data['updated_at'],
+                        ]);
+                    } else {
+                        $user = self::create([
+                            'id' => $data['id'],
+                            'name' => $data['name'],
+                            'email' => $data['email'],
+                            'phone' => $data['phone'],
+                            'type' => $data['type'],
+                            'password' => bcrypt($params['password']),
+                            'email_verified_at' => $data['email_verified_at'],
+                            'remember_token' => $data['remember_token'],
+                            'deleted_at' => $data['deleted_at'],
+                            'association_id' => $data['association_id'],
+                            'is_hold' => $data['is_hold'],
+                            'created_at' => $data['created_at'],
+                            'updated_at' => $data['updated_at'],
+                        ]);
+                    }
+                }
+            }
+        }
+        
         $user_key = 'email';
         $user_value = '';
 
@@ -540,14 +633,6 @@ class Users extends Model
             //         'fcm_token' => $params['fcm_token']
             //     ]); 
             // }
-        }
-
-        if ($get_user_detail->is_hold) {
-            // return response()->json([
-            //     'status' => 'error',
-            //     'message' => '<div style="font-size: 18px;">Untuk melanjutkan Demo/Trial harap hubungi <b>Product Consultant</b> kami di : <br><br> Admin 1 : <a class="btn btn-info" style="border-radius: 7px; padding: 5px 10px;" target="_blank" href="https://wa.me/6282219970453?text=Halo Admin. Saya ingin aktivasi Trial untuk akun saya dengan email = '.$get_user_detail->email.'"><img src="https://fanatech.net/wp-content/uploads/2024/02/wa_logo.png" height="35">0822 1997 0453</a> <br><br> Admin 2 : <a class="btn btn-info" style="border-radius: 7px; padding: 5px 10px;" target="_blank" href="https://wa.me/6287818202231?text=Halo Admin. Saya ingin aktivasi Trial untuk akun saya dengan email = '.$get_user_detail->email.'"><img src="https://fanatech.net/wp-content/uploads/2024/02/wa_logo.png" height="35">0878 1820 2231</a></div>',
-            //     'data' => 'call_consultant'
-            // ], 400);
         }
 
         $tokenResult = $user->createToken('login_member_'.$user_value);

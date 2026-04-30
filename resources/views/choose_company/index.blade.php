@@ -190,6 +190,7 @@
 	            headers: { 'Authorization': TOKEN },
 	            dataType: 'JSON',
 	            success: function(res, textStatus, jqXHR){
+                    window.userCompanies = res;
 	                let html = '';
 	                let badge = 'badge bg-warning';
 
@@ -219,11 +220,11 @@
                         html += '                </div>';
                         html += '            </div>';
                         html += '            <hr>';
-                        html += '            <button type="button" class="btn btn-light border w-100 text-warning fw-semibold" id="open-data" data-company_id="'+val.company_id+'">';
+                        html += '            <button type="button" class="btn btn-light border w-100 text-warning fw-semibold" id="open-data" data-company_id="'+val.company_id+'" data-index="'+key+'">';
                         html += '                Masuk Perusahaan ▶';
                         html += '            </button>';
                         @if (isset($_GET['is_setup_data']) && $_GET['is_setup_data'] == 'true')
-                        html += '            <button type="button" class="btn btn-danger border w-100 mt-2 text-light fw-semibold" id="delete-data" data-company_id="'+val.company_id+'">';
+                        html += '            <button type="button" class="btn btn-danger border w-100 mt-2 text-light fw-semibold" id="delete-data" data-company_id="'+val.company_id+'" data-index="'+key+'">';
                         html += '               Hapus Perusahaan <i class="fas fa-trash-alt ms-2 fs-12 text-white"></i>';
                         html += '            </button>';
 						@endif
@@ -250,21 +251,25 @@
 			  }
 			});
 			let companyId = $(this).data('company_id');
+			let index = $(this).data('index');
+            let data = window.userCompanies[index];
 
-            let data = {};
-            data.company_id = companyId;
+            let payload = {
+                id: data.id,
+                user_id: data.user_id,
+                company_id: data.company_id,
+                type: data.type,
+                company: data.company,
+                subscription: data.subscription
+            };
 
             $.ajax({
-                type: 'post',
+                type: 'POST',
                 url: BASE_URL + '/open-database',
-                data: JSON.stringify(data),
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                cache: false,
-                contentType: false,
+                data: JSON.stringify(payload),
+                contentType: 'application/json',
                 processData: false,
-                dataType: 'JSON',
+                dataType: 'json',
                 success: function(res) {
                 	if (res.status == 'success') {
 				        $.ajax({

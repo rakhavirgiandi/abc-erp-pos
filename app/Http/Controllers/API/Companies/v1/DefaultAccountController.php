@@ -2,6 +2,8 @@
 
 namespace App\Http\Controllers\API\Companies\v1;
 
+use App\Helpers\NetworkHelper;
+use Illuminate\Support\Facades\DB;
 use App\Http\Controllers\Controller;
 use App\Models\Companies\v1\DefaultAccounts;
 use Illuminate\Http\Request;
@@ -113,5 +115,75 @@ class DefaultAccountController extends Controller
         ];
 
         return json_encode($json_data);
+    }
+
+    public static function syncToLocal(Request $request)
+    {
+        if (!NetworkHelper::isConnected()) {
+            $params = $request->all();
+            $res = DefaultAccounts::getPaginatedResult($params, $request);
+
+            return response()->json([
+                'status' => 'offline',
+                'message' => 'Tidak ada koneksi, menggunakan data lokal',
+                'data' => $res
+            ]);
+        }
+
+        $page = 1;
+        $perPage = 500;
+
+        do {
+            $url = config('server_url') . "/api/v1/default_accounts?page={$page}&per_page={$perPage}&is_simple=true";
+            $result = NetworkHelper::curlWithToken($url);
+
+            $rows = $result['data'] ?? [];
+
+            if (empty($rows)) break;
+
+            DB::connection('pgsql_companies')->beginTransaction();
+
+            try {
+                $keys = collect($rows)->pluck('key')->filter()->toArray();
+                $exist_default_account = DefaultAccounts::whereIn('key', $keys)->get()->keyBy('key');
+
+                $insert_default_account = [];
+                foreach ($rows as $row) {
+                    if (!isset($row['key'])) continue;
+
+                    $default_account = $exist_default_account[$row['key']] ?? null;
+                    unset($row['id']);
+
+                    if ($default_account) {
+                        $default_account->update($row); // UPDATE
+                    } else {
+                        $insert_default_account[] = $row; // INSERT
+                    }
+                }
+
+                if (!empty($insert_default_account)) {
+                    DefaultAccounts::insert($insert_default_account);
+                }
+
+                DB::connection('pgsql_companies')->statement("SELECT SETVAL('default_accounts_id_seq', COALESCE((SELECT MAX(id) + 1 FROM default_accounts), 1))");
+                DB::connection('pgsql_companies')->commit();
+
+            } catch (\Exception $e) {
+                DB::connection('pgsql_companies')->rollBack();
+                return response()->json([
+                    'status' => 'error',
+                    'message' => 'Gagal sync default account setting',
+                    'error' => $e->getMessage()
+                ], 500);
+            }
+
+            $page++;
+
+        } while ($page <= ($result['nav']['totalPage'] ?? 1));
+
+        return response()->json([
+            'status' => 'success',
+            'message' => 'Sync default account berhasil',
+        ]);
     }
 }

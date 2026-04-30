@@ -2,6 +2,8 @@
 
 namespace App\Http\Controllers\API\Companies\v1;
 
+use App\Helpers\NetworkHelper;
+use Illuminate\Support\Facades\DB;
 use App\Http\Controllers\Controller;
 use App\Models\Companies\v1\AccountingMasters;
 use Illuminate\Http\Request;
@@ -113,5 +115,76 @@ class AccountingMasterController extends Controller
         ];
 
         return json_encode($json_data);
+    }
+
+    public static function syncToLocal(Request $request)
+    {
+        if (!NetworkHelper::isConnected()) {
+            $params = $request->all();
+            $res = AccountingMasters::getPaginatedResult($params, $request);
+
+            return response()->json([
+                'status' => 'offline',
+                'message' => 'Tidak ada koneksi, menggunakan data lokal',
+                'data' => $res
+            ]);
+        }
+
+        $page = 1;
+        $perPage = 500;
+
+        do {
+            $url = config('server_url') . "/api/v1/accounting_masters?page={$page}&per_page={$perPage}&is_simple=true";
+            $result = NetworkHelper::curlWithToken($url);
+dd($result);
+            $rows = $result['data'] ?? [];
+
+            if (empty($rows)) break;
+
+            DB::connection('pgsql_companies')->beginTransaction();
+
+            try {
+                $coas = collect($rows)->pluck('coa')->filter()->toArray();
+                $exist_coa = AccountingMasters::whereIn('coa', $coas)->get()->keyBy('coa');
+
+                $insert_coa = [];
+                foreach ($rows as $row) {
+                    
+                    if (!isset($row['coa'])) continue;
+                    $coa = $exist_coa[$row['coa']] ?? null;
+                    
+                    
+                    if ($coa) {
+                        unset($row['id']);
+                        $coa->update($row); // UPDATE
+                    } else {
+                        $insert_coa[] = $row; // INSERT
+                    }
+                }
+
+                if (!empty($insert_coa)) {
+                    AccountingMasters::insert($insert_coa);
+                }
+
+                DB::connection('pgsql_companies')->statement("SELECT SETVAL('accounting_masters_id_seq', COALESCE((SELECT MAX(id) + 1 FROM accounting_masters), 1))");
+                DB::connection('pgsql_companies')->commit();
+
+            } catch (\Exception $e) {
+                DB::connection('pgsql_companies')->rollBack();
+                return response()->json([
+                    'status' => 'error',
+                    'message' => 'Gagal sync coa',
+                    'error' => $e->getMessage()
+                ], 500);
+            }
+
+            $page++;
+
+        } while ($page <= ($result['nav']['totalPage'] ?? 1));
+
+        return response()->json([
+            'status' => 'success',
+            'message' => 'Sync coa berhasil',
+        ]);
     }
 }

@@ -296,35 +296,64 @@ class Users extends Authenticatable
 
     public static function createOrUpdate($params, $method, $request)
     {
-        DB::beginTransaction();
+        DB::connection('pgsql_companies')->beginTransaction();
 
         $filename = null;
+        $filepath = null;
+
+        if (isset($params['is_restore']) && $params['is_restore'] == 'true') {
+            $is_restore = true;
+            unset($params['is_restore']);
+        }
+
+        if (isset($params['is_from_registration']) && $params['is_from_registration']) {
+            $is_from_registration = $params['is_from_registration'];
+            unset($params['is_from_registration']);
+        }
 
         if (isset($params['_token']) && $params['_token']) {
             unset($params['_token']);
         }
 
         if (isset($params['id']) && $params['id']) {
-            $old = self::getById($params['id'])->original;
+            $key = 'id';
+            $id = $params['id'];
+            $email = '';
 
-            $update = self::where('id', $params['id'])->update($params);
+            if (isset($params['email']) && $params['email']) {
+                $email = $params['email'];
+            }
 
-            DB::commit();
+            if (!$old) {
+                $old = self::where($key, $id)->first();
+            }
+
+            $update = self::where($key, $id)->update($params);
+
+            DB::connection('pgsql_companies')->commit();
             
             return response()->json([
                 'status' => 'success',
                 'message' => 'Succesfully Updated Data',
-                'data' => self::getById($params['id'])->original
+                'data' => self::getById($old['id'])->original
             ]);
         }
 
-        $save = self::create($params);
+        $users = self::create([
+            'password' => $params['password'],
+            'name' => $params['name'],
+            'email' => $params['email'],
+            'username' => $params['email'],
+            'phone' => $params['phone'],
+            'role_id' => $params['role_id'],
+            'employee_id' => $params['employee_id'],
+        ]);
 
-        DB::commit();
+        DB::connection('pgsql_companies')->commit();
         return response()->json([
             'status' => 'success',
             'message' => 'Succesfully Added Data',
-            'data' => self::getById($save->id)->original
+            'data' => self::getById($users->id)->original
         ]);
     }
 

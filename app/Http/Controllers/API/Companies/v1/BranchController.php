@@ -2,6 +2,8 @@
 
 namespace App\Http\Controllers\API\Companies\v1;
 
+use App\Helpers\NetworkHelper;
+use Illuminate\Support\Facades\DB;
 use App\Http\Controllers\Controller;
 use App\Models\Companies\v1\Branches;
 use Illuminate\Http\Request;
@@ -113,5 +115,77 @@ class BranchController extends Controller
         ];
 
         return json_encode($json_data);
+    }
+
+        public static function syncToLocal(Request $request)
+    {
+        if (!NetworkHelper::isConnected()) {
+            $params = $request->all();
+            $res = Branches::getPaginatedResult($params, $request);
+
+            return response()->json([
+                'status' => 'offline',
+                'message' => 'Tidak ada koneksi, menggunakan data lokal',
+                'data' => $res
+            ]);
+        }
+
+        $page = 1;
+        $perPage = 500;
+
+        do {
+            $url = config('server_url') . "/api/v1/branches?page={$page}&per_page={$perPage}&is_simple=true";
+            $result = NetworkHelper::curlWithToken($url);
+
+            $rows = $result['data'] ?? [];
+
+            if (empty($rows)) break;
+
+            DB::connection('pgsql_companies')->beginTransaction();
+
+            try {
+                $ids = collect($rows)->pluck('id')->filter()->toArray();
+                $exist_branch = Branches::whereIn('id', $ids)->get()->keyBy('id');
+
+                $insert_branch = [];
+                foreach ($rows as $row) {
+                    
+                    if (!isset($row['id'])) continue;
+                    $branch = $exist_branch[$row['id']] ?? null;
+                    
+                    unset($row['branch_head_name']);
+                    
+                    if ($branch) {
+                        unset($row['id']);
+                        $branch->update($row); // UPDATE
+                    } else {
+                        $insert_branch[] = $row; // INSERT
+                    }
+                }
+
+                if (!empty($insert_branch)) {
+                    Branches::insert($insert_branch);
+                }
+
+                DB::connection('pgsql_companies')->statement("SELECT SETVAL('branches_id_seq', COALESCE((SELECT MAX(id) + 1 FROM branches), 1))");
+                DB::connection('pgsql_companies')->commit();
+
+            } catch (\Exception $e) {
+                DB::connection('pgsql_companies')->rollBack();
+                return response()->json([
+                    'status' => 'error',
+                    'message' => 'Gagal sync branch',
+                    'error' => $e->getMessage()
+                ], 500);
+            }
+
+            $page++;
+
+        } while ($page <= ($result['nav']['totalPage'] ?? 1));
+
+        return response()->json([
+            'status' => 'success',
+            'message' => 'Sync branch berhasil',
+        ]);
     }
 }

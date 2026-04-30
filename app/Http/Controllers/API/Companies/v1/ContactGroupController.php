@@ -2,6 +2,8 @@
 
 namespace App\Http\Controllers\API\Companies\v1;
 
+use App\Helpers\NetworkHelper;
+use Illuminate\Support\Facades\DB;
 use App\Http\Controllers\Controller;
 use App\Models\Companies\v1\ContactGroups;
 use Illuminate\Http\Request;
@@ -113,5 +115,75 @@ class ContactGroupController extends Controller
         ];
 
         return json_encode($json_data);
+    }
+
+    public static function syncToLocal(Request $request)
+    {
+        if (!NetworkHelper::isConnected()) {
+            $params = $request->all();
+            $res = ContactGroups::getPaginatedResult($params, $request);
+
+            return response()->json([
+                'status' => 'offline',
+                'message' => 'Tidak ada koneksi, menggunakan data lokal',
+                'data' => $res
+            ]);
+        }
+
+        $page = 1;
+        $perPage = 500;
+
+        do {
+            $url = config('server_url') . "/api/v1/contact_groups?page={$page}&per_page={$perPage}&is_simple=true";
+            $result = NetworkHelper::curlWithToken($url);
+
+            $rows = $result['data'] ?? [];
+
+            if (empty($rows)) break;
+
+            DB::connection('pgsql_companies')->beginTransaction();
+
+            try {
+                $ids = collect($rows)->pluck('id')->filter()->toArray();
+                $exist_contact = ContactGroups::whereIn('id', $ids)->get()->keyBy('id');
+
+                $insert_contact = [];
+                foreach ($rows as $row) {
+                    
+                    if (!isset($row['id'])) continue;
+                    $contact = $exist_contact[$row['id']] ?? null;
+                    
+                    if ($contact) {
+                        unset($row['id']);
+                        $contact->update($row); // UPDATE
+                    } else {
+                        $insert_contact[] = $row; // INSERT
+                    }
+                }
+
+                if (!empty($insert_contact)) {
+                    ContactGroups::insert($insert_contact);
+                }
+
+                DB::connection('pgsql_companies')->statement("SELECT SETVAL('contact_groups_id_seq', COALESCE((SELECT MAX(id) + 1 FROM contact_groups), 1))");
+                DB::connection('pgsql_companies')->commit();
+
+            } catch (\Exception $e) {
+                DB::connection('pgsql_companies')->rollBack();
+                return response()->json([
+                    'status' => 'error',
+                    'message' => 'Gagal sync contact group',
+                    'error' => $e->getMessage()
+                ], 500);
+            }
+
+            $page++;
+
+        } while ($page <= ($result['nav']['totalPage'] ?? 1));
+
+        return response()->json([
+            'status' => 'success',
+            'message' => 'Sync contact group berhasil',
+        ]);
     }
 }

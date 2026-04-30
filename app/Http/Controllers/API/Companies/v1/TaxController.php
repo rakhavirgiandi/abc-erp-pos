@@ -2,6 +2,8 @@
 
 namespace App\Http\Controllers\API\Companies\v1;
 
+use App\Helpers\NetworkHelper;
+use Illuminate\Support\Facades\DB;
 use App\Http\Controllers\Controller;
 use App\Models\Companies\v1\Taxes;
 use Illuminate\Http\Request;
@@ -113,5 +115,79 @@ class TaxController extends Controller
         ];
 
         return json_encode($json_data);
+    }
+
+    public static function syncToLocal(Request $request)
+    {
+        if (!NetworkHelper::isConnected()) {
+            $params = $request->all();
+            $res = Taxes::getPaginatedResult($params, $request);
+
+            return response()->json([
+                'status' => 'offline',
+                'message' => 'Tidak ada koneksi, menggunakan data lokal',
+                'data' => $res
+            ]);
+        }
+
+        $page = 1;
+        $perPage = 500;
+
+        do {
+            $url = config('server_url') . "/api/v1/taxes?page={$page}&per_page={$perPage}&is_simple=true";
+            $result = NetworkHelper::curlWithToken($url);
+
+            $rows = $result['data'] ?? [];
+
+            if (empty($rows)) break;
+
+            DB::connection('pgsql_companies')->beginTransaction();
+
+            try {
+                $ids = collect($rows)->pluck('id')->filter()->toArray();
+                $exist_tax = Taxes::whereIn('id', $ids)->get()->keyBy('id');
+
+                $insert_tax = [];
+                foreach ($rows as $row) {
+                    if (!isset($row['id'])) continue;
+                    $tax = $exist_tax[$row['id']] ?? null;
+                    
+                    unset(
+                        $row['purchase_coa_name'], 
+                        $row['sales_coa_name'],
+                    );
+                    
+                    if ($tax) {
+                        unset($row['id']);
+                        $tax->update($row); // UPDATE
+                    } else {
+                        $insert_tax[] = $row; // INSERT
+                    }
+                }
+
+                if (!empty($insert_tax)) {
+                    Taxes::insert($insert_tax);
+                }
+
+                DB::connection('pgsql_companies')->statement("SELECT SETVAL('taxes_id_seq', COALESCE((SELECT MAX(id) + 1 FROM taxes), 1))");
+                DB::connection('pgsql_companies')->commit();
+
+            } catch (\Exception $e) {
+                DB::connection('pgsql_companies')->rollBack();
+                return response()->json([
+                    'status' => 'error',
+                    'message' => 'Gagal sync tax',
+                    'error' => $e->getMessage()
+                ], 500);
+            }
+
+            $page++;
+
+        } while ($page <= ($result['nav']['totalPage'] ?? 1));
+
+        return response()->json([
+            'status' => 'success',
+            'message' => 'Sync tax berhasil',
+        ]);
     }
 }

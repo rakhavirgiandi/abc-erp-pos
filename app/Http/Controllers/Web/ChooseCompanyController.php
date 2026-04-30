@@ -22,6 +22,8 @@ class ChooseCompanyController extends Controller
     {
         $params = $request->all();
 
+        Companies::databaseStarter($params, $request);
+
         $subscription = Subscriptions::where('company_id', $params['company_id'])->first();
 
         if ($subscription) {

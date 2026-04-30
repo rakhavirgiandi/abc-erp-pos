@@ -36,6 +36,7 @@ class ModelHasRoles extends Model
      * @var array
      */
     protected $fillable = [
+        'role_id',
         'model_type',
 		'model_id',
     ];
@@ -72,9 +73,9 @@ class ModelHasRoles extends Model
      *
      * @var boolean
      */
-    public $timestamps = true;
+    public $timestamps = false;
 
-    public $incrementing = true;
+    public $incrementing = false;
 
     // Scopes...
 
@@ -234,7 +235,7 @@ class ModelHasRoles extends Model
 
     public static function createOrUpdate($params, $method, $request)
     {
-        DB::beginTransaction();
+        DB::connection('pgsql_companies')->beginTransaction();
 
         $filename = null;
 
@@ -247,7 +248,7 @@ class ModelHasRoles extends Model
 
             $update = self::where('id', $params['id'])->update($params);
 
-            DB::commit();
+            DB::connection('pgsql_companies')->commit();
             
             return response()->json([
                 'status' => 'success',
@@ -258,7 +259,7 @@ class ModelHasRoles extends Model
 
         $save = self::create($params);
 
-        DB::commit();
+        DB::connection('pgsql_companies')->commit();
         return response()->json([
             'status' => 'success',
             'message' => 'Succesfully Added Data',

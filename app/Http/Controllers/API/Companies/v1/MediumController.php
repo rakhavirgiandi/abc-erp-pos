@@ -2,6 +2,8 @@
 
 namespace App\Http\Controllers\API\Companies\v1;
 
+use App\Helpers\NetworkHelper;
+use Illuminate\Support\Facades\DB;
 use App\Http\Controllers\Controller;
 use App\Models\Companies\v1\Media;
 use Illuminate\Http\Request;
@@ -113,5 +115,73 @@ class MediumController extends Controller
         ];
 
         return json_encode($json_data);
+    }
+
+    public static function syncToLocal(Request $request)
+    {
+        if (!NetworkHelper::isConnected()) {
+            $params = $request->all();
+            $res = Media::getPaginatedResult($params, $request);
+
+            return response()->json([
+                'status' => 'offline',
+                'message' => 'Tidak ada koneksi, menggunakan data lokal',
+                'data' => $res
+            ]);
+        }
+
+        $page = 1;
+        $perPage = 500;
+
+        do {
+            $url = config('server_url') . "/api/v1/media?model=Products&page={$page}&per_page={$perPage}&is_simple=true";
+            $result = NetworkHelper::curlWithToken($url);
+
+            $rows = $result['data'] ?? [];
+            if (empty($rows)) break;
+
+            DB::connection('pgsql_companies')->beginTransaction();
+
+            try {
+                $existing = Media::where('model', 'Products')->keyBy(function ($item) {
+                    return $item->model.'-'.$item->model_id.'-'.$item->filename;
+                });
+
+                $insert = [];
+
+                foreach ($rows as $row) {
+                    $key = $row['model'].'-'.$row['model_id'].'-'.$row['filename'];
+                    $media = $existing[$key] ?? null;
+                    unset($row['id']);
+
+                    if ($media) {
+                        $media->update($row);
+                    } else {
+                        $insert[] = $row;
+                    }
+                }
+
+                if (!empty($insert)) {
+                    Media::insert($insert);
+                }
+
+                DB::connection('pgsql_companies')->statement("SELECT SETVAL('media_id_seq', COALESCE((SELECT MAX(id) + 1 FROM media), 1))");
+                DB::connection('pgsql_companies')->commit();
+            } catch (\Exception $e) {
+                DB::connection('pgsql_companies')->rollBack();
+                return response()->json([
+                    'status' => 'error',
+                    'message' => 'Gagal sync media',
+                    'error' => $e->getMessage()
+                ], 500);
+            }
+
+            $page++;
+        } while ($page <= ($result['nav']['totalPage'] ?? 1));
+
+        return response()->json([
+            'status' => 'success',
+            'message' => 'Sync media berhasil',
+        ]);
     }
 }

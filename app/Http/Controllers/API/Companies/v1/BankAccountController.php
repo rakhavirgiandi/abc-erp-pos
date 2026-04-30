@@ -2,9 +2,11 @@
 
 namespace App\Http\Controllers\API\Companies\v1;
 
+use App\Helpers\NetworkHelper;
 use App\Http\Controllers\Controller;
 use App\Models\Companies\v1\BankAccounts;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 
 class BankAccountController extends Controller
 {
@@ -113,5 +115,77 @@ class BankAccountController extends Controller
         ];
 
         return json_encode($json_data);
+    }
+
+        public static function syncToLocal(Request $request)
+    {
+        if (!NetworkHelper::isConnected()) {
+            $params = $request->all();
+            $res = BankAccounts::getPaginatedResult($params, $request);
+
+            return response()->json([
+                'status' => 'offline',
+                'message' => 'Tidak ada koneksi, menggunakan data lokal',
+                'data' => $res
+            ]);
+        }
+
+        $page = 1;
+        $perPage = 500;
+
+        do {
+            $url = config('server_url') . "/api/v1/bank_accounts?page={$page}&per_page={$perPage}&is_simple=true";
+            $result = NetworkHelper::curlWithToken($url);
+
+            $rows = $result['data'] ?? [];
+
+            if (empty($rows)) break;
+
+            DB::connection('pgsql_companies')->beginTransaction();
+
+            try {
+                $ids = collect($rows)->pluck('id')->filter()->toArray();
+                $exist_bank = BankAccounts::whereIn('id', $ids)->get()->keyBy('id');
+
+                $insert_bank = [];
+                foreach ($rows as $row) {
+                    
+                    if (!isset($row['id'])) continue;
+                    $bank = $exist_bank[$row['id']] ?? null;
+                    
+                    unset($row['coa_name']);
+                    
+                    if ($bank) {
+                        unset($row['id']);
+                        $bank->update($row); // UPDATE
+                    } else {
+                        $insert_bank[] = $row; // INSERT
+                    }
+                }
+
+                if (!empty($insert_bank)) {
+                    BankAccounts::insert($insert_bank);
+                }
+
+                DB::connection('pgsql_companies')->statement("SELECT SETVAL('bank_accounts_id_seq', COALESCE((SELECT MAX(id) + 1 FROM bank_accounts), 1))");
+                DB::connection('pgsql_companies')->commit();
+
+            } catch (\Exception $e) {
+                DB::connection('pgsql_companies')->rollBack();
+                return response()->json([
+                    'status' => 'error',
+                    'message' => 'Gagal sync bank',
+                    'error' => $e->getMessage()
+                ], 500);
+            }
+
+            $page++;
+
+        } while ($page <= ($result['nav']['totalPage'] ?? 1));
+
+        return response()->json([
+            'status' => 'success',
+            'message' => 'Sync bank berhasil',
+        ]);
     }
 }

@@ -2,6 +2,8 @@
 
 namespace App\Http\Controllers\API\Companies\v1;
 
+use App\Helpers\NetworkHelper;
+use Illuminate\Support\Facades\DB;
 use App\Http\Controllers\Controller;
 use App\Models\Companies\v1\ProductSkus;
 use Illuminate\Http\Request;
@@ -113,5 +115,74 @@ class ProductSkuController extends Controller
         ];
 
         return json_encode($json_data);
+    }
+
+    public static function syncToLocal(Request $request)
+    {
+        if (!NetworkHelper::isConnected()) {
+            $params = $request->all();
+            $res = ProductSkus::getPaginatedResult($params, $request);
+
+            return response()->json([
+                'status' => 'offline',
+                'message' => 'Tidak ada koneksi, menggunakan data lokal',
+                'data' => $res
+            ]);
+        }
+
+        $page = 1;
+        $perPage = 500;
+
+        do {
+            $url = config('server_url') . "/api/v1/product_skus?page={$page}&per_page={$perPage}&is_simple=true";
+            $result = NetworkHelper::curlWithToken($url);
+
+            $rows = $result['data'] ?? [];
+
+            if (empty($rows)) break;
+
+            DB::connection('pgsql_companies')->beginTransaction();
+
+            try {
+                $ids = collect($rows)->pluck('id')->filter()->toArray();
+                $exist_sku = ProductSkus::whereIn('id', $ids)->get()->keyBy('id');
+
+                $insert_sku = [];
+                foreach ($rows as $row) {
+                    if (!isset($row['id'])) continue;
+                    $sku = $exist_sku[$row['id']] ?? null;
+                    
+                    if ($sku) {
+                        unset($row['id']);
+                        $sku->update($row); // UPDATE
+                    } else {
+                        $insert_sku[] = $row; // INSERT
+                    }
+                }
+
+                if (!empty($insert_sku)) {
+                    ProductSkus::insert($insert_sku);
+                }
+
+                DB::connection('pgsql_companies')->statement("SELECT SETVAL('product_skus_id_seq', COALESCE((SELECT MAX(id) + 1 FROM product_skus), 1))");
+                DB::connection('pgsql_companies')->commit();
+
+            } catch (\Exception $e) {
+                DB::connection('pgsql_companies')->rollBack();
+                return response()->json([
+                    'status' => 'error',
+                    'message' => 'Gagal sync product sku',
+                    'error' => $e->getMessage()
+                ], 500);
+            }
+
+            $page++;
+
+        } while ($page <= ($result['nav']['totalPage'] ?? 1));
+
+        return response()->json([
+            'status' => 'success',
+            'message' => 'Sync product sku berhasil',
+        ]);
     }
 }
