@@ -82,13 +82,28 @@ class Companies
             ->leftJoin('companies', 'company_credentials.company_id', '=', 'companies.id')
             ->first();
 
+            // KALO Gini POS Online ERROR, karena ambil root terus, apa yang di buat harus bisa handle Online maupun On Premis
+            // config(['database.connections.pgsql_companies' => [
+            //     'driver' => env('DEFAULT_DB_DRIVER', 'pgsql'),
+            //     'host' => env('DEFAULT_DB_HOST', '127.0.0.1'),
+            //     'port' => env('DEFAULT_DB_PORT', '5432'),
+            //     'database' => env('DEFAULT_DB_DATABASE', $company['db_database']),
+            //     'username' => env('DEFAULT_DB_USERNAME', 'root'),
+            //     'password' => env('DEFAULT_DB_PASSWORD', ''),
+            //     'charset' => 'utf8',
+            //     'prefix' => '',
+            //     'prefix_indexes' => true,
+            //     'schema' => 'public',
+            //     'sslmode' => 'prefer',
+            // ]]);
+
             config(['database.connections.pgsql_companies' => [
-                'driver' => env('DEFAULT_DB_DRIVER', 'pgsql'),
-                'host' => env('DEFAULT_DB_HOST', '127.0.0.1'),
-                'port' => env('DEFAULT_DB_PORT', '5432'),
-                'database' => env('DEFAULT_DB_DATABASE', $company['db_database']),
-                'username' => env('DEFAULT_DB_USERNAME', 'root'),
-                'password' => env('DEFAULT_DB_PASSWORD', ''),
+                'driver' => 'pgsql',
+                'host' => $company['db_host'],
+                'port' => $company['db_port'],
+                'database' => $company['db_database'],
+                'username' => $company['db_username'],
+                'password' => $company['db_password'],
                 'charset' => 'utf8',
                 'prefix' => '',
                 'prefix_indexes' => true,

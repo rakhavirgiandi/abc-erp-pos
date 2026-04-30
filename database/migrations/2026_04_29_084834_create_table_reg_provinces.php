@@ -11,18 +11,20 @@ return new class extends Migration
 {
     public function up(): void
     {
-        Schema::create('reg_provinces', function (Blueprint $table) {
-            $table->unsignedBigInteger('id');
-            $table->string('name');
-        });
+        if (!Schema::hasTable('reg_provinces')) {
+            Schema::create('reg_provinces', function (Blueprint $table) {
+                $table->unsignedBigInteger('id');
+                $table->string('name');
+            });
 
-        $now = Carbon::now();
-        $csv = new CsvtoArray();
-        $file = __DIR__.'/csv_indonesia/provinces.csv';
-        $header = ['id', 'name'];
-        $data = $csv->csv_to_array($file, $header);
+            $now = Carbon::now();
+            $csv = new CsvtoArray();
+            $file = __DIR__.'/csv_indonesia/provinces.csv';
+            $header = ['id', 'name'];
+            $data = $csv->csv_to_array($file, $header);
 
-        DB::table('reg_provinces')->insertOrIgnore($data);
+            DB::table('reg_provinces')->insertOrIgnore($data);
+        }
     }
 
     public function down(): void

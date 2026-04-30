@@ -46,6 +46,13 @@ return [
             'lock_table' => env('DB_CACHE_LOCK_TABLE'),
         ],
 
+       'pgsql' => [
+            'driver' => 'database',
+            'table' => 'cache',
+            'connection' => 'pgsql',
+            'lock_connection' => 'pgsql',
+        ],
+
         'file' => [
             'driver' => 'file',
             'path' => storage_path('framework/cache/data'),

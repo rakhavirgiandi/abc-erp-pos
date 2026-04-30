@@ -40,7 +40,6 @@ use Illuminate\Support\Str;
 class Users extends Model
 {
     use SoftDeletes;
-    protected $connection = 'pgsql';
 
     /**
      * The database table used by the model.
@@ -48,6 +47,7 @@ class Users extends Model
      * @var string
      */
     protected $connection = 'pgsql';
+
     protected $table = 'users';
     /**
      * The primary key for the model.
@@ -512,8 +512,8 @@ class Users extends Model
 
     public static function generateToken($params, $method, $request, $type = 'member')
     {
-        if (NetworkHelper::isConnected()) {
-            if (env('IS_ONPREMISE', false)) {
+        if (env('IS_ONPREMISE', false)) {
+            if (NetworkHelper::isConnected()) {
                 $db = env('DB_DATABASE');
     
                 $exists = DB::connection('pgsql_admin')->select("SELECT 1 FROM pg_database WHERE datname = ?", [$db]);
