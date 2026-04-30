@@ -40,6 +40,7 @@ use Illuminate\Support\Str;
 class Users extends Model
 {
     use SoftDeletes;
+    protected $connection = 'pgsql';
 
     /**
      * The database table used by the model.
@@ -291,7 +292,7 @@ class Users extends Model
         $pattern = '/([^a-z0-9]+)/';
         $slug = preg_replace($pattern,'', strtolower('erp-'.$params['company']['name'])) . date('ynjGis');
 
-        DB::beginTransaction();
+        DB::connection('pgsql')->beginTransaction();
 
         $filename = null;
         $company = [];
@@ -328,7 +329,7 @@ class Users extends Model
 
             $update = self::where('id', $params['id'])->update($params);
 
-            DB::commit();
+            DB::connection('pgsql')->commit();
             
             return response()->json([
                 'status' => 'success',
@@ -409,7 +410,7 @@ class Users extends Model
             //Create Database
             $check_db = DB::select("SELECT 1 FROM pg_catalog.pg_database WHERE datname = '{$slug}'");
             if (count($check_db) > 0) {
-                DB::Rollback();
+                DB::connection('pgsql')->Rollback();
                 return response()->json([
                     'status' => 'error',
                     'message' => 'Database is exist',
@@ -437,9 +438,9 @@ class Users extends Model
             'city_id' => $city_id,
         ]);
 
-        DB::commit();
+        DB::connection('pgsql')->commit();
 
-        DB::statement("CREATE DATABASE {$slug}");
+        DB::connection('pgsql')->statement("CREATE DATABASE {$slug}");
         
         config(['database.connections.pgsql_companies' => [
             'driver' => 'pgsql',
@@ -696,7 +697,7 @@ class Users extends Model
 
     public static function newPassword($params)
     {
-        DB::beginTransaction();
+        DB::connection('pgsql')->beginTransaction();
 
         if ($params['password'] != $params['confirm_password']) {
             return response()->json([
@@ -727,7 +728,7 @@ class Users extends Model
                 PasswordResets::where('token', $params['code'])->delete();
             }
 
-            DB::commit();
+            DB::connection('pgsql')->commit();
 
             $send_email = new EmailSmtpService();
             $send_email->composeEmail([
@@ -742,7 +743,7 @@ class Users extends Model
                 'message' => 'Sukses merubah password, silahkan login'
             ]);
         } else {
-            DB::rollBack();
+            DB::connection('pgsql')->Rollback();
             return response()->json([
                 'status' => 'error',
                 'message' => 'Token sudah kadaluarsa'

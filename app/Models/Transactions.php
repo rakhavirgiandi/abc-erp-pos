@@ -34,6 +34,7 @@ use Illuminate\Support\Str;
 class Transactions extends Model
 {
     use SoftDeletes;
+    protected $connection = 'pgsql';
 
     /**
      * The database table used by the model.
@@ -285,7 +286,7 @@ class Transactions extends Model
 
     public static function createOrUpdate($params, $method, $request)
     {
-        DB::beginTransaction();
+        DB::connection('pgsql')->beginTransaction();
 
         $user = auth()->guard('api')->user();
         // $ipaymu = new IpaymuService();
@@ -301,7 +302,7 @@ class Transactions extends Model
 
             $update = self::where('id', $params['id'])->update($params);
 
-            DB::commit();
+            DB::connection('pgsql')->commit();
             
             return response()->json([
                 'status' => 'success',
@@ -412,7 +413,7 @@ class Transactions extends Model
             ]);
         }
 
-        DB::commit();
+        DB::connection('pgsql')->commit();
         return response()->json([
             'status' => 'success',
             'message' => 'Succesfully Added Data',

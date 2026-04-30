@@ -70,6 +70,7 @@ use Illuminate\Support\Str;
 class Companies extends Model
 {
     use SoftDeletes;
+    protected $connection = 'pgsql';
 
     /**
      * The database table used by the model.
@@ -328,7 +329,7 @@ class Companies extends Model
 
     public static function createOrUpdate($params, $method, $request)
     {
-        DB::beginTransaction();
+        DB::connection('pgsql')->beginTransaction();
 
         $filename = null;
 
@@ -341,7 +342,7 @@ class Companies extends Model
 
             $update = self::where('id', $params['id'])->update($params);
 
-            DB::commit();
+            DB::connection('pgsql')->commit();
             
             return response()->json([
                 'status' => 'success',
@@ -409,7 +410,7 @@ class Companies extends Model
         //Create Database
         $check_db = DB::select("SELECT 1 FROM pg_catalog.pg_database WHERE datname = '{$slug}'");
         if (count($check_db) > 0) {
-            DB::Rollback();
+            DB::connection('pgsql')->Rollback();
             return response()->json([
                 'status' => 'error',
                 'message' => 'Database is exist',
@@ -436,9 +437,9 @@ class Companies extends Model
             'city_id' => $city_id,
         ]);
 
-        DB::commit();
+        DB::connection('pgsql')->commit();
 
-        DB::statement("CREATE DATABASE {$slug}");
+        DB::connection('pgsql')->statement("CREATE DATABASE {$slug}");
 
         config(['database.connections.pgsql_companies' => [
             'driver' => 'pgsql',
@@ -494,7 +495,7 @@ class Companies extends Model
 
     public static function deleteById($id, $params, $request)
     {
-        DB::beginTransaction();
+        DB::connection('pgsql')->beginTransaction();
 
         $old = self::where('id', $id)->first();
 
@@ -513,7 +514,7 @@ class Companies extends Model
         Transactions::where('company_id', $id)->delete();
         UserCompanies::where('company_id', $id)->delete();
 
-        DB::commit();
+        DB::connection('pgsql')->commit();
 
         return response()->json([
             'status' => 'success',
@@ -524,7 +525,7 @@ class Companies extends Model
 
     public static function activateCompany($company_id, $params)
     {
-        DB::beginTransaction();
+        DB::connection('pgsql')->beginTransaction();
 
         $subscription_type = 'subscribe';
         $total = 0;
@@ -608,7 +609,7 @@ class Companies extends Model
             Invoices::create($invoice);
         }
 
-        DB::commit();
+        DB::connection('pgsql')->commit();
 
         return [
             'status' => 'success',
