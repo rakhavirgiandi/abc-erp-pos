@@ -202,6 +202,20 @@ class SalesInvoices extends Model
     {
         return $this->hasMany(SalesInvoiceDetails::class, 'sales_invoice_id', 'id');
     }
+    public function product_histories()
+    {
+        return $this->hasMany(ProductHistories::class, 'model_id', 'id')->where('model', self::class);
+    }
+
+    public function point_histories()
+    {
+        return $this->hasMany(PointHistories::class, 'model_id', 'id')->where('model', 'SalesInvoices');
+    }
+
+    public function accounting_journals()
+    {
+        return $this->hasMany(AccountingJournals::class, 'model_id', 'id')->where('model', self::class);
+    }
 
     public static function mapSchema($params = [], $user = [])
     {

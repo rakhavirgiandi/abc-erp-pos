@@ -463,7 +463,7 @@
 
 @section('script')
     <script src="{{ asset('assets/libs/datatables.net/js/dataTables.min.js')}}"></script>
-    <script src="{{ asset('assets/libs/datatables.net-bs5/js/dataTables.bootstrap5.min.js')}}s"></script>
+    <script src="{{ asset('assets/libs/datatables.net-bs5/js/dataTables.bootstrap5.min.js')}}"></script>
 
     <!-- Responsive examples -->
     <script src="{{ asset('assets/libs/datatables.net-responsive/js/dataTables.responsive.min.js')}}"></script>
@@ -600,7 +600,7 @@
         const setCustomerDefaultValue = () => {
             $.ajax({
                 type: 'get',
-                url: BASE_URL + "/api/v1/contacts/"+'{{ config('settings.default_customer') }}',
+                url: BASE_URL + "/api/v1/contacts/"+'{{ config('general_settings.default_customer') }}',
                 "headers": {
                     'Authorization': TOKEN,
                     'company-id': COMPANY_ID,
@@ -3878,7 +3878,7 @@
                 'order[id]': 'desc',
                 is_active: 1,
                 is_default_pos_payment: 1,
-                'id[$not]': '{{ config('settings.default_cash') }}',
+                'id[$not]': '{{ config('general_settings.default_cash') }}',
                 page: paymentMethodPage,
                 ...props?.params
             }
