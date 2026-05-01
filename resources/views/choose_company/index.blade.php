@@ -12,7 +12,7 @@
     <meta name="Author" content="ABC Group Teknologi Indonesia">
     <meta name="keywords" content="ABC, Aplikasi Sekolah, Software Sekolah, PT Alimrugi Bisnis Creative, ABC Group Teknologi Indonesia">
     <!-- Favicon -->
-    <link rel="icon" href="{{ asset('assets/images/brand-logos/favicon.ico') }}" type="image/x-icon">
+    <link rel="shortcut icon" href="{{ asset('assets/images/logo-sm-new.ico')}}">
 
     {{-- <script src="{{ asset('assets/js/authentication-main.js') }}"></script> --}}
 

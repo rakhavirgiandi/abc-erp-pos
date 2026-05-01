@@ -24,7 +24,7 @@
     <!-- <script type="module" src="assets/js/layout-setup.js"></script> -->
     
     <!-- App favicon -->
-    <link rel="shortcut icon" href="{{ asset('assets/images/logo-sm.png') }}">
+    <link rel="shortcut icon" href="{{ asset('assets/images/logo-sm-new.ico')}}">
     <!-- slick-carousel css -->
     <link rel="stylesheet" href="{{ asset('assets/libs/slick-carousel/slick/slick.css') }}">
     <!-- Bootstrap Datepicker -->

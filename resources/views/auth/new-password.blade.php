@@ -11,7 +11,7 @@
     <meta name="keywords" content="ERP, sistem ERP, manajemen bisnis, software akuntansi, stok, inventory">
     <meta name="author" content="ABC ERP">
     <!-- Favicon -->
-    <link rel="shortcut icon" href="{{ asset('assets/images/logo-sm-new.png')}}">
+    <link rel="shortcut icon" href="{{ asset('assets/images/logo-sm-new.ico')}}">
     
 
     <!-- Ikon perangkat seluler -->

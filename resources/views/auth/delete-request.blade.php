@@ -13,7 +13,7 @@
     <meta name="author" content="ABC ERP">
 
     <!-- Favicon -->
-    <link rel="shortcut icon" href="{{ asset('assets/images/logo-sm-new.png')}}">
+    <link rel="shortcut icon" href="{{ asset('assets/images/logo-sm-new.ico')}}">
 
     <!-- Ikon perangkat seluler -->
     <link rel="apple-touch-icon" sizes="180x180" href="{{ asset('assets/images/favicon/apple-touch-icon.png') }}">
