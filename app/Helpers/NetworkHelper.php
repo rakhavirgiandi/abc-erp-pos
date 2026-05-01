@@ -96,7 +96,7 @@ class NetworkHelper
 
     private static function executeCurl($url, $token, &$httpCode)
     {
-        $COMPANY_ID = Session::get('_company_id');
+        $COMPANY_ID = self::getCompanyId();
 
         $curl = curl_init();
 
@@ -136,7 +136,7 @@ class NetworkHelper
 
     private static function executePost($url, $payload, $token, &$httpCode)
     {
-        $COMPANY_ID = Session::get('_company_id');
+        $COMPANY_ID = self::getCompanyId();
         $curl = curl_init();
 
         curl_setopt_array($curl, [
@@ -192,9 +192,16 @@ class NetworkHelper
         curl_close($curl);
 
         $result = json_decode($response, true);
-        
+
         Cache::put('server_token', $result['access_token'], now()->addDay());
 
         return $result;
+    }
+
+    private static function getCompanyId()
+    {
+        return config('company_id') 
+            ?? Session::get('_company_id') 
+            ?? request()->header('company-id')[0];
     }
 }

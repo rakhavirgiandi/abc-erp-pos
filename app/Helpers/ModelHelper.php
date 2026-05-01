@@ -354,10 +354,10 @@ class ModelHelper
 
 	public static function adjustSequencePostgreSql()
 	{
-		$tables = DB::select(DB::raw("SELECT table_name FROM information_schema.tables WHERE table_schema='public' AND table_type='BASE TABLE'")->getValue(DB::getQueryGrammar()));
+		$tables = DB::connection('pgsql_companies')->select(DB::raw("SELECT table_name FROM information_schema.tables WHERE table_schema='public' AND table_type='BASE TABLE'")->getValue(DB::connection('pgsql_companies')->getQueryGrammar()));
 
         foreach ($tables as $table) {
-            $primary_key = DB::select(DB::raw("SELECT               
+            $primary_key = DB::connection('pgsql_companies')->select(DB::raw("SELECT               
               pg_attribute.attname, 
               format_type(pg_attribute.atttypid, pg_attribute.atttypmod) 
             FROM pg_index, pg_class, pg_attribute, pg_namespace 
@@ -368,15 +368,15 @@ class ModelHelper
               pg_class.relnamespace = pg_namespace.oid AND 
               pg_attribute.attrelid = pg_class.oid AND 
               pg_attribute.attnum = any(pg_index.indkey)
-             AND indisprimary")->getValue(DB::getQueryGrammar()));
+             AND indisprimary")->getValue(DB::connection('pgsql_companies')->getQueryGrammar()));
 
             if ($table->table_name && isset($primary_key[0]->attname)) {
-                $sequence_name = DB::select(DB::raw("SELECT * FROM information_schema.sequences WHERE sequence_name = '".$table->table_name."_".$primary_key[0]->attname."_seq' ")->getValue(DB::getQueryGrammar()));
+                $sequence_name = DB::connection('pgsql_companies')->select(DB::raw("SELECT * FROM information_schema.sequences WHERE sequence_name = '".$table->table_name."_".$primary_key[0]->attname."_seq' ")->getValue(DB::connection('pgsql_companies')->getQueryGrammar()));
                 if (isset($sequence_name[0]->sequence_name)) {
-                    DB::select(
+                    DB::connection('pgsql_companies')->select(
                     	DB::raw(
                     		"SELECT SETVAL('".$sequence_name[0]->sequence_name."', (SELECT MAX(".$primary_key[0]->attname.") + 1 FROM ".$table->table_name."))"
-                		)->getValue(DB::getQueryGrammar())
+                		)->getValue(DB::connection('pgsql_companies')->getQueryGrammar())
 					);
                 }
             }

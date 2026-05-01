@@ -117,17 +117,6 @@ class SalesInvoiceController extends Controller
         return json_encode($json_data);
     }
 
-    public function syncSalesInvoices(Request $request)
-    {
-        $result = SalesInvoices::syncFromLocal($request->all());
-
-        if ($result['status'] !== 'success') {
-            return response()->json($result, 500);
-        }
-
-        return response()->json($result);
-    }
-
     public function syncToServer()
     {
         if (!NetworkHelper::isConnected()) {

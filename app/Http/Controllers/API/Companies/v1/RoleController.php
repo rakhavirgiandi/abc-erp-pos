@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\API\Companies\v1;
 
+use App\Helpers\ModelHelper;
 use App\Helpers\NetworkHelper;
 use Illuminate\Support\Facades\DB;
 use App\Http\Controllers\Controller;
@@ -144,25 +145,19 @@ class RoleController extends Controller
             DB::connection('pgsql_companies')->beginTransaction();
 
             try {
-                $ids = collect($rows)->pluck('id')->filter()->toArray();
-                $exist_role = Roles::whereIn('id', $ids)->get()->keyBy('id');
+                Roles::truncate();
 
-                $insert_role = [];
                 foreach ($rows as $row) {
-                    if (!isset($row['id'])) continue;
-                    $role = $exist_role[$row['id']] ?? null;
-                    
-                    if ($role) {
-                        unset($row['id']);
-                        $role->update($row); // UPDATE
-                    } else {
-                        $insert_role[] = $row; // INSERT
-                    }
+                    Roles::create([
+                        'id' => $row['id'],
+                        'name' => $row['name'],
+                        'guard_name' => $row['guard_name'] ?? 'web',
+                        'created_at' => $row['created_at'] ?? now(),
+                        'updated_at' => now(),
+                    ]);
                 }
 
-                if (!empty($insert_role)) {
-                    Roles::insert($insert_role);
-                }
+                ModelHelper::reorderPermissionAdmin();
 
                 DB::connection('pgsql_companies')->statement("SELECT SETVAL('roles_id_seq', COALESCE((SELECT MAX(id) + 1 FROM roles), 1))");
                 DB::connection('pgsql_companies')->commit();

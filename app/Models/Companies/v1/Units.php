@@ -96,6 +96,10 @@ class Units extends Model
     // Functions ...
 
     // Relations ...
+    public function conversions()
+    {
+        return $this->hasMany(BaseUnitConversions::class, 'from_unit_id', 'id');
+    }
 
     public static function mapSchema($params = [], $user = [])
     {
@@ -180,6 +184,7 @@ class Units extends Model
     {
         $append = [];
         $schema = self::mapSchema();
+        $is_simple = false;
 
         $paramsPage = isset($params['page']) ? $params['page'] : 0;
         
@@ -192,8 +197,40 @@ class Units extends Model
             unset($params['or']);
         }
 
+        if (isset($params['is_simple']) && $params['is_simple'] == 'true') {
+            $is_simple = true;
+            unset($params['is_simple']);
+        }
+
         $db = ModelHelper::select($schema['field'], $request, __CLASS__);
         ModelHelper::join($schema['join'], $request, $db);
+        
+        if (!$is_simple) {
+            $product_id = null;
+    
+            if (isset($params['product_id']) && $params['product_id']) {
+                $product_id = $params['product_id'];
+            }
+    
+            if ($product_id) {
+                $product = Products::where('id', $product_id)->first();
+                $product_unit_conversion_ids = ProductUnitConversions::where('product_id', '=', $product_id)->pluck('to_unit_id')->toArray();
+                if (!in_array($product->unit_id, $product_unit_conversion_ids)) {
+                    $product_unit_conversion_ids[] = $product->unit_id;
+                }
+                $db->whereIn('id', $product_unit_conversion_ids);
+            }
+    
+            $db->with(['conversions' => function ($q) {
+                $q->leftJoin('units as form_unit', 'form_unit.id', '=', 'base_unit_conversions.from_unit_id')
+                ->leftJoin('units as to_unit', 'to_unit.id', '=', 'base_unit_conversions.to_unit_id')
+                ->select(
+                  'base_unit_conversions.*',
+                  'form_unit.name as from_unit_name',
+                  'to_unit.name as to_unit_name',
+                );
+            }]);
+        }
 
         if ($params) {
             ModelHelper::dynamicFilterAnd($params, $request, $db, __CLASS__);
@@ -218,6 +255,16 @@ class Units extends Model
         
         $db = ModelHelper::select($schema['field'], $request, __CLASS__)->where($models->table.'.id', $id);
         
+        $db->with(['conversions' => function ($q) {
+            $q->leftJoin('units as form_unit', 'form_unit.id', '=', 'base_unit_conversions.from_unit_id')
+            ->leftJoin('units as to_unit', 'to_unit.id', '=', 'base_unit_conversions.to_unit_id')
+            ->select(
+              'base_unit_conversions.*',
+              'form_unit.name as from_unit_name',
+              'to_unit.name as to_unit_name',
+            );
+        }]);
+
         ModelHelper::join($schema['join'], $request, $db);
         
         return response()->json($db->first());
