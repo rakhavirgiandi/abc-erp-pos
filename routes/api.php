@@ -755,6 +755,7 @@ Route::group(['prefix' => 'v1', 'middleware' => ['auth:api', 'api.companies']], 
         Route::get('/role_has_permissions', [RoleHasPermissionController::class, 'syncToLocal'])->name('sync.role_has_permissions');
         Route::get('/taxes', [TaxController::class, 'syncToLocal'])->name('sync.taxes');
         Route::get('/units', [UnitController::class, 'syncToLocal'])->name('sync.units');
+        Route::get('/users', [UserController::class, 'syncToLocal'])->name('sync.users');
         Route::get('/variants', [VariantController::class, 'syncToLocal'])->name('sync.variants');
         Route::get('/variant_options', [VariantOptionController::class, 'syncToLocal'])->name('sync.variant_options');
         Route::get('/warehouses', [WarehouseController::class, 'syncToLocal'])->name('sync.warehouses');
