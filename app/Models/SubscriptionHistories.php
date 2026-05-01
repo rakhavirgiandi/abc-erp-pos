@@ -22,7 +22,8 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 class SubscriptionHistories extends Model
 {
     use SoftDeletes;
-
+    protected $connection = 'pgsql';
+    
     /**
      * The database table used by the model.
      *
@@ -257,7 +258,7 @@ class SubscriptionHistories extends Model
 
     public static function createOrUpdate($params, $method, $request)
     {
-        DB::beginTransaction();
+        DB::connection('pgsql')->beginTransaction();
 
         $filename = null;
 
@@ -270,7 +271,7 @@ class SubscriptionHistories extends Model
 
             $update = self::where('id', $params['id'])->update($params);
 
-            DB::commit();
+            DB::connection('pgsql')->commit();
             
             return response()->json([
                 'status' => 'success',
@@ -280,7 +281,7 @@ class SubscriptionHistories extends Model
 
         $save = self::create($params);
 
-        DB::commit();
+        DB::connection('pgsql')->commit();
         return response()->json([
             'status' => 'success',
             'message' => 'Succesfully Added Data',

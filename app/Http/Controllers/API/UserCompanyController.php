@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\API;
 
+use App\Helpers\NetworkHelper;
 use App\Http\Controllers\Controller;
 use App\Models\UserCompanies;
 use Illuminate\Http\Request;
@@ -15,7 +16,14 @@ class UserCompanyController extends Controller
         if ($id != null) {
             $res = UserCompanies::getById($id, $params, $request);
         } else if (isset($params['all']) && $params['all']) {
-            $res = UserCompanies::getAllResult($params, $request);
+            if (env('IS_ONPREMISE', false)) {
+                if (NetworkHelper::isConnected()) {
+                    $url = config('services.admin_credentials.server_url') . "/api/user_companies?all=true";
+                    $res = NetworkHelper::curlWithToken($url, true);
+                }
+            } else {
+                $res = UserCompanies::getAllResult($params, $request);
+            }
         } else {
             $res = UserCompanies::getPaginatedResult($params, $request);
         }

@@ -2,9 +2,10 @@
 
 namespace App\Helpers;
 
-use App\Models\GeneralSettings;
+use App\Models\Companies\v1\GeneralSettings;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\Session;
 
 class NetworkHelper
 {
@@ -36,13 +37,13 @@ class NetworkHelper
         $curl = curl_init();
 
         curl_setopt_array($curl, [
-            CURLOPT_URL => config('sync.server_url') . '/api/login',
+            CURLOPT_URL => config('services.admin_credentials.server_url') . '/api/login',
             CURLOPT_RETURNTRANSFER => true,
             CURLOPT_TIMEOUT => 30,
             CURLOPT_POST => true,
             CURLOPT_POSTFIELDS => json_encode([
-                'email' => config('sync.email'),
-                'password' => config('sync.password'),
+                'email' => config('services.admin_credentials.email'),
+                'password' => config('services.admin_credentials.password'),
             ]),
             CURLOPT_HTTPHEADER => [
                 'Content-Type: application/json',
@@ -61,7 +62,6 @@ class NetworkHelper
 
         $token = $result['access_token'];
 
-        // simpan ke DB
         GeneralSettings::updateOrCreate(
             ['key' => 'access_token'],
             [
@@ -73,9 +73,13 @@ class NetworkHelper
         return $token;
     }
 
-    public static function curlWithToken($url)
+    public static function curlWithToken($url, $server_token = false)
     {
-        $token = self::getAccessToken();
+        if ($server_token) {
+            $token = Cache::get('server_token');
+        } else {
+            $token = self::getAccessToken();
+        }
 
         $response = self::executeCurl($url, $token, $httpCode);
 
@@ -92,6 +96,8 @@ class NetworkHelper
 
     private static function executeCurl($url, $token, &$httpCode)
     {
+        $COMPANY_ID = self::getCompanyId();
+
         $curl = curl_init();
 
         curl_setopt_array($curl, [
@@ -101,6 +107,7 @@ class NetworkHelper
             CURLOPT_FOLLOWLOCATION => true,
             CURLOPT_HTTPHEADER => [
                 'Authorization: Bearer ' . $token,
+                'company-id: ' . $COMPANY_ID,
                 'Accept: application/json'
             ],
         ]);
@@ -129,6 +136,7 @@ class NetworkHelper
 
     private static function executePost($url, $payload, $token, &$httpCode)
     {
+        $COMPANY_ID = self::getCompanyId();
         $curl = curl_init();
 
         curl_setopt_array($curl, [
@@ -139,6 +147,7 @@ class NetworkHelper
             CURLOPT_POSTFIELDS => json_encode($payload),
             CURLOPT_HTTPHEADER => [
                 'Authorization: Bearer ' . $token,
+                'company-id: ' . $COMPANY_ID,
                 'Content-Type: application/json',
                 'Accept: application/json'
             ],
@@ -150,5 +159,49 @@ class NetworkHelper
         curl_close($curl);
 
         return $response;
+    }
+
+    public static function loginToServer($params)
+    {
+        $curl = curl_init();
+
+        curl_setopt_array($curl, [
+            CURLOPT_URL => config('services.admin_credentials.server_url') . '/api/login',
+            CURLOPT_RETURNTRANSFER => true,
+            CURLOPT_TIMEOUT => 10,
+            CURLOPT_POST => true,
+            CURLOPT_POSTFIELDS => json_encode([
+                'email' => $params['email'] ?? '',
+                'password' => $params['password'] ?? '',
+            ]),
+            CURLOPT_HTTPHEADER => [
+                'Content-Type: application/json',
+                'Accept: application/json'
+            ],
+        ]);
+
+        $response = curl_exec($curl);
+
+        if (curl_errno($curl)) {
+            $error = curl_error($curl);
+            curl_close($curl);
+            throw new \Exception($error);
+        }
+
+        $httpCode = curl_getinfo($curl, CURLINFO_HTTP_CODE);
+        curl_close($curl);
+
+        $result = json_decode($response, true);
+
+        Cache::put('server_token', $result['access_token'], now()->addDay());
+
+        return $result;
+    }
+
+    private static function getCompanyId()
+    {
+        return config('company_id') 
+            ?? Session::get('_company_id') 
+            ?? request()->header('company-id')[0];
     }
 }

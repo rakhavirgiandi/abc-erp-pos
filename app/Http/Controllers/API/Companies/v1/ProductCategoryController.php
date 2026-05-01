@@ -2,6 +2,8 @@
 
 namespace App\Http\Controllers\API\Companies\v1;
 
+use App\Helpers\NetworkHelper;
+use Illuminate\Support\Facades\DB;
 use App\Http\Controllers\Controller;
 use App\Models\Companies\v1\ProductCategories;
 use Illuminate\Http\Request;
@@ -113,5 +115,87 @@ class ProductCategoryController extends Controller
         ];
 
         return json_encode($json_data);
+    }
+
+    public static function syncToLocal(Request $request)
+    {
+        if (!NetworkHelper::isConnected()) {
+            $params = $request->all();
+            $res = ProductCategories::getPaginatedResult($params, $request);
+
+            return response()->json([
+                'status' => 'offline',
+                'message' => 'Tidak ada koneksi, menggunakan data lokal',
+                'data' => $res
+            ]);
+        }
+
+        $page = 1;
+        $perPage = 500;
+
+        do {
+            $url = config('services.admin_credentials.server_url') . "/api/v1/product_categories?page={$page}&per_page={$perPage}&is_simple=true";
+            $result = NetworkHelper::curlWithToken($url);
+
+            $rows = $result['data'] ?? [];
+
+            if (empty($rows)) break;
+
+            DB::connection('pgsql_companies')->beginTransaction();
+
+            try {
+                $ids = collect($rows)->pluck('id')->filter()->toArray();
+                $exist_categories = ProductCategories::whereIn('id', $ids)->get()->keyBy('id');
+
+                $insert_categories = [];
+                foreach ($rows as $row) {
+                    if (!isset($row['id'])) continue;
+                    $categories = $exist_categories[$row['id']] ?? null;
+                    
+                    unset(
+                        $row['inventory_coa_name'],
+                        $row['delivery_goods_coa_name'],
+                        $row['receipt_goods_coa_name'],
+                        $row['cogs_coa_name'],
+                        $row['purchase_return_coa_name'],
+                        $row['sales_coa_name'],
+                        $row['sales_return_coa_name']
+                    );
+                    
+                    if ($categories) {
+                        unset($row['id']);
+                        $categories->update($row); // UPDATE
+                    } else {
+                        $insert_categories[] = $row; // INSERT
+                    }
+                }
+
+                if (!empty($insert_categories)) {
+                    ProductCategories::insert($insert_categories);
+                }
+
+                DB::connection('pgsql_companies')->commit();
+
+            } catch (\Exception $e) {
+                DB::connection('pgsql_companies')->rollBack();
+                return response()->json([
+                    'status' => 'error',
+                    'message' => 'Gagal sync product categories',
+                    'error' => $e->getMessage()
+                ], 500);
+            }
+
+            $page++;
+
+        } while ($page <= ($result['nav']['totalPage'] ?? 1));
+
+        $params = $request->all();
+        $res = ProductCategories::getPaginatedResult($params, $request);
+
+        return response()->json([
+            'status' => 'success',
+            'message' => 'Sync product categories berhasil',
+            'data' => $res
+        ]);
     }
 }

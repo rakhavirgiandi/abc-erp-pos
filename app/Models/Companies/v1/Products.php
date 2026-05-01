@@ -161,7 +161,6 @@ class Products extends Model
         return $this->hasOne(Units::class, 'id', 'unit_id');
     }
 
-
     public static function mapSchema($params = [], $user = [])
     {
         $model = new self;
@@ -452,13 +451,110 @@ class Products extends Model
 
         $append = [];
 
-        $schema = self::mapSchema();
+        $schema = self::mapSchema($params);
         
         $db = ModelHelper::select($schema['field'], $request, __CLASS__)->where($models->table.'.id', $id);
         
+        $db->with(['product_skus.product_sku_variants' => function($q) {
+            $q->leftJoin('variants', 'variants.id', '=', 'product_sku_variants.variant_id')
+              ->select(
+                  'product_sku_variants.*',
+                  'variants.name as variant_name'
+              );
+        }]);
+
+        $db->with(['product_variants' => function ($q) {
+            $q->leftJoin('variants', 'variants.id', '=', 'product_variants.variant_id')
+              ->select(
+                  'product_variants.*',
+                  'variants.name as variant_name'
+              );
+        }]);
+
+        $db->with(['unit_conversions' => function ($q) {
+            $q->leftJoin('units as form_unit', 'form_unit.id', '=', 'product_unit_conversions.from_unit_id')
+            ->leftJoin('units as to_unit', 'to_unit.id', '=', 'product_unit_conversions.to_unit_id')
+            ->select(
+              'product_unit_conversions.*',
+              'form_unit.name as from_unit_name',
+              'to_unit.name as to_unit_name',
+            );
+        }]);
+
+        $db->with(['multi_prices' => function ($q) {
+            $q->leftJoin('contact_groups', 'contact_groups.id', '=', 'product_multi_prices.contact_group_id')
+            ->leftJoin('branches', 'branches.id', '=', 'product_multi_prices.branch_id')
+            ->leftJoin('units', 'units.id', '=', 'product_multi_prices.unit_id')
+            ->leftJoin('product_skus', 'product_skus.id', '=', 'product_multi_prices.product_sku_id')
+            ->select(
+              'product_multi_prices.*',
+              'branches.name as branch_name',
+              'branches.code as branch_code',
+              'contact_groups.name as contact_group_name',
+              'units.name as unit_name',
+              'product_skus.alias as product_sku_name',
+              'product_skus.sku_code as product_sku_code',
+            );
+        }]);
+
+        if (isset($params['with_media']) && $params['with_media']) {
+            $db->with(['media']);
+        }
+
         ModelHelper::join($schema['join'], $request, $db);
+
+        $data = $db->first();
         
-        return response()->json($db->first());
+        $variant_option_ids = [];
+
+        foreach ($data['product_variants'] as $product_variants) {
+            if (isset($product_variants['variant_option_ids'])) {
+                foreach ($product_variants['variant_option_ids'] as $variant_option_id) {
+                    $variant_option_ids[] = $variant_option_id;
+                }
+            }
+        }
+
+        foreach ($data['product_skus'] as $product_sku) {
+            foreach ($product_sku['product_sku_variants'] as $product_sku_variant) {
+                $variant_option_ids[] = $product_sku_variant['option_id'];
+            }
+        }
+
+        $variant_option_ids = array_unique($variant_option_ids);
+
+        $variant_options = VariantOptions::select('id', 'value', 'sequence')->whereIn('id', $variant_option_ids)->get();
+
+        $variant_option_by_id = [];
+
+        foreach ($variant_options as $variant_option) {
+            $variant_option_by_id[$variant_option['id']] = $variant_option->toArray();
+        }
+
+        foreach ($data['product_variants'] as $key => $product_variant) {
+            $variant_option_details = [];
+
+            foreach (($product_variant['variant_option_ids'] ?? []) as $variant_option_id) {
+                $variant_option_details[] = [
+                    'variant_option_id' => $variant_option_id,
+                    'variant_option_name' => $variant_option_by_id[$variant_option_id]['value'] ?? '-',
+                ];
+            }
+
+            $data['product_variants'][$key]['variant_option_details'] = $variant_option_details;
+        }
+
+        foreach ($data['product_skus'] as $key => $product_sku) {
+            foreach ($product_sku['product_sku_variants'] as $k => $product_sku_variant) {
+                $data['product_skus'][$key]['product_sku_variants'][$k]['option_name'] = '-';
+
+                if (isset($variant_option_by_id[$product_sku_variant['option_id']]) && $variant_option_by_id[$product_sku_variant['option_id']]) {
+                    $data['product_skus'][$key]['product_sku_variants'][$k]['option_name'] = $variant_option_by_id[$product_sku_variant['option_id']]['value'];
+                }
+            }
+        }
+
+        return response()->json($data);
     }
 
     public static function getAllResult($params, $request)
@@ -493,7 +589,7 @@ class Products extends Model
 
     public static function createOrUpdate($params, $method, $request)
     {
-        DB::beginTransaction();
+        DB::connection('pgsql_companies')->beginTransaction();
 
         $filename = null;
 
@@ -506,7 +602,7 @@ class Products extends Model
 
             $update = self::where('id', $params['id'])->update($params);
 
-            DB::commit();
+            DB::connection('pgsql_companies')->commit();
             
             return response()->json([
                 'status' => 'success',
@@ -517,7 +613,7 @@ class Products extends Model
 
         $save = self::create($params);
 
-        DB::commit();
+        DB::connection('pgsql_companies')->commit();
         return response()->json([
             'status' => 'success',
             'message' => 'Succesfully Added Data',

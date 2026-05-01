@@ -2,6 +2,8 @@
 
 namespace App\Http\Controllers\API\Companies\v1;
 
+use App\Helpers\NetworkHelper;
+use Illuminate\Support\Facades\DB;
 use App\Http\Controllers\Controller;
 use App\Models\Companies\v1\BaseUnitConversions;
 use Illuminate\Http\Request;
@@ -113,5 +115,80 @@ class BaseUnitConversionController extends Controller
         ];
 
         return json_encode($json_data);
+    }
+
+    public static function syncToLocal(Request $request)
+    {
+        if (!NetworkHelper::isConnected()) {
+            $params = $request->all();
+            $res = BaseUnitConversions::getPaginatedResult($params, $request);
+
+            return response()->json([
+                'status' => 'offline',
+                'message' => 'Tidak ada koneksi, menggunakan data lokal',
+                'data' => $res
+            ]);
+        }
+
+        $page = 1;
+        $perPage = 500;
+
+        do {
+            $url = config('services.admin_credentials.server_url') . "/api/v1/base_unit_conversions?page={$page}&per_page={$perPage}&is_simple=true";
+            $result = NetworkHelper::curlWithToken($url);
+
+            $rows = $result['data'] ?? [];
+
+            if (empty($rows)) break;
+
+            DB::connection('pgsql_companies')->beginTransaction();
+
+            try {
+                $ids = collect($rows)->pluck('id')->filter()->toArray();
+                $exist_base_unit = BaseUnitConversions::whereIn('id', $ids)->get()->keyBy('id');
+
+                $insert_base_unit = [];
+                foreach ($rows as $row) {
+                    
+                    if (!isset($row['id'])) continue;
+                    $base_unit = $exist_base_unit[$row['id']] ?? null;
+                    
+                    unset(
+                        $row['to_unit_name'], 
+                        $row['from_unit_name']
+                    );
+                    
+                    if ($base_unit) {
+                        unset($row['id']);
+                        $base_unit->update($row); // UPDATE
+                    } else {
+                        $insert_base_unit[] = $row; // INSERT
+                    }
+                }
+
+                if (!empty($insert_base_unit)) {
+                    BaseUnitConversions::insert($insert_base_unit);
+                }
+
+                DB::connection('pgsql_companies')->statement("SELECT SETVAL('base_unit_convertions_id_seq', COALESCE((SELECT MAX(id) + 1 FROM base_unit_conversions), 1))");
+                DB::connection('pgsql_companies')->commit();
+
+            } catch (\Exception $e) {
+                DB::connection('pgsql_companies')->rollBack();
+                return response()->json([
+                    'status' => 'error',
+                    'message' => 'Gagal sync base unit',
+                    'error' => $e->getMessage()
+                ], 500);
+            }
+
+            $page++;
+
+        } while ($page <= ($result['nav']['totalPage'] ?? 1));
+
+        return response()->json([
+            'status' => 'success',
+            'message' => 'Sync base unit berhasil',
+        ]);
     }
 }

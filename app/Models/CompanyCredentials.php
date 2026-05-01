@@ -25,6 +25,7 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 class CompanyCredentials extends Model
 {
     use SoftDeletes;
+    protected $connection = 'pgsql';
 
     /**
      * The database table used by the model.
@@ -264,7 +265,7 @@ class CompanyCredentials extends Model
 
     public static function createOrUpdate($params, $method, $request)
     {
-        DB::beginTransaction();
+        DB::connection('pgsql')->beginTransaction();
 
         $filename = null;
 
@@ -277,7 +278,7 @@ class CompanyCredentials extends Model
 
             $update = self::where('id', $params['id'])->update($params);
 
-            DB::commit();
+            DB::connection('pgsql')->commit();
             
             return response()->json([
                 'status' => 'success',
@@ -287,7 +288,7 @@ class CompanyCredentials extends Model
 
         $save = self::create($params);
 
-        DB::commit();
+        DB::connection('pgsql')->commit();
         return response()->json([
             'status' => 'success',
             'message' => 'Succesfully Added Data',

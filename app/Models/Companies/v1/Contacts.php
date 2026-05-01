@@ -143,7 +143,7 @@ class Contacts extends Model
 
     // Relations ...
 
-    public static function mapSchema($params = [], $user = [])
+   public static function mapSchema($params = [], $user = [])
     {
         $model = new self;
 
@@ -170,14 +170,38 @@ class Contacts extends Model
 				'is_supplier' => ['column' => $model->table.'.is_supplier', 'alias' => 'is_supplier', 'type' => 'int'],
 				'is_seller' => ['column' => $model->table.'.is_seller', 'alias' => 'is_seller', 'type' => 'int'],
 				'is_leads' => ['column' => $model->table.'.is_leads', 'alias' => 'is_leads', 'type' => 'int'],
+				'is_active' => ['column' => $model->table.'.is_active', 'alias' => 'is_active', 'type' => 'int'],
 				'salesman_id' => ['column' => $model->table.'.salesman_id', 'alias' => 'salesman_id', 'type' => 'int'],
+				'salesman_name' => ['column' => $model->table.'.salesman_name', 'alias' => 'salesman_name', 'type' => 'string'],
 				'currency_id' => ['column' => $model->table.'.currency_id', 'alias' => 'currency_id', 'type' => 'int'],
+				'contact_group_id' => ['column' => $model->table.'.contact_group_id', 'alias' => 'contact_group_id', 'type' => 'int'],
+				'contact_group_name' => ['column' => 'contact_groups.name', 'alias' => 'contact_group_name', 'type' => 'string'],
+				'currency_name' => ['column' => 'currencies.name', 'alias' => 'currency_name', 'type' => 'string'],
 				'due_days' => ['column' => $model->table.'.due_days', 'alias' => 'due_days', 'type' => 'int'],
 				'early_discount' => ['column' => $model->table.'.early_discount', 'alias' => 'early_discount', 'type' => 'int'],
 				'late_fees' => ['column' => $model->table.'.late_fees', 'alias' => 'late_fees', 'type' => 'int'],
-				'is_active' => ['column' => $model->table.'.is_active', 'alias' => 'is_active', 'type' => 'int'],
-				'salesman_name' => ['column' => $model->table.'.salesman_name', 'alias' => 'salesman_name', 'type' => 'string'],
-				'contact_group_id' => ['column' => $model->table.'.contact_group_id', 'alias' => 'contact_group_id', 'type' => 'int'],
+                'point_balance' => [
+                    'column' => '(
+                        COALESCE((
+                            SELECT SUM(ph.point)
+                            FROM point_histories ph
+                            WHERE ph.contact_id = contacts.id
+                            AND ph.type = \'in\'
+                            AND ph.deleted_at IS NULL
+                        ),0)
+                        -
+                        COALESCE((
+                            SELECT SUM(ph.point)
+                            FROM point_histories ph
+                            WHERE ph.contact_id = contacts.id
+                            AND ph.type = \'out\'
+                            AND ph.deleted_at IS NULL
+                        ),0)
+                    )',
+                    'alias' => 'point_balance',
+                    'type' => 'int',
+                    'is_raw' => true
+                ],
 				'created_at' => ['column' => $model->table.'.created_at', 'alias' => 'created_at', 'type' => 'date'],
 				'updated_at' => ['column' => $model->table.'.updated_at', 'alias' => 'updated_at', 'type' => 'date'],
 				'deleted_at' => ['column' => $model->table.'.deleted_at', 'alias' => 'deleted_at', 'type' => 'date'],
@@ -205,7 +229,9 @@ class Contacts extends Model
                 ],
                 ],
             'join' => [
-
+                ['table' => 'currencies', 'type' => 'left', 'on' => ['currencies.id', '=', $model->table . '.currency_id']],
+                ['table' => 'contact_groups', 'type' => 'left', 'on' => ['contact_groups.id', '=', $model->table . '.contact_group_id']],
+            
             ],
             'where' => [
 
@@ -223,6 +249,23 @@ class Contacts extends Model
         ModelHelper::join($schema['join'], null, $qry);
         
         //FILTER
+        if (!empty($filter)) {
+            if (isset($filter) && $filter['is_active'] != 'all') {
+                $qry->where('contacts.is_active',$filter['is_active']);
+            }
+            if (isset($filter['is_seller'])) {
+                $qry->where('is_seller',$filter['is_seller']);
+            }
+            if (isset($filter['is_customer'])) {
+                $qry->where('is_customer',$filter['is_customer']);
+            }
+            if (isset($filter['is_supplier'])) {
+                $qry->where('is_supplier',$filter['is_supplier']);
+            }
+            if (isset($filter['is_staff'])) {
+                $qry->where('is_staff',$filter['is_staff']);
+            }
+        }
 
         $totalFiltered = $qry->count();
 
@@ -346,7 +389,7 @@ class Contacts extends Model
 
     public static function createOrUpdate($params, $method, $request)
     {
-        DB::beginTransaction();
+        DB::connection('pgsql_companies')->beginTransaction();
 
         $filename = null;
 
@@ -359,7 +402,7 @@ class Contacts extends Model
 
             $update = self::where('id', $params['id'])->update($params);
 
-            DB::commit();
+            DB::connection('pgsql_companies')->commit();
             
             return response()->json([
                 'status' => 'success',
@@ -370,7 +413,7 @@ class Contacts extends Model
 
         $save = self::create($params);
 
-        DB::commit();
+        DB::connection('pgsql_companies')->commit();
         return response()->json([
             'status' => 'success',
             'message' => 'Succesfully Added Data',
@@ -397,6 +440,64 @@ class Contacts extends Model
         return response()->json([
             'status' => 'success',
             'message' => 'Succesfully Approved Data',
+            'data' => null
+        ]);
+    }
+
+    public static function resetRewardPoints($params)
+    {
+        $rules = [
+            'contact_ids' => 'required_without:contact_group_ids|array',
+            'contact_ids.*' => 'integer',
+            'contact_group_ids' => 'required_without:contact_ids|array',
+            'contact_group_ids.*' => 'integer',
+        ];
+
+        $validator = Validator::make($params, $rules);
+
+        if ($validator->fails()) {
+            return response()->json([
+                'status' => 'error',
+                'message' => $validator->errors()->first(),
+                'errors' => $validator->errors()->all()
+            ], 422);
+        }
+
+        $contact_ids = [];
+        
+        if (isset($params['contact_ids']) && $params['contact_ids']) {
+            $contact_ids = $params['contact_ids'];
+        }
+
+        $contact_group_ids = [];
+
+        if (isset($params['contact_group_ids']) && $params['contact_group_ids']) {
+            $contact_group_ids = $params['contact_group_ids'];
+        }
+
+        DB::connection('pgsql_companies')->beginTransaction();
+
+        $contact_qry = Contacts::where('is_customer', 1);
+
+        if (count($contact_ids) > 0) {
+            $contact_qry->whereIn('id', $contact_ids);
+        }
+
+        if (count($contact_group_ids) > 0) {
+            $contact_qry->whereIn('contact_group_id', $contact_group_ids);
+        }
+
+        if (count($contact_group_ids) > 0 || count($contact_ids) > 0) {
+            $contact_by_ids = $contact_qry->get()->pluck('id')->toArray();
+
+            PointHistories::whereIn('contact_id', $contact_by_ids)->delete();
+        }
+
+        DB::connection('pgsql_companies')->commit();
+
+        return response()->json([
+            'status' => 'success',
+            'message' => 'Succesfully Reset Point',
             'data' => null
         ]);
     }

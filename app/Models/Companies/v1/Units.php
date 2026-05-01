@@ -255,6 +255,16 @@ class Units extends Model
         
         $db = ModelHelper::select($schema['field'], $request, __CLASS__)->where($models->table.'.id', $id);
         
+        $db->with(['conversions' => function ($q) {
+            $q->leftJoin('units as form_unit', 'form_unit.id', '=', 'base_unit_conversions.from_unit_id')
+            ->leftJoin('units as to_unit', 'to_unit.id', '=', 'base_unit_conversions.to_unit_id')
+            ->select(
+              'base_unit_conversions.*',
+              'form_unit.name as from_unit_name',
+              'to_unit.name as to_unit_name',
+            );
+        }]);
+
         ModelHelper::join($schema['join'], $request, $db);
         
         return response()->json($db->first());
@@ -292,7 +302,7 @@ class Units extends Model
 
     public static function createOrUpdate($params, $method, $request)
     {
-        DB::beginTransaction();
+        DB::connection('pgsql_companies')->beginTransaction();
 
         $filename = null;
 
@@ -305,7 +315,7 @@ class Units extends Model
 
             $update = self::where('id', $params['id'])->update($params);
 
-            DB::commit();
+            DB::connection('pgsql_companies')->commit();
             
             return response()->json([
                 'status' => 'success',
@@ -316,7 +326,7 @@ class Units extends Model
 
         $save = self::create($params);
 
-        DB::commit();
+        DB::connection('pgsql_companies')->commit();
         return response()->json([
             'status' => 'success',
             'message' => 'Succesfully Added Data',

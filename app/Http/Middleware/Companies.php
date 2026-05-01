@@ -5,9 +5,12 @@ namespace App\Http\Middleware;
 use App\Helpers\DateHelper;
 use App\Helpers\GlobalHelper;
 use App\Models\Companies\v1\Branches;
+use App\Models\Companies\v1\Currencies;
 use App\Models\Companies\v1\Users;
 use App\Models\Companies\v1\GeneralSettings;
 use App\Models\Companies\v1\DefaultAccounts;
+use App\Models\Companies\v1\Projects;
+use App\Models\Companies\v1\Warehouses;
 use App\Models\CompanyCredentials;
 use App\Models\Users as ModelsUsers;
 use Closure;
@@ -79,6 +82,21 @@ class Companies
             ->leftJoin('companies', 'company_credentials.company_id', '=', 'companies.id')
             ->first();
 
+            // KALO Gini POS Online ERROR, karena ambil root terus, apa yang di buat harus bisa handle Online maupun On Premis
+            // config(['database.connections.pgsql_companies' => [
+            //     'driver' => env('DEFAULT_DB_DRIVER', 'pgsql'),
+            //     'host' => env('DEFAULT_DB_HOST', '127.0.0.1'),
+            //     'port' => env('DEFAULT_DB_PORT', '5432'),
+            //     'database' => env('DEFAULT_DB_DATABASE', $company['db_database']),
+            //     'username' => env('DEFAULT_DB_USERNAME', 'root'),
+            //     'password' => env('DEFAULT_DB_PASSWORD', ''),
+            //     'charset' => 'utf8',
+            //     'prefix' => '',
+            //     'prefix_indexes' => true,
+            //     'schema' => 'public',
+            //     'sslmode' => 'prefer',
+            // ]]);
+
             config(['database.connections.pgsql_companies' => [
                 'driver' => 'pgsql',
                 'host' => $company['db_host'],
@@ -107,14 +125,34 @@ class Companies
 
             $settings = GeneralSettings::get();
 
-            foreach ($settings->toArray() as $row) {
-                config(['general_settings.' . $row['key'] => $row['value']]);
+            foreach($settings->toArray() as $row) {
+                config(['general_settings.'.$row['key'] => $row['value']]);
 
-                if ($row['type'] == 'App\Models\Branches') {
+                if ($row['key'] == 'access_token') {
+                    config(['general_settings.sync_token' => $row['value']]);
+                } else if ($row['type'] == 'App\Models\Branches') {
                     config(['general_settings.branch_name' => 'N/A']);
                     $branch = Branches::select('id', 'name')->where('id', $row['value'])->first();
                     if ($branch) {
                         config(['general_settings.branch_name' => $branch['name']]);
+                    }
+                } else if ($row['type'] == 'App\Models\Warehouses') {
+                    config(['general_settings.warehouse_name' => 'N/A']);
+                    $warehouse = Warehouses::select('id', 'name')->where('id', $row['value'])->first();
+                    if ($warehouse) {
+                        config(['general_settings.warehouse_name' => $warehouse['name']]);
+                    }
+                } else if ($row['type'] == 'App\Models\Projects') {
+                    config(['general_settings.project_name' => 'N/A']);
+                    $project = Projects::select('id', 'name')->where('id', $row['value'])->first();
+                    if ($project) {
+                        config(['general_settings.project_name' => $project['name']]);
+                    }
+                } else if ($row['type'] == 'App\Models\Currencies') {
+                    config(['general_settings.currency_name' => 'N/A']);
+                    $currency = Currencies::select('id', 'name')->where('id', $row['value'])->first();
+                    if ($currency) {
+                        config(['general_settings.currency_name' => $currency['name']]);
                     }
                 }
             }

@@ -2,6 +2,8 @@
 
 namespace App\Http\Controllers\API\Companies\v1;
 
+use App\Helpers\NetworkHelper;
+use Illuminate\Support\Facades\DB;
 use App\Http\Controllers\Controller;
 use App\Models\Companies\v1\ProductHistories;
 use Illuminate\Http\Request;
@@ -113,5 +115,80 @@ class ProductHistoryController extends Controller
         ];
 
         return json_encode($json_data);
+    }
+
+    public static function syncToLocal(Request $request)
+    {
+        if (!NetworkHelper::isConnected()) {
+            $params = $request->all();
+            $res = ProductHistories::getPaginatedResult($params, $request);
+
+            return response()->json([
+                'status' => 'offline',
+                'message' => 'Tidak ada koneksi, menggunakan data lokal',
+                'data' => $res
+            ]);
+        }
+
+        $page = 1;
+        $perPage = 500;
+
+        $warehouse_id = config('general_settings.default_warehouse') ?? '';
+        $period = now()->format('Y-m');
+
+        do {
+            $url = config('services.admin_credentials.server_url') . "/api/v1/product_histories?page={$page}&per_page={$perPage}&is_simple=true&warehouse_id={$warehouse_id}&periode={$period}";
+            $result = NetworkHelper::curlWithToken($url);
+
+            $rows = $result['data'] ?? [];
+
+            if (empty($rows)) break;
+
+            DB::connection('pgsql_companies')->beginTransaction();
+
+            try {
+                $ids = collect($rows)->pluck('id')->filter()->toArray();
+                $exist_bank = ProductHistories::whereIn('id', $ids)->get()->keyBy('id');
+
+                $insert_bank = [];
+                foreach ($rows as $row) {
+                    
+                    if (!isset($row['id'])) continue;
+                    $bank = $exist_bank[$row['id']] ?? null;
+                    
+                    unset($row['id']);
+                    unset($row['coa_name']);
+                    
+                    if ($bank) {
+                        $bank->update($row); // UPDATE
+                    } else {
+                        $insert_bank[] = $row; // INSERT
+                    }
+                }
+
+                if (!empty($insert_bank)) {
+                    ProductHistories::insert($insert_bank);
+                }
+
+                DB::connection('pgsql_companies')->statement("SELECT SETVAL('product_histories_id_seq', COALESCE((SELECT MAX(id) + 1 FROM product_histories), 1))");
+                DB::connection('pgsql_companies')->commit();
+
+            } catch (\Exception $e) {
+                DB::connection('pgsql_companies')->rollBack();
+                return response()->json([
+                    'status' => 'error',
+                    'message' => 'Gagal sync bank',
+                    'error' => $e->getMessage()
+                ], 500);
+            }
+
+            $page++;
+
+        } while ($page <= ($result['nav']['totalPage'] ?? 1));
+
+        return response()->json([
+            'status' => 'success',
+            'message' => 'Sync bank berhasil',
+        ]);
     }
 }

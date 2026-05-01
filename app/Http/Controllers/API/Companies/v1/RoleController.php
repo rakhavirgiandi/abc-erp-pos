@@ -2,6 +2,9 @@
 
 namespace App\Http\Controllers\API\Companies\v1;
 
+use App\Helpers\ModelHelper;
+use App\Helpers\NetworkHelper;
+use Illuminate\Support\Facades\DB;
 use App\Http\Controllers\Controller;
 use App\Models\Companies\v1\Roles;
 use Illuminate\Http\Request;
@@ -113,5 +116,68 @@ class RoleController extends Controller
         ];
 
         return json_encode($json_data);
+    }
+
+    public static function syncToLocal(Request $request)
+    {
+        if (!NetworkHelper::isConnected()) {
+            $params = $request->all();
+            $res = Roles::getPaginatedResult($params, $request);
+
+            return response()->json([
+                'status' => 'offline',
+                'message' => 'Tidak ada koneksi, menggunakan data lokal',
+                'data' => $res
+            ]);
+        }
+
+        $page = 1;
+        $perPage = 500;
+
+        do {
+            $url = config('services.admin_credentials.server_url') . "/api/v1/roles?page={$page}&per_page={$perPage}&is_simple=true";
+            $result = NetworkHelper::curlWithToken($url);
+
+            $rows = $result['data'] ?? [];
+
+            if (empty($rows)) break;
+
+            DB::connection('pgsql_companies')->beginTransaction();
+
+            try {
+                Roles::truncate();
+
+                foreach ($rows as $row) {
+                    Roles::create([
+                        'id' => $row['id'],
+                        'name' => $row['name'],
+                        'guard_name' => $row['guard_name'] ?? 'web',
+                        'created_at' => $row['created_at'] ?? now(),
+                        'updated_at' => now(),
+                    ]);
+                }
+
+                ModelHelper::reorderPermissionAdmin();
+
+                DB::connection('pgsql_companies')->statement("SELECT SETVAL('roles_id_seq', COALESCE((SELECT MAX(id) + 1 FROM roles), 1))");
+                DB::connection('pgsql_companies')->commit();
+
+            } catch (\Exception $e) {
+                DB::connection('pgsql_companies')->rollBack();
+                return response()->json([
+                    'status' => 'error',
+                    'message' => 'Gagal sync role',
+                    'error' => $e->getMessage()
+                ], 500);
+            }
+
+            $page++;
+
+        } while ($page <= ($result['nav']['totalPage'] ?? 1));
+
+        return response()->json([
+            'status' => 'success',
+            'message' => 'Sync role berhasil',
+        ]);
     }
 }

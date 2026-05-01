@@ -3,9 +3,39 @@
 namespace App\Models;
 
 use App\Helpers\AutoNumberHelper;
+use App\Helpers\GlobalHelper;
 use App\Helpers\ModelHelper;
-use App\Models\Companies\v2\GeneralSettings;
-use App\Models\Companies\v2\Users as CompanyUsers;
+use App\Helpers\NetworkHelper;
+use App\Http\Controllers\API\Companies\v1\AccountingMasterController;
+use App\Http\Controllers\API\Companies\v1\BankAccountController;
+use App\Http\Controllers\API\Companies\v1\BaseUnitConversionController;
+use App\Http\Controllers\API\Companies\v1\BranchController;
+use App\Http\Controllers\API\Companies\v1\ContactController;
+use App\Http\Controllers\API\Companies\v1\ContactGroupController;
+use App\Http\Controllers\API\Companies\v1\ContactGroupPointRuleController;
+use App\Http\Controllers\API\Companies\v1\CurrencyController;
+use App\Http\Controllers\API\Companies\v1\DefaultAccountController;
+use App\Http\Controllers\API\Companies\v1\GeneralSettingController;
+use App\Http\Controllers\API\Companies\v1\MediumController;
+use App\Http\Controllers\API\Companies\v1\ProductCategoryController;
+use App\Http\Controllers\API\Companies\v1\ProductController;
+use App\Http\Controllers\API\Companies\v1\ProductMultiPriceController;
+use App\Http\Controllers\API\Companies\v1\ProductSkuController;
+use App\Http\Controllers\API\Companies\v1\ProductSkuVariantController;
+use App\Http\Controllers\API\Companies\v1\ProductUnitConversionController;
+use App\Http\Controllers\API\Companies\v1\ProductVariantController;
+use App\Http\Controllers\API\Companies\v1\RewardPointController;
+use App\Http\Controllers\API\Companies\v1\RoleController;
+use App\Http\Controllers\API\Companies\v1\TaxController;
+use App\Http\Controllers\API\Companies\v1\UnitController;
+use App\Http\Controllers\API\Companies\v1\VariantController;
+use App\Http\Controllers\API\Companies\v1\VariantOptionController;
+use App\Http\Controllers\API\Companies\v1\WarehouseController;
+use App\Jobs\SyncAllJob;
+use App\Models\Companies\v1\GeneralSettings;
+use App\Models\Companies\v1\Permissions;
+use App\Models\Companies\v1\Roles;
+use App\Models\Companies\v1\Users as CompanyUsers;
 use App\Models\CompanyCredentials;
 use App\Models\Invoices;
 use App\Models\RegRegencies;
@@ -15,12 +45,13 @@ use App\Models\TransactionDetails;
 use App\Models\Transactions;
 use App\Models\UserCompanies;
 use App\Models\Users;
-use Artisan;
 use Carbon\Carbon;
 use Database\Seeders\Company\DatabaseSeeder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
 
 /**
@@ -39,6 +70,7 @@ use Illuminate\Support\Str;
 class Companies extends Model
 {
     use SoftDeletes;
+    protected $connection = 'pgsql';
 
     /**
      * The database table used by the model.
@@ -297,7 +329,7 @@ class Companies extends Model
 
     public static function createOrUpdate($params, $method, $request)
     {
-        DB::beginTransaction();
+        DB::connection('pgsql')->beginTransaction();
 
         $filename = null;
 
@@ -310,7 +342,7 @@ class Companies extends Model
 
             $update = self::where('id', $params['id'])->update($params);
 
-            DB::commit();
+            DB::connection('pgsql')->commit();
             
             return response()->json([
                 'status' => 'success',
@@ -378,7 +410,7 @@ class Companies extends Model
         //Create Database
         $check_db = DB::select("SELECT 1 FROM pg_catalog.pg_database WHERE datname = '{$slug}'");
         if (count($check_db) > 0) {
-            DB::Rollback();
+            DB::connection('pgsql')->Rollback();
             return response()->json([
                 'status' => 'error',
                 'message' => 'Database is exist',
@@ -405,9 +437,9 @@ class Companies extends Model
             'city_id' => $city_id,
         ]);
 
-        DB::commit();
+        DB::connection('pgsql')->commit();
 
-        DB::statement("CREATE DATABASE {$slug}");
+        DB::connection('pgsql')->statement("CREATE DATABASE {$slug}");
 
         config(['database.connections.pgsql_companies' => [
             'driver' => 'pgsql',
@@ -463,7 +495,7 @@ class Companies extends Model
 
     public static function deleteById($id, $params, $request)
     {
-        DB::beginTransaction();
+        DB::connection('pgsql')->beginTransaction();
 
         $old = self::where('id', $id)->first();
 
@@ -482,7 +514,7 @@ class Companies extends Model
         Transactions::where('company_id', $id)->delete();
         UserCompanies::where('company_id', $id)->delete();
 
-        DB::commit();
+        DB::connection('pgsql')->commit();
 
         return response()->json([
             'status' => 'success',
@@ -493,7 +525,7 @@ class Companies extends Model
 
     public static function activateCompany($company_id, $params)
     {
-        DB::beginTransaction();
+        DB::connection('pgsql')->beginTransaction();
 
         $subscription_type = 'subscribe';
         $total = 0;
@@ -577,12 +609,229 @@ class Companies extends Model
             Invoices::create($invoice);
         }
 
-        DB::commit();
+        DB::connection('pgsql')->commit();
 
         return [
             'status' => 'success',
             'message' => 'Company succesfully activated',
             'data' => null
         ];
+    }
+
+    public static function databaseStarter($params, $request)
+    {
+        if (!NetworkHelper::isConnected()) {
+            return;
+        }
+
+        if (!env('IS_ONPREMISE', false)) {
+            return;
+        }
+
+        DB::connection('pgsql')->beginTransaction();
+
+        try {
+            $companyPayload = $params['company'] ?? null;
+            $subscriptionPayload = $params['subscription'] ?? null;
+            $slug = null;
+
+            if (!$companyPayload || !$subscriptionPayload) {
+                throw new \Exception('Invalid payload: company or subscription missing');
+            }
+
+            $company = Companies::join('company_credentials', 'company_credentials.company_id', '=', 'companies.id')->where('companies.id', $params['company_id'])->select('companies.*', 'company_credentials.*')->first();
+
+            /**
+             * =====================================
+             * CREATE COMPANY
+             * =====================================
+             */
+            if (!$company) {
+                $company = Companies::create([
+                    'id' => $companyPayload['id'],
+                    'user_id' => $companyPayload['user_id'],
+                    'name' => $companyPayload['name'],
+                    'address' => $companyPayload['address'],
+                    'phone' => $companyPayload['phone'],
+                    'city' => $companyPayload['city'],
+                    'email' => $companyPayload['email'],
+                    'tax_id_number' => $companyPayload['tax_id_number'],
+                    'tax_id_address' => $companyPayload['tax_id_address'],
+                    'business_type' => $companyPayload['business_type'],
+                    'main_project_quota' => $companyPayload['main_project_quota'],
+                    'main_lot_quota' => $companyPayload['main_lot_quota'],
+                    'is_storefront' => $companyPayload['is_storefront'],
+                    'domain' => $companyPayload['domain'],
+                    'subdomain' => $companyPayload['subdomain'],
+                    'storefront_project_quota' => $companyPayload['storefront_project_quota'],
+                    'number_of_branches' => $companyPayload['number_of_branches'],
+                ]);
+
+                /**
+                 * =====================================
+                 * USER COMPANY RELATION
+                 * =====================================
+                 */
+                UserCompanies::create([
+                    'id' => $params['id'],
+                    'user_id' => $params['user_id'],
+                    'company_id' => $params['company_id'],
+                    'type' => strtolower($params['type'] ?? 'member'),
+                ]);
+
+                /**
+                 * =====================================
+                 * SUBSCRIPTION
+                 * =====================================
+                 */
+                Subscriptions::create([
+                    'id' => $subscriptionPayload['id'],
+                    'company_id' => $subscriptionPayload['company_id'],
+                    'start_at' => $subscriptionPayload['start_at'],
+                    'finish_at' => $subscriptionPayload['finish_at'],
+                    'status' => strtolower($subscriptionPayload['status']),
+                    'referral_code' => $subscriptionPayload['referral_code'],
+                ]);
+
+                /**
+                 * =====================================
+                 * SUBSCRIPTION HISTORY
+                 * =====================================
+                 */
+                SubscriptionHistories::create([
+                    'id' => Str::orderedUuid()->toString(),
+                    'subscription_id' => $subscriptionPayload['id'],
+                    'company_id' => $subscriptionPayload['company_id'],
+                    'start_at' => $subscriptionPayload['start_at'],
+                    'finish_at' => $subscriptionPayload['finish_at'],
+                    'status' => strtolower($subscriptionPayload['status']),
+                    'type' => strtolower($subscriptionPayload['status']),
+                    'referral_code' => $subscriptionPayload['referral_code'],
+                ]);
+
+                /**
+                 * =====================================
+                 * DATABASE SLUG SAFE
+                 * =====================================
+                 */
+                $slug = 'erp_' . preg_replace('/[^a-z0-9]/', '', strtolower($companyPayload['name'])) . '_' . date('ymdHis');
+
+                /**
+                 * CHECK DB EXISTS
+                 */
+                $check_db = DB::connection('pgsql_admin')->select("SELECT 1 FROM pg_catalog.pg_database WHERE datname = ?", [$slug]);
+
+                if (!empty($check_db)) {
+                    throw new \Exception('Database already exists');
+                }
+
+                /**
+                 * SAVE CREDENTIALS
+                 */
+                CompanyCredentials::create([
+                    'id' => Str::orderedUuid()->toString(),
+                    'company_id' => $params['company_id'],
+                    'db_driver' => config('default_db_driver'),
+                    'db_host' => config('default_db_host'),
+                    'db_username' => config('default_db_user'),
+                    'db_password' => config('default_db_password'),
+                    'db_database' => $slug,
+                    'db_port' => config('default_db_port')
+                ]);
+
+                DB::connection('pgsql')->commit();
+                /**
+                 * CREATE DATABASE
+                 */
+                DB::connection('pgsql_admin')->statement("CREATE DATABASE \"{$slug}\"");
+            }
+
+            /**
+             * CONFIG CONNECTION
+             */
+            config(['database.connections.pgsql_companies' => [
+                'driver' => 'pgsql',
+                'host' => config('default_db_host'),
+                'port' => config('default_db_port'),
+                'database' => $slug ?: $company->db_database,
+                'username' => config('default_db_user'),
+                'password' => config('default_db_password'),
+                'charset' => 'utf8',
+                'prefix' => '',
+                'prefix_indexes' => true,
+                'schema' => 'public',
+                'sslmode' => 'prefer',
+            ]]);
+
+            DB::purge('pgsql_companies');
+            DB::reconnect('pgsql_companies');
+            
+            /**
+             * =====================================
+             * RUN MIGRATION
+             * =====================================
+             */
+
+            $result = Artisan::call('migrate', [ '--path' => 'database/migration_company', '--database' => 'pgsql_companies', '--force' => true]);
+
+            if ($result != 0) {
+                throw new \Exception('Migration failed: ' . Artisan::output());
+            }
+
+            if ($result == 0) {
+                $user = Users::find($companyPayload['user_id']);
+
+                if ($user) {
+                    $company_user = CompanyUsers::where('email', $user->email)->first();
+
+                    if (!$company_user) {
+                        $phone = $user->phone;
+    
+                        if (!$phone) {
+                            $phone = GlobalHelper::randomText('numeric', 11);
+                        }
+    
+                        $users = [];
+                        $users['password'] = $user->password;
+                        $users['name'] = $user->name;
+                        $users['email'] = $user->email;
+                        $users['username'] = $user->email;
+                        $users['phone'] = $phone;
+                        $users['is_suspend'] = 0;
+                        $users['role_id'] = 1;
+                        $users['department_id'] = 0;
+                        $users['branch_ids'] = [0];
+                        $users['project_ids'] = [0];
+                        $users['warehouse_ids'] = [0];
+                        $users['employee_id'] = 1;
+                        $users['contact_id'] = 0;
+                        $users['is_from_registration'] = true;
+    
+                        CompanyUsers::createOrUpdate($users, 'POST', $request);
+
+                        Roles::create([
+                            'name' => 'SuperAdmin',
+                            'guard_name' => 'web',
+                        ]);
+
+                        Permissions::create([
+                            'name' => 'pos',
+                            'guard_name' => 'web',
+                        ]);
+
+                        Artisan::call('permission:cache-reset');
+                    }
+                }
+
+                ModelHelper::reorderPermissionAdmin();
+                ModelHelper::adjustSequencePostgreSql();
+            }
+        } catch (\Exception $e) {
+            DB::connection('pgsql')->rollBack();
+            return [
+                'status' => 'error',
+                'message' => $e->getMessage()
+            ];
+        }
     }
 }

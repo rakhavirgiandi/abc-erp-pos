@@ -94,7 +94,7 @@
                         Remember me
                     </label>
                 </div>
-                <a href="{{url('/forgot-password')}}" class="text-decoration-none small">Lupa password?</a>
+                <a href="https://app.abcerp.id/forgot-password" class="text-decoration-none small" target="_blank">Lupa password?</a>
             </div>
 
             <button type="submit" class="btn btn-primary w-100 py-2 fw-semibold">
@@ -102,7 +102,7 @@
             </button>
 
             <div class="mt-2">
-                <p class="mb-0">Belum Mempunyai Akun ? <a href="{{url('/register')}}" class="fw-medium text-primary"> Daftar </a> </p>
+                {{-- <p class="mb-0">Belum Mempunyai Akun ? <a href="{{url('/register')}}" class="fw-medium text-primary"> Daftar </a> </p> --}}
             </div>
         </form>
 

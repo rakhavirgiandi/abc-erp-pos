@@ -2,8 +2,11 @@
 
 namespace App\Http\Controllers\API\Companies\v1;
 
+use App\Helpers\NetworkHelper;
+use Illuminate\Support\Facades\DB;
 use App\Http\Controllers\Controller;
 use App\Models\Companies\v1\ProductMultiPrices;
+use App\Models\Companies\v1\Products;
 use Illuminate\Http\Request;
 
 class ProductMultiPriceController extends Controller
@@ -113,5 +116,79 @@ class ProductMultiPriceController extends Controller
         ];
 
         return json_encode($json_data);
+    }
+
+    public static function syncToLocal(Request $request)
+    {
+        if (!NetworkHelper::isConnected()) {
+            $params = $request->all();
+            $res = ProductMultiPrices::getPaginatedResult($params, $request);
+
+            return response()->json([
+                'status' => 'offline',
+                'message' => 'Tidak ada koneksi, menggunakan data lokal',
+                'data' => $res
+            ]);
+        }
+
+        $page = 1;
+        $perPage = 500;
+
+        do {
+            $url = config('services.admin_credentials.server_url') . "/api/v1/product_multi_prices?page={$page}&per_page={$perPage}&is_simple=true";
+            $result = NetworkHelper::curlWithToken($url);
+
+            $rows = $result['data'] ?? [];
+            if (empty($rows)) break;
+
+            DB::connection('pgsql_companies')->beginTransaction();
+
+            try {
+                $ids = collect($rows)->pluck('product_id')->filter()->unique()->toArray();
+                $products = Products::whereIn('id', $ids)->get()->keyBy('id');
+                $product_ids = $products->pluck('id')->toArray();
+
+                if (!empty($product_ids)) {
+                    ProductMultiPrices::whereIn('product_id', $product_ids)->forceDelete();
+                }
+
+                $insert_multi_price = [];
+                foreach ($rows as $row) {
+                    if (!isset($row['product_id'])) continue;
+
+                    $product = $products[$row['product_id']] ?? null;
+                    if (!$product) continue;
+
+                    $row['product_id'] = $product->id;
+                    unset($row['code']);
+                    unset($row['id']);
+
+                    $insert_multi_price[] = $row;
+                }
+
+                if (!empty($insert_multi_price)) {
+                    ProductMultiPrices::insert($insert_multi_price);
+                }
+
+                DB::connection('pgsql_companies')->statement("SELECT SETVAL('product_multi_prices_id_seq', COALESCE((SELECT MAX(id) + 1 FROM product_multi_prices), 1))");
+                DB::connection('pgsql_companies')->commit();
+
+            } catch (\Exception $e) {
+                DB::connection('pgsql_companies')->rollBack();
+                return response()->json([
+                    'status' => 'error',
+                    'message' => 'Gagal sync multi price',
+                    'error' => $e->getMessage()
+                ], 500);
+            }
+
+            $page++;
+
+        } while ($page <= ($result['nav']['totalPage'] ?? 1));
+
+        return response()->json([
+            'status' => 'success',
+            'message' => 'Sync multi price berhasil',
+        ]);
     }
 }

@@ -13,7 +13,7 @@ return new class extends Migration
 
             $table->string('name')->nullable();
             $table->string('key')->nullable();
-            $table->string('value')->nullable();
+            $table->text('value')->nullable();
             $table->string('type')->nullable();
             $table->text('description')->nullable();
             $table->integer('is_protected')->nullable();

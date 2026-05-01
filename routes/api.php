@@ -51,9 +51,11 @@ use App\Http\Controllers\API\Companies\v1\UserController;
 use App\Http\Controllers\API\Companies\v1\VariantController;
 use App\Http\Controllers\API\Companies\v1\VariantOptionController;
 use App\Http\Controllers\API\Companies\v1\WarehouseController;
+use App\Http\Controllers\API\CompanyController;
+use App\Http\Controllers\API\SubscriptionController;
 use App\Models\Companies;
+use App\Models\Users;
 use App\Models\CompanyCredentials;
-use App\Models\Companies\v1\Users;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 // ---- Route Use Generator ----
@@ -252,6 +254,16 @@ Route::controller(CompletedJobController::class)->group(function() {
 });
 
 Route::middleware(['auth:api'])->group(function () {
+    if (env('IS_ONPREMISE', false)) {
+        config([
+            'default_db_host' => env('DB_HOST', '127.0.0.1'),
+            'default_db_port' => env('DB_PORT', '5432'),
+            'default_db_driver' => env('DB_DRIVER', 'pgsql'),
+            'default_db_user' => env('DB_USERNAME', 'root'),
+            'default_db_password' => env('DB_PASSWORD', ''),
+        ]);
+    }
+
     Route::controller(CentralUserController::class)->group(function() {
         Route::get('users/{id?}', 'get')->name('get.users');
         Route::post('users', 'post')->name('post.users');
@@ -725,10 +737,44 @@ Route::group(['prefix' => 'v1', 'middleware' => ['auth:api', 'api.companies']], 
         Route::get('printer_connected', 'printerConnected')->name('v1.pos.printerConnected');
     });
 
-    // Route::get('/persib_bandung_juara', function (Request $request) {
-    //     // $halo = 'asd';
-    //     return response()->json($halo);
-    // });
+    Route::prefix('sync')->group(function (){
+        Route::post('/', [ProductController::class, 'syncAll'])->name('sync.all');
+        Route::get('/accounting_master', [AccountingMasterController::class, 'syncToLocal'])->name('sync.accounting_master');
+        Route::get('/bank_accounts', [BankAccountController::class, 'syncToLocal'])->name('sync.bank_accounts');
+        Route::get('/base_unit_conversions', [BaseUnitConversionController::class, 'syncToLocal'])->name('sync.base_unit_conversions');
+        Route::get('/branches', [BranchController::class, 'syncToLocal'])->name('sync.branches');
+        Route::get('/currencies', [CurrencyController::class, 'syncToLocal'])->name('sync.currencies');
+        Route::get('/contacts', [ContactController::class, 'syncToLocal'])->name('sync.contacts');
+        Route::get('/contact_groups', [ContactGroupController::class, 'syncToLocal'])->name('sync.contact_groups');
+        Route::get('/contact_point_rules', [ContactGroupPointRuleController::class, 'syncToLocal'])->name('sync.contact_point_rules');
+        Route::get('/default_accounts', [DefaultAccountController::class, 'syncToLocal'])->name('sync.default_accounts');
+        Route::get('/general_settings', [GeneralSettingController::class, 'syncToLocal'])->name('sync.general_settings');
+        Route::get('/media', [MediumController::class, 'syncToLocal'])->name('sync.media');
+        Route::get('/products', [ProductController::class, 'syncToLocal'])->name('sync.products');
+        Route::get('/permissions', [PermissionController::class, 'syncToLocal'])->name('sync.permissions');
+        Route::get('/product_categories', [ProductCategoryController::class, 'syncToLocal'])->name('sync.product_categories');
+        Route::get('/product_multi_prices', [ProductMultiPriceController::class, 'syncToLocal'])->name('sync.product_multi_prices');
+        Route::get('/product_skus', [ProductSkuController::class, 'syncToLocal'])->name('sync.product_skus');
+        Route::get('/product_sku_variants', [ProductSkuVariantController::class, 'syncToLocal'])->name('sync.product_sku_variants');
+        Route::get('/product_stock', [ProductController::class, 'getStockDatatable'])->name('sync.product_stock');
+        Route::get('/product_unit_conversions', [ProductUnitConversionController::class, 'syncToLocal'])->name('sync.product_unit_conversions');
+        Route::get('/product_variants', [ProductVariantController::class, 'syncToLocal'])->name('sync.product_variants');
+        Route::get('/reward_points', [RewardPointController::class, 'syncToLocal'])->name('sync.reward_points');
+        Route::get('/roles', [RoleController::class, 'syncToLocal'])->name('sync.roles');
+        Route::get('/role_has_permissions', [RoleHasPermissionController::class, 'syncToLocal'])->name('sync.role_has_permissions');
+        Route::get('/taxes', [TaxController::class, 'syncToLocal'])->name('sync.taxes');
+        Route::get('/units', [UnitController::class, 'syncToLocal'])->name('sync.units');
+        Route::get('/variants', [VariantController::class, 'syncToLocal'])->name('sync.variants');
+        Route::get('/variant_options', [VariantOptionController::class, 'syncToLocal'])->name('sync.variant_options');
+        Route::get('/warehouses', [WarehouseController::class, 'syncToLocal'])->name('sync.warehouses');
+        Route::post('/sales_invoices', [SalesInvoiceController::class, 'syncToServer'])->name('sync.post_sales_invoices');
+        Route::get('/stock_cards', [ProductClosingController::class, 'getStockCard'])->name('sync.stock_card');
+    });
+
+    Route::get('/persib_bandung_juara', function (Request $request) {
+        // $halo = 'asd';
+        return response()->json($halo);
+    });
 
     // ---- Route Controller Generator ----
 });

@@ -2,6 +2,8 @@
 
 namespace App\Http\Controllers\API\Companies\v1;
 
+use App\Helpers\NetworkHelper;
+use Illuminate\Support\Facades\DB;
 use App\Http\Controllers\Controller;
 use App\Models\Companies\v1\SalesInvoices;
 use Illuminate\Http\Request;
@@ -113,5 +115,44 @@ class SalesInvoiceController extends Controller
         ];
 
         return json_encode($json_data);
+    }
+
+    public function syncToServer()
+    {
+        if (!NetworkHelper::isConnected()) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Tidak ada koneksi'
+            ], 400);
+        }
+
+        SalesInvoices::with([
+            'sales_invoice_details',
+            'point_histories',
+        ])
+        ->whereNull('number')
+        ->orderBy('id')
+        ->where('status', '!=', 'draft')
+        ->chunk(100, function ($invoices) {
+            $payload = $invoices->toArray();
+
+            $url = config('services.admin_credentials.server_url') . '/api/sync/sync_sales_invoices';
+            $response = NetworkHelper::postWithToken($url, $payload);
+
+            if (($response['status'] ?? '') !== 'success') {
+                throw new \Exception('Gagal sync ke server');
+            }
+
+            foreach ($response['data'] ?? [] as $row) {
+                SalesInvoices::where('id', $row['local_id'])->update([
+                    'number' => $row['number']
+                ]);
+            }
+        });
+
+        return response()->json([
+            'status' => 'success',
+            'message' => 'Sync selesai'
+        ]);
     }
 }

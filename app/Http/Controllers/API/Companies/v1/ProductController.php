@@ -2,8 +2,14 @@
 
 namespace App\Http\Controllers\API\Companies\v1;
 
+use App\Helpers\NetworkHelper;
+use Illuminate\Support\Facades\DB;
 use App\Http\Controllers\Controller;
+use App\Jobs\SyncAllJob;
+use App\Models\Companies\v1\ProductCategories;
 use App\Models\Companies\v1\Products;
+use App\Models\Companies\v1\Taxes;
+use App\Models\Companies\v1\Units;
 use Illuminate\Http\Request;
 
 class ProductController extends Controller
@@ -113,5 +119,149 @@ class ProductController extends Controller
         ];
 
         return json_encode($json_data);
+    }
+
+    public function getStockDatatable(Request $request)
+    {
+        if (NetworkHelper::isConnected()) {
+            $url = config('services.admin_credentials.server_url') . "/api/v1/product_stock_datatables";
+
+            $query = http_build_query([
+                'start'  => $request->start,
+                'length' => $request->length,
+                'search' => $request->search['value'] ?? '',
+                'order'  => $request->order,
+                'draw'   => $request->draw,
+                'warehouse_id'   => $request->warehouse_id ?? null,
+                'product_id'   => $request->product_id ?? null,
+            ]);
+
+            $fullUrl = $url . '?' . $query;
+            $result = NetworkHelper::curlWithToken($fullUrl);
+
+            return response()->json($result);
+        }
+
+        $data = Products::stockPerWarehouseDatatable($request);
+
+        return response()->json($data);
+    }
+
+    public static function syncToLocal(Request $request)
+    {
+        if (!NetworkHelper::isConnected()) {
+            $params = $request->all();
+            $res = Products::getPaginatedResult($params, $request);
+
+            return response()->json([
+                'status' => 'offline',
+                'message' => 'Tidak ada koneksi, menggunakan data lokal',
+                'data' => $res
+            ]);
+        }
+
+        $page = 1;
+        $perPage = 500;
+
+        do {
+            $url = config('services.admin_credentials.server_url') . "/api/v1/products?page={$page}&per_page={$perPage}&is_simple=true&order_by=id&sort=asc";
+            $result = NetworkHelper::curlWithToken($url);
+
+            $rows = $result['data'] ?? [];
+
+            if (empty($rows)) break;
+
+            DB::connection('pgsql_companies')->beginTransaction();
+
+            try {
+                $ids = collect($rows)->pluck('id')->filter()->toArray();
+                $exist_product = Products::whereIn('id', $ids)->get()->keyBy('id');
+
+                $category_map = ProductCategories::pluck('id', 'code'); 
+                $tax_map = Taxes::pluck('id', 'code');
+                $unit_map = Units::pluck('id', 'code');
+
+                $insert_product = [];
+
+                foreach ($rows as $row) {
+                    if (!isset($row['id'])) continue;
+
+                    $product = $exist_product[$row['id']] ?? null;
+
+                    if (!empty($row['category_code'])) {
+                        $row['product_category_id'] = $category_map[$row['category_code']] ?? null;
+                    }
+
+                    if (!empty($row['unit_code'])) {
+                        $row['unit_id'] = $unit_map[$row['unit_code']] ?? null;
+                    }
+
+                    if (!empty($row['sale_tax_code'])) {
+                        $row['sale_tax_id'] = $tax_map[$row['sale_tax_code']] ?? null;
+                    }
+
+                    if (!empty($row['purchase_tax_code'])) {
+                        $row['purchase_tax_id'] = $tax_map[$row['purchase_tax_code']] ?? null;
+                    }
+
+                    unset(
+                        $row['category_name'], 
+                        $row['category_code'],
+                        $row['unit_name'],
+                        $row['unit_code'],
+                        $row['sale_tax_name'],
+                        $row['sale_tax_code'],
+                        $row['purchase_tax_name'],
+                        $row['purchase_tax_code'],
+                        $row['qty_on_hand'],
+                        $row['is_product_unit_convert'],
+                    );
+
+                    if ($product) {
+                        unset($row['id']);
+                        $product->update($row);
+                    } else {
+                        $insert_product[] = $row;
+                    }
+                }
+
+                if (!empty($insert_product)) {
+                    Products::insert($insert_product);
+                }
+
+                DB::connection('pgsql_companies')->statement("SELECT SETVAL('products_id_seq', COALESCE((SELECT MAX(id) + 1 FROM products), 1))");
+
+                DB::connection('pgsql_companies')->commit();
+            } catch (\Exception $e) {
+                DB::connection('pgsql_companies')->rollBack();
+                return response()->json([
+                    'status' => 'error',
+                    'message' => 'Gagal sync product',
+                    'error' => $e->getMessage()
+                ], 500);
+            }
+
+            $page++;
+
+        } while ($page <= ($result['nav']['totalPage'] ?? 1));
+
+        return response()->json([
+            'status' => 'success',
+            'message' => 'Sync product berhasil',
+        ]);
+    }
+
+    public function syncAll(Request $request)
+    {
+        // AKTIFKAN UNTUK SERVER
+        // SyncAllJob::dispatch($request);
+
+        // AKTIFKAN UNTUK LOKAL
+        SyncAllJob::dispatchSync($request);
+
+        return response()->json([
+            'status' => 'success',
+            'message' => 'Sync process started'
+        ]);
     }
 }

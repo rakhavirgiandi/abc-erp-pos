@@ -22,7 +22,9 @@ Route::group(['middleware' => ['auth.primary']], function () {
     Route::get('/subscription/{company_id}/edition', [SubscriptionController::class, 'edition']);
     Route::get('/subscription/{company_id}/edition/{edition_id}/period', [SubscriptionController::class, 'period']);
     Route::get('/subscription/{company_id}/edition/{edition_id}/period/{period_id}/payment', [SubscriptionController::class, 'paymentMethod']);
-    Route::post('/open-database', [ChooseCompanyController::class, 'openDatabase']);
+    Route::middleware(['setup.config'])->group(function () {
+        Route::post('/open-database', [ChooseCompanyController::class, 'openDatabase']);
+    });
 
     Route::group([
         'middleware' => ['companies']

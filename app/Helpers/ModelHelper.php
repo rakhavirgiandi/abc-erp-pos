@@ -2,6 +2,11 @@
 
 namespace App\Helpers;
 
+use App\Models\Companies\v1\ModelHasRoles as V1ModelHasRoles;
+use App\Models\Companies\v1\Permissions as V1Permissions;
+use App\Models\Companies\v1\RoleHasPermissions as V1RoleHasPermissions;
+use App\Models\Companies\v1\Roles as V1Roles;
+use App\Models\Companies\v1\Users as V1Users;
 use App\Models\ModelHasRoles;
 use App\Models\Permissions;
 use App\Models\RoleHasPermissions;
@@ -349,10 +354,10 @@ class ModelHelper
 
 	public static function adjustSequencePostgreSql()
 	{
-		$tables = DB::select(DB::raw("SELECT table_name FROM information_schema.tables WHERE table_schema='public' AND table_type='BASE TABLE'")->getValue(DB::getQueryGrammar()));
+		$tables = DB::connection('pgsql_companies')->select(DB::raw("SELECT table_name FROM information_schema.tables WHERE table_schema='public' AND table_type='BASE TABLE'")->getValue(DB::connection('pgsql_companies')->getQueryGrammar()));
 
         foreach ($tables as $table) {
-            $primary_key = DB::select(DB::raw("SELECT               
+            $primary_key = DB::connection('pgsql_companies')->select(DB::raw("SELECT               
               pg_attribute.attname, 
               format_type(pg_attribute.atttypid, pg_attribute.atttypmod) 
             FROM pg_index, pg_class, pg_attribute, pg_namespace 
@@ -363,15 +368,15 @@ class ModelHelper
               pg_class.relnamespace = pg_namespace.oid AND 
               pg_attribute.attrelid = pg_class.oid AND 
               pg_attribute.attnum = any(pg_index.indkey)
-             AND indisprimary")->getValue(DB::getQueryGrammar()));
+             AND indisprimary")->getValue(DB::connection('pgsql_companies')->getQueryGrammar()));
 
             if ($table->table_name && isset($primary_key[0]->attname)) {
-                $sequence_name = DB::select(DB::raw("SELECT * FROM information_schema.sequences WHERE sequence_name = '".$table->table_name."_".$primary_key[0]->attname."_seq' ")->getValue(DB::getQueryGrammar()));
+                $sequence_name = DB::connection('pgsql_companies')->select(DB::raw("SELECT * FROM information_schema.sequences WHERE sequence_name = '".$table->table_name."_".$primary_key[0]->attname."_seq' ")->getValue(DB::connection('pgsql_companies')->getQueryGrammar()));
                 if (isset($sequence_name[0]->sequence_name)) {
-                    DB::select(
+                    DB::connection('pgsql_companies')->select(
                     	DB::raw(
                     		"SELECT SETVAL('".$sequence_name[0]->sequence_name."', (SELECT MAX(".$primary_key[0]->attname.") + 1 FROM ".$table->table_name."))"
-                		)->getValue(DB::getQueryGrammar())
+                		)->getValue(DB::connection('pgsql_companies')->getQueryGrammar())
 					);
                 }
             }
@@ -499,11 +504,11 @@ class ModelHelper
     {
 		$superadmin_role_id = 1;
 		
-		RoleHasPermissions::where('role_id', $superadmin_role_id)->delete();
+		V1RoleHasPermissions::where('role_id', $superadmin_role_id)->delete();
 
 		$filtered_data = [];
 
-		$data = Permissions::get();
+		$data = V1Permissions::get();
 
 		foreach ($data as $row) {
 			$filtered_data[] = [
@@ -512,19 +517,19 @@ class ModelHelper
 			];
 		}
 
-		RoleHasPermissions::insert($filtered_data);
+		V1RoleHasPermissions::insert($filtered_data);
 
 		// $users = Users::select('id', 'role_id')->where('role_id', $superadmin_role_id)->get();
-		$users = Users::select('id', 'name', 'email', 'role_id')->get();
-		$roles = Roles::select('id', 'name')->get()->pluck('name', 'id')->toArray();
+		$users = V1Users::select('id', 'name', 'email', 'role_id')->get();
+		$roles = V1Roles::select('id', 'name')->get()->pluck('name', 'id')->toArray();
 
-		ModelHasRoles::where('model_type', 'App\Models\User')->delete();
+		V1ModelHasRoles::where('model_type', 'App\Models\User')->delete();
 
 		foreach ($users as $user) {
 			if (isset($roles[$user['role_id']])) {
-				ModelHasRoles::create([
+				V1ModelHasRoles::create([
 					'role_id' => $user['role_id'],
-					'model_type' => 'App\Models\User',
+					'model_type' => 'App\Models\Companies\v1\Users',
 					'model_id' => $user['id']
 				]);
 

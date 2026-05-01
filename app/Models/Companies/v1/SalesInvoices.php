@@ -507,7 +507,7 @@ class SalesInvoices extends Model
 
     public static function createOrUpdate($params, $method, $request)
     {
-        DB::beginTransaction();
+        DB::connection('pgsql_companies')->beginTransaction();
 
         $filename = null;
 
@@ -520,7 +520,7 @@ class SalesInvoices extends Model
 
             $update = self::where('id', $params['id'])->update($params);
 
-            DB::commit();
+            DB::connection('pgsql_companies')->commit();
             
             return response()->json([
                 'status' => 'success',
@@ -531,7 +531,7 @@ class SalesInvoices extends Model
 
         $save = self::create($params);
 
-        DB::commit();
+        DB::connection('pgsql_companies')->commit();
         return response()->json([
             'status' => 'success',
             'message' => 'Succesfully Added Data',
@@ -643,7 +643,6 @@ class SalesInvoices extends Model
         DB::connection('pgsql_companies')->beginTransaction();
 
         $filename = null;
-        $deposit_histories = [];
         $sales_invoice_details = null;
         $reward_point_applied_ids = [];
         $total_point_applied = 0;
@@ -664,11 +663,6 @@ class SalesInvoices extends Model
 
         if (isset($params['_token']) && $params['_token']) {
             unset($params['_token']);
-        }
-
-        if (isset($params['deposit_histories']) && $params['deposit_histories']) {
-            $deposit_histories = $params['deposit_histories'];
-            unset($params['deposit_histories']);
         }
 
         if (isset($params['sales_invoice_details']) && $params['sales_invoice_details']) {
@@ -698,13 +692,6 @@ class SalesInvoices extends Model
             if (!isset($params['discount_coa']) || !$params['discount_coa']) {
                 $params['discount_coa'] = config('default_accounts.sales_discount');
             }
-
-            $debit[] = [
-                'coa' => $params['discount_coa'],
-                // 'coa_name' => $accounting_masters[$params['discount_coa']],
-                'value' => $params['discount_amount'],
-                'description' => ''
-            ];
         }
 
         if (isset($params['other_cost']) && GlobalHelper::convertSeparator($params['other_cost'], ',') > 0) {
@@ -716,21 +703,6 @@ class SalesInvoices extends Model
                 // SEMENTARA SEBELUM INPUTAN OTHER INCOME DI BUAT
                 $params['other_coa'] = config('default_accounts.other_income');
             }
-
-            // $debit[] = [
-            //     'coa' => $params['other_coa'],
-            //     'coa_name' => $accounting_masters[$params['other_coa']],
-            //     'value' => $params['other_cost'],
-            //     'description' => ''
-            // ];
-
-            // SEMENTARA SEBELUM INPUTAN OTHER INCOME DI BUAT
-            $credit[] = [
-                'coa' => $params['other_coa'],
-                // 'coa_name' => $accounting_masters[$params['other_coa']],
-                'value' => $params['other_cost'],
-                'description' => ''
-            ];
         }
 
         if (isset($params['other_income']) && GlobalHelper::convertSeparator($params['other_income']) > 0) {
@@ -739,13 +711,6 @@ class SalesInvoices extends Model
             if (!isset($params['other_income_coa']) || !$params['other_income_coa']) {
                 $params['other_income_coa'] = config('default_accounts.other_income');
             }
-
-            $credit[] = [
-                'coa' => $params['other_income_coa'],
-                // 'coa_name' => $accounting_masters[$params['other_income_coa']],
-                'value' => $params['other_income'],
-                'description' => ''
-            ];
         }
 
         if (isset($params['tax_amount']) && GlobalHelper::convertSeparator($params['tax_amount'], ',') > 0) {
@@ -755,14 +720,6 @@ class SalesInvoices extends Model
         if (isset($params['down_payment_amount']) && $params['down_payment_amount'] > 0) {
             $params['down_payment_amount'] = GlobalHelper::convertSeparator($params['down_payment_amount'], ',');
             $down_payment_coa = $params['down_payment_coa'] ?? config('default_accounts.sales_advance');
-            if ($down_payment_coa) {
-                $debit[] = [
-                    'coa' => $down_payment_coa,
-                    // 'coa_name' => $accounting_masters[$down_payment_coa],
-                    'value' => GlobalHelper::convertSeparator( $params['down_payment_amount'], ','),
-                    'description' => 'Uang Muka'
-                ];
-            }
         }
 
         if (isset($params['total']) && GlobalHelper::convertSeparator($params['total']) > 0) {
@@ -770,38 +727,10 @@ class SalesInvoices extends Model
             if (!isset($params['total_coa']) || (!$params['total_coa'])) {
                 $params['total_coa'] = config('default_accounts.account_receivable');
             }
-
-            if ($params['total'] > 0) {
-                if ($params['payment_type'] == 'cash') {
-                    $debit[] = [
-                        'coa' => $params['coa_cash'],
-                        // 'coa_name' => $accounting_masters[$params['coa_cash']],
-                        'value' => $params['total'],
-                        'description' => null
-                    ];
-                } else {
-                    $debit[] = [
-                        'coa' => ((isset($params['total_coa']) && $params['total_coa']) ? $params['total_coa'] : config('default_accounts.account_receivable')),
-                        // 'coa_name' => $accounting_masters[((isset($params['total_coa']) && $params['total_coa']) ? $params['total_coa'] : config('default_accounts.account_receivable'))],
-                        'value' => $params['total'],
-                        'description' => null
-                    ];
-                }
-            }
         }
 
         if (isset($params['subtotal']) && GlobalHelper::convertSeparator($params['subtotal'], ',') > 0) {
             $params['subtotal'] = GlobalHelper::convertSeparator($params['subtotal'], ',');
-        }
-
-        foreach ($sales_invoice_details as $sales_invoice_detail) {
-            if (isset($sales_invoice_detail['product_id']) && $sales_invoice_detail['product_id']) {
-                $product_ids[] = $sales_invoice_detail['product_id'];
-            }
-
-            if (isset($sales_invoice_detail['tax_id']) && $sales_invoice_detail['tax_id']) {
-                $tax_ids[] = $sales_invoice_detail['tax_id'];
-            }
         }
 
         // if (isset($params['payment_type'])) {
