@@ -315,23 +315,4 @@ class PointHistories extends Model
             'data' => null
         ]);
     }
-
-    public static function createHistoriesFromSync($invoice_id, $histories)
-    {
-        $insert = [];
-
-        foreach ($histories as $history) {
-            $data = collect($history)->only((new self)->getFillable())->toArray();
-
-            unset($data['id']);
-            $data['model'] = 'SalesInvoices';
-            $data['model_id'] = $invoice_id;
-
-            $insert[] = $data;
-        }
-
-        if (!empty($insert)) {
-            self::insert($insert);
-        }
-    }
 }

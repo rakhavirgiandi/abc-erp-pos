@@ -4850,7 +4850,7 @@
 
         $(document).on('hidden.bs.modal', '#sync-modal', function () {
             $('.sync-check').prop('checked', false);
-            $('#sync-all-check').prop('checked', false);
+            $('#sync-all-php a').prop('checked', false);
         });
 
         $(document).on('change', '.sync-check', function () {
@@ -5102,6 +5102,33 @@
                     });
         }
 
+        const permissionsSync = () => {
+            return  $.ajax({
+                        url: BASE_URL+'/api/v1/sync/permissions',
+                        method: 'GET',
+                        contentType: 'application/json',
+                        headers: { 'Authorization': TOKEN, 'company-id': COMPANY_ID, },
+                    });
+        }
+
+        const rolesSync = () => {
+            return  $.ajax({
+                        url: BASE_URL+'/api/v1/sync/roles',
+                        method: 'GET',
+                        contentType: 'application/json',
+                        headers: { 'Authorization': TOKEN, 'company-id': COMPANY_ID, },
+                    });
+        }
+
+        const roleHasPermissionsSync = () => {
+            return  $.ajax({
+                        url: BASE_URL+'/api/v1/sync/role_has_permissions',
+                        method: 'GET',
+                        contentType: 'application/json',
+                        headers: { 'Authorization': TOKEN, 'company-id': COMPANY_ID, },
+                    });
+        }
+
         const order = [
             'settings',
             'warehouse',
@@ -5113,6 +5140,7 @@
             'product',
             'reward_point_and_point_rule',
             'transaction',
+            'permissions',
         ];
 
         const processSync = async (params = {}) => {
@@ -5175,6 +5203,11 @@
                 ],
                 currencies: [
                     currenciesSync
+                ],
+                permissions: [
+                    permissionsSync,
+                    rolesSync,
+                    roleHasPermissionsSync,
                 ]
             }
 

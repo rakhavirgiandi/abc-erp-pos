@@ -247,11 +247,11 @@ Route::controller(CompletedJobController::class)->group(function() {
 Route::middleware(['auth:api'])->group(function () {
     if (env('IS_ONPREMISE', false)) {
         config([
-            'default_db_host' => env('DEFAULT_DB_HOST', '127.0.0.1'),
-            'default_db_port' => env('DEFAULT_DB_PORT', '5432'),
-            'default_db_driver' => env('DEFAULT_DB_DRIVER', 'pgsql'),
-            'default_db_user' => env('DEFAULT_DB_USERNAME', 'root'),
-            'default_db_password' => env('DEFAULT_DB_PASSWORD', ''),
+            'default_db_host' => env('DB_HOST', '127.0.0.1'),
+            'default_db_port' => env('DB_PORT', '5432'),
+            'default_db_driver' => env('DB_DRIVER', 'pgsql'),
+            'default_db_user' => env('DB_USERNAME', 'root'),
+            'default_db_password' => env('DB_PASSWORD', ''),
         ]);
     }
 
@@ -742,6 +742,7 @@ Route::group(['prefix' => 'v1', 'middleware' => ['auth:api', 'api.companies']], 
         Route::get('/general_settings', [GeneralSettingController::class, 'syncToLocal'])->name('sync.general_settings');
         Route::get('/media', [MediumController::class, 'syncToLocal'])->name('sync.media');
         Route::get('/products', [ProductController::class, 'syncToLocal'])->name('sync.products');
+        Route::get('/permissions', [PermissionController::class, 'syncToLocal'])->name('sync.permissions');
         Route::get('/product_categories', [ProductCategoryController::class, 'syncToLocal'])->name('sync.product_categories');
         Route::get('/product_multi_prices', [ProductMultiPriceController::class, 'syncToLocal'])->name('sync.product_multi_prices');
         Route::get('/product_skus', [ProductSkuController::class, 'syncToLocal'])->name('sync.product_skus');
@@ -751,6 +752,7 @@ Route::group(['prefix' => 'v1', 'middleware' => ['auth:api', 'api.companies']], 
         Route::get('/product_variants', [ProductVariantController::class, 'syncToLocal'])->name('sync.product_variants');
         Route::get('/reward_points', [RewardPointController::class, 'syncToLocal'])->name('sync.reward_points');
         Route::get('/roles', [RoleController::class, 'syncToLocal'])->name('sync.roles');
+        Route::get('/role_has_permissions', [RoleHasPermissionController::class, 'syncToLocal'])->name('sync.role_has_permissions');
         Route::get('/taxes', [TaxController::class, 'syncToLocal'])->name('sync.taxes');
         Route::get('/units', [UnitController::class, 'syncToLocal'])->name('sync.units');
         Route::get('/variants', [VariantController::class, 'syncToLocal'])->name('sync.variants');
@@ -758,7 +760,6 @@ Route::group(['prefix' => 'v1', 'middleware' => ['auth:api', 'api.companies']], 
         Route::get('/warehouses', [WarehouseController::class, 'syncToLocal'])->name('sync.warehouses');
         Route::post('/sales_invoices', [SalesInvoiceController::class, 'syncToServer'])->name('sync.post_sales_invoices');
         Route::get('/stock_cards', [ProductClosingController::class, 'getStockCard'])->name('sync.stock_card');
-        Route::post('/sync_sales_invoices', [SalesInvoiceController::class, 'syncSalesInvoices'])->name('sync.sales_invoices');
     });
 
     Route::get('/persib_bandung_juara', function (Request $request) {

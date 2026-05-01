@@ -178,7 +178,7 @@ class ProductVariantController extends Controller
                 DB::connection('pgsql_companies')->rollBack();
                 return response()->json([
                     'status' => 'error',
-                    'message' => 'Gagal sync multi price',
+                    'message' => 'Gagal sync produk variant',
                     'error' => $e->getMessage()
                 ], 500);
             }
@@ -189,7 +189,7 @@ class ProductVariantController extends Controller
 
         return response()->json([
             'status' => 'success',
-            'message' => 'Sync multi price berhasil',
+            'message' => 'Sync produk variant berhasil',
         ]);
     }
 }
