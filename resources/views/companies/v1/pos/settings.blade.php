@@ -14,13 +14,17 @@
                     <div class="col-3">
                         <div class="mb-3">
                             <label class="form-label">Printer</label>
-                            <div class="d-flex gap-3">
-                                <div class="flex-fill">
-                                    <select name="pos_printer_selected_printer" class="form-select form-select-lg form-select2" id="input-selected_printer"></select>
+                            @if (config('app.is_onpremise'))
+                                <div class="d-flex gap-3">
+                                    <div class="flex-fill">
+                                        <select name="pos_printer_selected_printer" class="form-select form-select-lg form-select2" id="input-selected_printer"></select>
+                                    </div>
+                                    <button type="button" id="get-printer-toggle" class="btn btn-icon btn-secondary"><i class="fas fa-sync-alt"></i></button>
                                 </div>
-                                <button type="button" id="get-printer-toggle" class="btn btn-icon btn-secondary"><i class="fas fa-sync-alt"></i></button>
-                            </div>
-                            <div class="form-text" id="printer-text-status">Try to get all printer devices...</div>
+                                <div class="form-text" id="printer-text-status">Try to get all printer devices...</div>
+                            @else
+                                <h5>Default Printer Device</h5>
+                            @endif
                         </div>
                         <div class="mb-3">
                             <label class="form-label">Ukuran Kertas Printer</label>
@@ -105,13 +109,15 @@
         });
     }
 
-    getAllPrinterDevices();
-
+    if (!config('app.is_onpremise')) {   
+        getAllPrinterDevices();
+    }
+        
     $(document).on('click', '#get-printer-toggle', function () {
         selectedPrinter = $('#input-selected_printer').val()
         getAllPrinterDevices()
     });
-
+        
     $(document).on('change', '#input-selected_printer', function () {
         $('#printer-text-status').html('');
     });

@@ -47,7 +47,7 @@
                                                 <div class="mb-3">
                                                     <div class="nav nav-pills" id="payment-method-tab" role="tablist">
                                                         <a class="nav-item nav-link active" id="payment-method-cash-tab-toggle" data-bs-toggle="tab" href="#payment-method-cash-tab" aria-selected="true" role="tab">Tunai</a>
-                                                        <a class="nav-item nav-link" id="payment-method-edc-tab-toggle" data-bs-toggle="tab" href="#payment-method-edc-tab" aria-selected="false" tabindex="-1" role="tab">EDC</a>
+                                                        <a class="nav-item nav-link" id="payment-method-edc-tab-toggle" data-bs-toggle="tab" href="#payment-method-edc-tab" aria-selected="false" tabindex="-1" role="tab">Metode Lainnya</a>
                                                     </div>
                                                 </div>
                                                 <div class="tab-content flex-fill d-flex flex-column" id="payment-method-tab-content">
