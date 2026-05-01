@@ -2,9 +2,15 @@
 
 namespace App\Http\Controllers\API\Companies\v1;
 
+use App\Helpers\NetworkHelper;
 use App\Http\Controllers\Controller;
+use App\Models\Companies\v1\User;
 use App\Models\Companies\v1\Users;
+use App\Models\User as CentralUser;
+use App\Models\UserCompanies;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Str;
 
 class UserController extends Controller
 {
@@ -113,5 +119,114 @@ class UserController extends Controller
         ];
 
         return json_encode($json_data);
+    }
+
+    public static function syncToLocal(Request $request)
+    {
+        if (!NetworkHelper::isConnected()) {
+            $params = $request->all();
+            $res = Users::getPaginatedResult($params, $request);
+
+            return response()->json([
+                'status' => 'offline',
+                'message' => 'Tidak ada koneksi, menggunakan data lokal',
+                'data' => $res
+            ]);
+        }
+
+        $page = 1;
+        $perPage = 500;
+
+        do {
+            $url = config('services.admin_credentials.server_url') . "/api/v1/users?page={$page}&per_page={$perPage}&is_simple=true";
+            $result = NetworkHelper::curlWithToken($url);
+
+            $rows = $result['data'] ?? [];
+
+            if (empty($rows)) break;
+
+            DB::connection('pgsql_companies')->beginTransaction();
+
+            try {
+                $emails = collect($rows)->pluck('email')->filter()->unique()->toArray();
+                $existing_users = Users::whereIn('email', $emails)->get()->keyBy('email');
+
+                $insert = [];
+
+                foreach ($rows as $row) {
+                    if (!isset($row['email'])) continue;
+
+                    $user = $existing_users[$row['email']] ?? null;
+
+                    if ($user) {
+                        unset($row['id']);
+
+                        if (empty($row['password'])) {
+                            unset($row['password']);
+                        }
+
+                        if (isset($row['password']) && !str_starts_with($row['password'], '$2y$')) {
+                            $row['password'] = bcrypt($row['password']);
+                        }
+
+                        $user->update($row);
+
+                    } else {
+                        if (isset($row['password']) && !str_starts_with($row['password'], '$2y$')) {
+                            $row['password'] = bcrypt($row['password']);
+                        }
+
+                        $row['username'] = $row['email'];
+
+                        $insert[] = $row;
+                    }
+                }
+
+                if (!empty($insert)) {
+                    foreach ($insert as $row) {
+                        $customer = CentralUser::where('email', $row['email'])->first();
+
+                        if (!$customer) {
+                            $customer = CentralUser::create([
+                                'id' => Str::orderedUuid()->toString(),
+                                'name' => $row['name'],
+                                'email' => $row['email'],
+                                'phone' => $row['phone'] ?? null,
+                                'password' => $row['password'],
+                            ]);
+                        }
+
+                        UserCompanies::firstOrCreate([
+                            'user_id' => $customer->id,
+                            'company_id' => config('company_id'),
+                        ], [
+                            'id' => Str::orderedUuid()->toString(),
+                            'type' => 'member'
+                        ]);
+                    }
+
+                    Users::insert($insert);
+                }
+
+                DB::connection('pgsql_companies')->statement("SELECT SETVAL('users_id_seq', COALESCE((SELECT MAX(id) + 1 FROM users), 1))");
+                DB::connection('pgsql_companies')->commit();
+
+            } catch (\Exception $e) {
+                DB::connection('pgsql_companies')->rollBack();
+                return response()->json([
+                    'status' => 'error',
+                    'message' => 'Gagal sync bank',
+                    'error' => $e->getMessage()
+                ], 500);
+            }
+
+            $page++;
+
+        } while ($page <= ($result['nav']['totalPage'] ?? 1));
+
+        return response()->json([
+            'status' => 'success',
+            'message' => 'Sync bank berhasil',
+        ]);
     }
 }

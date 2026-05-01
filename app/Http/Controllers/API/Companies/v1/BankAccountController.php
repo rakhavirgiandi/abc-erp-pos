@@ -117,7 +117,7 @@ class BankAccountController extends Controller
         return json_encode($json_data);
     }
 
-        public static function syncToLocal(Request $request)
+    public static function syncToLocal(Request $request)
     {
         if (!NetworkHelper::isConnected()) {
             $params = $request->all();
