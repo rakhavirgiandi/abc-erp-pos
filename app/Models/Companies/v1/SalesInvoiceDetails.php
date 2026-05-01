@@ -156,6 +156,20 @@ class SalesInvoiceDetails extends Model
     // Functions ...
 
     // Relations ...
+    public function product_detail()
+    {
+        return $this->hasOne(Products::class, 'id', 'product_id');
+    }
+
+    public function product_sku_detail()
+    {
+        return $this->hasOne(ProductSkus::class, 'id', 'product_sku_id');
+    }
+
+    public function unit_detail()
+    {
+        return $this->hasOne(Units::class, 'id', 'unit_id');
+    }
 
     public static function mapSchema($params = [], $user = [])
     {

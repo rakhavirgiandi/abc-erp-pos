@@ -1,5 +1,14 @@
 <?php
+use App\Http\Controllers\API\AdminController;
+use App\Http\Controllers\API\AssociationController;
 use App\Http\Controllers\API\Auth\AuthController;
+use App\Http\Controllers\API\CompanyCredentialController;
+use App\Http\Controllers\API\EmailQueueController;
+use App\Http\Controllers\API\InvoiceController;
+use App\Http\Controllers\API\RegDistrictController;
+use App\Http\Controllers\API\RegProvinceController;
+use App\Http\Controllers\API\RegVillageController;
+use App\Http\Controllers\API\SubscriptionHistoryController;
 use App\Http\Controllers\API\UserCompanyController;
 use App\Http\Controllers\API\UserController as CentralUserController;
 use App\Http\Controllers\API\Companies\v1\MiscellaneousController;
@@ -29,7 +38,7 @@ use App\Http\Controllers\API\Companies\v1\ProductSkuController;
 use App\Http\Controllers\API\Companies\v1\ProductSkuVariantController;
 use App\Http\Controllers\API\Companies\v1\ProductUnitConversionController;
 use App\Http\Controllers\API\Companies\v1\ProductVariantController;
-use App\Http\Controllers\API\Companies\v1\RegRegencyController;
+use App\Http\Controllers\API\RegRegencyController;
 use App\Http\Controllers\API\Companies\v1\RewardPointController;
 use App\Http\Controllers\API\Companies\v1\RoleController;
 use App\Http\Controllers\API\Companies\v1\RoleHasPermissionController;
@@ -42,8 +51,8 @@ use App\Http\Controllers\API\Companies\v1\UserController;
 use App\Http\Controllers\API\Companies\v1\VariantController;
 use App\Http\Controllers\API\Companies\v1\VariantOptionController;
 use App\Http\Controllers\API\Companies\v1\WarehouseController;
-use App\Models\Companies\v1\Companies;
-use App\Models\Companies\v1\CompanyCredentials;
+use App\Models\Companies;
+use App\Models\CompanyCredentials;
 use App\Models\Companies\v1\Users;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
@@ -335,7 +344,7 @@ Route::middleware(['auth:api'])->group(function () {
         Route::delete('email_queues/{id}', 'delete')->name('delete.email_queues');
         Route::post('email_queues_datatables', 'datatables')->name('datatable.email_queues');
     });
-    Route::controller(CentralGeneralSettingController::class)->group(function() {
+    Route::controller(CentralGeneralSettingControlle::class)->group(function() {
         Route::get('general_settings/{id?}', 'get')->name('get.general_settings');
         Route::post('general_settings', 'post')->name('post.general_settings');
         Route::patch('general_settings/{id}', 'patch')->name('patch.general_settings');
@@ -408,6 +417,7 @@ Route::group(['prefix' => 'v1', 'middleware' => ['auth:api', 'api.companies']], 
         Route::delete('contact_groups/{id}', 'delete')->name('v1.delete.contact_groups');
         Route::post('contact_groups_datatables', 'datatables')->name('v1.datatable.contact_groups');
         Route::patch('contact_groups/{id}/approve', 'approve')->name('v1.approve.contact_groups');
+        Route::get('contact_groups/{id}/generate_reward_points', 'generateRewardPoints')->name('v1.generate_reward_points.contact_groups');
     });
     Route::controller(ContactController::class)->group(function() {
         Route::get('contacts/{id?}', 'get')->name('v1.get.contacts');
@@ -707,19 +717,18 @@ Route::group(['prefix' => 'v1', 'middleware' => ['auth:api', 'api.companies']], 
         Route::patch('role_has_permissions/{id}/approve', 'approve')->name('v1.approve.role_has_permissions');
     });
     
-    Route::controller(PointOfSalesController::class)->prefix('pos')->group(function() {
-        Route::get('holds', 'getHoldData')->name('v1.pos.holds.get');
-        Route::post('holds', 'hold')->name('v1.pos.holds.post');
+    Route::controller(PointOfSalesController::class)->prefix('pos')->group(function() { 
         Route::post('payments', 'payment')->name('v1.pos.payments');
         Route::get('generate_ref_numbers', 'getRefNumber')->name('v1.pos.get_ref_number');
         Route::get('discount_point_exchange', 'discountPointExchange')->name('v1.pos.discount_point_exchange');
         Route::post('login', 'login')->name('v1.pos.login');
+        Route::get('printer_connected', 'printerConnected')->name('v1.pos.printerConnected');
     });
 
-    Route::get('/persib_bandung_juara', function (Request $request) {
-        // $halo = 'asd';
-        return response()->json($halo);
-    });
+    // Route::get('/persib_bandung_juara', function (Request $request) {
+    //     // $halo = 'asd';
+    //     return response()->json($halo);
+    // });
 
     // ---- Route Controller Generator ----
 });

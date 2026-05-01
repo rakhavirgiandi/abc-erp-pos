@@ -94,6 +94,10 @@ class ProductSkus extends Model
     // Functions ...
 
     // Relations ...
+    public function product_sku_variants()
+    { 
+        return $this->hasMany(ProductSkuVariants::class, 'product_sku_id', 'id');
+    }
 
     public static function mapSchema($params = [], $user = [])
     {

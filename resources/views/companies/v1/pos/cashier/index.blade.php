@@ -3,291 +3,292 @@
 @section('title', $title)
 
 @section('style')
-    <style>
-        #page-topbar {
-            min-width: var(--pos-layout-min-width);
-            position: absolute;
-        }
+<style>
+    #page-topbar {
+        min-width: var(--pos-layout-min-width);
+        position: absolute;
+    }
 
-        .product-image {
-            width: 100%;
-            max-height: 160px;
-            object-fit: cover;
-        }
+    .product-image {
+        width: 100%;
+        max-height: 160px;
+        object-fit: cover;
+    }
 
-        .page-content {
-            height: 100vh;
-            overflow: hidden;
-        }
+    .page-content {
+        height: 100vh;
+        overflow: hidden;
+    }
 
-        #products-display[data-mode="table"] #product-cashier-table {
-            display: table;
-        }
+    #products-display[data-mode="table"] #product-cashier-table {
+        display: table;
+    }
 
-        #products-display[data-mode="table"] #product-cashier-grid {
-            display: none;
-        }
+    #products-display[data-mode="table"] #product-cashier-grid {
+        display: none;
+    }
 
-        #products-display[data-mode="grid"] #product-cashier-grid {
-            display: flex;
-        }
+    #products-display[data-mode="grid"] #product-cashier-grid {
+        display: flex;
+    }
 
-        #products-display[data-mode="grid"] #product-cashier-table {
-            display: none;
-        }
+    #products-display[data-mode="grid"] #product-cashier-table {
+        display: none;
+    }
 
 
-        table#product-cashier-table thead th {
-          position: sticky;
-          top: 0;
-          z-index: 1;
-        }
-        
-        #products-display {
-            flex: 1 1 auto;
-            overflow-y: auto;
-            padding: var(--bs-card-spacer-y) var(--bs-card-spacer-x);
-            color: var(--bs-card-color);
-        }
+    table#product-cashier-table thead th {
+      position: sticky;
+      top: 0;
+      z-index: 1;
+    }
+    
+    #products-display {
+        flex: 1 1 auto;
+        overflow-y: auto;
+        padding: var(--bs-card-spacer-y) var(--bs-card-spacer-x);
+        color: var(--bs-card-color);
+    }
 
-        #products-display[data-mode="table"] {
-            padding: 0 !important;
-        }
+    #products-display[data-mode="table"] {
+        padding: 0 !important;
+    }
 
-        #products-display[data-mode="grid"] {
-            border-top: var(--bs-border-width) var(--bs-border-style) var(--bs-border-color) !important;
-        }
+    #products-display[data-mode="grid"] {
+        border-top: var(--bs-border-width) var(--bs-border-style) var(--bs-border-color) !important;
+    }
 
-        .order-item .qty-box {
-            padding: 0 .5rem;
-            width: auto;
-            min-width: 32px;
-            height: 32px;
-            border-radius: 0.375rem;
-            background: var(--bs-light);
-            cursor: pointer;
-            position: relative;
-        }
+    .order-item .qty-box {
+        padding: 0 .5rem;
+        width: auto;
+        min-width: 32px;
+        height: 32px;
+        border-radius: 0.375rem;
+        background: var(--bs-light);
+        cursor: pointer;
+        position: relative;
+    }
 
-        .order-item .qty-box .qty-value {
-            -webkit-user-select: none;
-            -ms-user-select: none;
-            user-select: none;
-        }
+    .order-item .qty-box .qty-value {
+        -webkit-user-select: none;
+        -ms-user-select: none;
+        user-select: none;
+    }
 
-        .order-item {
-            --bs-bg-opacity: 1;
-            background-color: rgba(var(--bs-white-rgb), var(--bs-bg-opacity));
-        }
+    .order-item {
+        --bs-bg-opacity: 1;
+        background-color: rgba(var(--bs-white-rgb), var(--bs-bg-opacity));
+    }
 
-        .order-item:hover {
-            background-color: rgba(var(--bs-secondary-rgb), 0.15);
-        }
+    .order-item:hover {
+        background-color: rgba(var(--bs-secondary-rgb), 0.15);
+    }
 
-        .order-item:hover .qty-box {
-            background: var(--bs-secondary);
-            color: #fff
-        }
+    .order-item:hover .qty-box {
+        background: var(--bs-secondary);
+        color: #fff
+    }
 
-        .order-item[data-selected="true"] {
-            background-color: rgba(var(--bs-secondary-rgb), 0.15);
-            border-left: 4px solid var(--bs-secondary);
-        }
+    .order-item[data-selected="true"] {
+        background-color: rgba(var(--bs-secondary-rgb), 0.15);
+        border-left: 4px solid var(--bs-secondary);
+    }
 
-        .order-item[data-selected="true"] .qty-box {
-            background: var(--bs-secondary);
-            color: #fff
-        }
+    .order-item[data-selected="true"] .qty-box {
+        background: var(--bs-secondary);
+        color: #fff
+    }
 
-        .numpad-btn {
-            border-radius: 0;
-        }
+    .numpad-btn {
+        border-radius: 0;
+    }
 
-        .key-pct {
-            background: #FEF3C7;
-            color: #D97706;
-        }
-        .key-pct:hover { background: #fde68a; }
+    .key-pct {
+        background: #FEF3C7;
+        color: #D97706;
+    }
+    .key-pct:hover { background: #fde68a; }
 
-        .key-nom {
-            background: #DCFCE7;
-            color: #059669;
-        }
-        .key-nom:hover { background: #bbf7d0; }
+    .key-nom {
+        background: #DCFCE7;
+        color: #059669;
+    }
+    .key-nom:hover { background: #bbf7d0; }
 
-        .key-price {
-            background: #F3E8FF;
-            color: #7C3AED;
-        }
-        .key-price:hover { background: #e9d5ff; }
+    .key-price {
+        background: #F3E8FF;
+        color: #7C3AED;
+    }
+    .key-price:hover { background: #e9d5ff; }
 
-        .numpad-key {
-            border-radius: 0;
-            height: 51px;
-        }
-        .numpad-key:hover {
-            background: #f8f9fa;
-        }
+    .numpad-key {
+        border-radius: 0;
+        height: 51px;
+    }
+    .numpad-key:hover {
+        background: #f8f9fa;
+    }
 
-        .rotate-icon {
-            display: inline-block;
-            transform: rotate(180deg);
-            transition: transform 0.3s ease;
-        }
+    .rotate-icon {
+        display: inline-block;
+        transform: rotate(180deg);
+        transition: transform 0.3s ease;
+    }
 
-        #payment-modal .modal-header {
-            position: sticky;
-            top: 0;
-            z-index: 1055;
-            background: white;
-            box-shadow: 0 4px 6px -4px rgba(0, 0, 0, 0.2);
-        }
-        
-        #histories-modal .modal-header {
-            box-shadow: 0 4px 6px -4px rgba(0, 0, 0, 0.2);
-        }
+    #payment-modal .modal-header {
+        position: sticky;
+        top: 0;
+        z-index: 1055;
+        background: white;
+        box-shadow: 0 4px 6px -4px rgba(0, 0, 0, 0.2);
+    }
+    
+    #histories-modal .modal-header {
+        box-shadow: 0 4px 6px -4px rgba(0, 0, 0, 0.2);
+    }
 
-        #payment-modal .modal-body {
-            background-color: var(--bs-body-bg);
-            padding: var(--bs-modal-padding);
-        }
+    #payment-modal .modal-body {
+        background-color: var(--bs-body-bg);
+        padding: var(--bs-modal-padding);
+    }
 
-        #payment-modal .modal-footer {
-            box-shadow: 0 -4px 6px -4px rgba(0, 0, 0, 0.2);
-            position: sticky;
-            bottom: 0;
-            z-index: 1055;
-            background: white;
-            padding: calc(var(--bs-modal-padding) - var(--bs-modal-footer-gap) * .5);
-        }
+    #payment-modal .modal-footer {
+        box-shadow: 0 -4px 6px -4px rgba(0, 0, 0, 0.2);
+        position: sticky;
+        bottom: 0;
+        z-index: 1055;
+        background: white;
+        padding: calc(var(--bs-modal-padding) - var(--bs-modal-footer-gap) * .5);
+    }
 
-        .reward-point-product-item {
-            width: 100%;
-            border-radius: var(--bs-border-radius) !important;
-            padding: .75rem !important;
-            border: var(--bs-border-width) var(--bs-border-style) var(--bs-border-color) !important;
-            cursor: pointer;
-        }
+    .reward-point-product-item {
+        width: 100%;
+        border-radius: var(--bs-border-radius) !important;
+        padding: .75rem !important;
+        border: var(--bs-border-width) var(--bs-border-style) var(--bs-border-color) !important;
+        cursor: pointer;
+    }
 
-        .reward-point-product-item .name-placeholder {
-            font-size: 14px;
-        }
+    .reward-point-product-item .name-placeholder {
+        font-size: 14px;
+    }
 
-        .reward-point-product-item .total-point-placeholder {
-            --bs-text-opacity: 1;
-            color: rgba(var(--bs-warning-rgb), var(--bs-text-opacity)) !important;
-            margin: 0;
-        }
+    .reward-point-product-item .total-point-placeholder {
+        --bs-text-opacity: 1;
+        color: rgba(var(--bs-warning-rgb), var(--bs-text-opacity)) !important;
+        margin: 0;
+    }
 
-        .reward-point-product-item.disabled .name-placeholder {
-            opacity: .5;
-        }
+    .reward-point-product-item.disabled .name-placeholder {
+        opacity: .5;
+    }
 
-        .reward-point-product-item.disabled .total-point-placeholder {
-            color: var(--bs-body-color) !important;
-            opacity: 0.3;
-        }
+    .reward-point-product-item.disabled .total-point-placeholder {
+        color: var(--bs-body-color) !important;
+        opacity: 0.3;
+    }
 
-        .reward-point-product-item.disabled {
-            cursor: default;
-            background-color: var(--bs-body-bg);
-            color: var(--bs-secondary-color) !important;
-        }
+    .reward-point-product-item.disabled {
+        cursor: default;
+        background-color: var(--bs-body-bg);
+        color: var(--bs-secondary-color) !important;
+    }
 
-        .reward-point-product-item:hover {
-            background: rgba(var(--bs-secondary-rgb), 0.15);
-            border: var(--bs-border-width) var(--bs-border-style) rgba(var(--bs-secondary-rgb), 0.15) !important;
-        }
+    .reward-point-product-item:hover {
+        background: rgba(var(--bs-secondary-rgb), 0.15);
+        border: var(--bs-border-width) var(--bs-border-style) rgba(var(--bs-secondary-rgb), 0.15) !important;
+    }
 
-        .reward-point-product-item.selected {
-            background: rgba(var(--bs-secondary-rgb), 0.15);
-            border: var(--bs-border-width) var(--bs-border-style) var(--bs-secondary) !important;
-        }
+    .reward-point-product-item.selected {
+        background: rgba(var(--bs-secondary-rgb), 0.15);
+        border: var(--bs-border-width) var(--bs-border-style) var(--bs-secondary) !important;
+    }
 
-        #payment-modal.modal.fade .modal-dialog {
-            transform: translateY(100px) !important;
-            transition: transform .25s ease-out !important;
-        }
+    #payment-modal.modal.fade .modal-dialog {
+        transform: translateY(100px) !important;
+        transition: transform .25s ease-out !important;
+    }
 
-        #payment-modal.modal.show .modal-dialog {
-            transform: translateY(0) !important;
-        }
+    #payment-modal.modal.show .modal-dialog {
+        transform: translateY(0) !important;
+    }
 
-        .input-item-qty {
-            background: none;
-            border: 0px !important;
-            text-align: center;
-            color: var(--bs-body-color);
-            font-weight: 600;
-            outline: 0px !important;
-            width: 1ch;
-            padding: 0px;
-            font-family: monospace;
-        }
+    .input-item-qty {
+        background: none;
+        border: 0px !important;
+        text-align: center;
+        color: var(--bs-body-color);
+        font-weight: 600;
+        outline: 0px !important;
+        width: 1ch;
+        padding: 0px;
+        font-family: monospace;
+    }
 
-        .order-item[data-selected="true"] .input-item-qty, .order-item:hover .input-item-qty {
-            color: #fff;
-        }
+    .order-item[data-selected="true"] .input-item-qty, .order-item:hover .input-item-qty {
+        color: #fff;
+    }
 
-        .input-discount-value {
-            background: none;
-            border: 0px !important;
-            color: rgba(var(--bs-danger-rgb), var(--bs-text-opacity));
-            font-weight: 600;
-            outline: 0px !important;
-            width: 1ch;
-            padding: 0px;
-            font-family: monospace;
-        }
+    .input-discount-value {
+        background: none;
+        border: 0px !important;
+        color: rgba(var(--bs-danger-rgb), var(--bs-text-opacity));
+        font-weight: 600;
+        outline: 0px !important;
+        width: 1ch;
+        padding: 0px;
+        font-family: monospace;
+    }
 
-        .input-price {
-            background: none;
-            border: 0px !important;
-            color: var(--bs-secondary-color) !important;
-            outline: 0px !important;
-            width: 1ch;
-            font-size: 0.75rem;
-            padding: 0px;
-            font-family: monospace;
-        }
+    .input-price {
+        background: none;
+        border: 0px !important;
+        color: var(--bs-secondary-color) !important;
+        outline: 0px !important;
+        width: 1ch;
+        font-size: 0.75rem;
+        padding: 0px;
+        font-family: monospace;
+    }
 
-        [data-shortcut-mode="discount-type-percentage"] [data-selected="true"] .discount-placeholder {
-            display: block !important;
-        }
+    [data-shortcut-mode="discount-type-percentage"] [data-selected="true"] .discount-placeholder {
+        display: block !important;
+    }
 
-        [data-shortcut-mode="discount-type-amount"] [data-selected="true"] .discount-placeholder {
-            display: block !important;
-        }
+    [data-shortcut-mode="discount-type-amount"] [data-selected="true"] .discount-placeholder {
+        display: block !important;
+    }
 
-        #payment-method-tab.nav-pills .nav-link.active, .nav-pills .show>.nav-link {
-            --bs-nav-pills-link-active-bg: var(--bs-secondary)
-        }
+    #payment-method-tab.nav-pills .nav-link.active, .nav-pills .show>.nav-link {
+        --bs-nav-pills-link-active-bg: var(--bs-secondary)
+    }
 
-        .edc-box {
-            border: 1px solid var(--bs-border-color);
-            cursor: pointer;
-            height: 80px;
-        }
+    .edc-box {
+        border: 1px solid var(--bs-border-color);
+        cursor: pointer;
+        height: 80px;
+    }
 
-        .edc-box.active {
-            border: 2px solid var(--bs-secondary);
-            background-color: rgba(var(--bs-secondary-rgb), 0.15); 
-        }
-        
-        .apply-point-toggle.selected {
-            border: 1px solid var(--bs-secondary);
-            background-color: rgba(var(--bs-secondary-rgb), 0.15); 
-        }
-    </style>
-    <link href="{{ asset('assets/libs/datatables.net-bs5/css/dataTables.bootstrap5.min.css')}}" rel="stylesheet" type="text/css">
+    .edc-box.active {
+        border: 2px solid var(--bs-secondary);
+        background-color: rgba(var(--bs-secondary-rgb), 0.15); 
+    }
+    
+    .apply-point-toggle.selected {
+        border: 1px solid var(--bs-secondary);
+        background-color: rgba(var(--bs-secondary-rgb), 0.15); 
+    }
 
-    <!-- Responsive datatable examples -->
-    <link href="{{ asset('assets/libs/datatables.net-responsive-bs5/css/responsive.bootstrap5.min.css')}}" rel="stylesheet" type="text/css">
+</style>
+  <link href="{{ asset('assets/libs/datatables.net-bs5/css/dataTables.bootstrap5.min.css')}}" rel="stylesheet" type="text/css">
 
-    <!-- Datatable extensions -->
-    <link href="{{ asset('assets/libs/datatables.net-buttons-bs5/css/buttons.bootstrap5.min.css')}}" rel="stylesheet" type="text/css">
-    <link href="{{ asset('assets/libs/datatables.net-select-bs5/css/select.bootstrap5.min.css')}}" rel="stylesheet" type="text/css">
-    <link href="{{ asset('assets/libs/bootstrap-touchspin/jquery.bootstrap-touchspin.min.css') }}" rel="stylesheet">
+  <!-- Responsive datatable examples -->
+  <link href="{{ asset('assets/libs/datatables.net-responsive-bs5/css/responsive.bootstrap5.min.css')}}" rel="stylesheet" type="text/css">
+
+  <!-- Datatable extensions -->
+  <link href="{{ asset('assets/libs/datatables.net-buttons-bs5/css/buttons.bootstrap5.min.css')}}" rel="stylesheet" type="text/css">
+  <link href="{{ asset('assets/libs/datatables.net-select-bs5/css/select.bootstrap5.min.css')}}" rel="stylesheet" type="text/css">
+  <link href="{{ asset('assets/libs/bootstrap-touchspin/jquery.bootstrap-touchspin.min.css') }}" rel="stylesheet">
 @endsection
 
 @section('content')
@@ -462,7 +463,7 @@
 
 @section('script')
     <script src="{{ asset('assets/libs/datatables.net/js/dataTables.min.js')}}"></script>
-    <script src="{{ asset('assets/libs/datatables.net-bs5/js/dataTables.bootstrap5.min.j')}}s"></script>
+    <script src="{{ asset('assets/libs/datatables.net-bs5/js/dataTables.bootstrap5.min.js')}}s"></script>
 
     <!-- Responsive examples -->
     <script src="{{ asset('assets/libs/datatables.net-responsive/js/dataTables.responsive.min.js')}}"></script>
@@ -2277,6 +2278,10 @@
         }
 
         const shortcutClick = (sc) => {
+            if (sc == 'f2' && $('#payment-modal').hasClass('show')) {
+                $('.insert-payment-toggle[data-value="exact"]').trigger('click')
+                return
+            }
             $('[data-shortcut="'+sc+'"]').trigger('click');
         }
 
@@ -2852,7 +2857,7 @@
                 dataType: "json",
                 headers: {
                     'Authorization': TOKEN,
-                    'company-id': COMPANY_ID,
+                    'company-id': COMPANY_ID
                 },
                 beforeSend: function() {
                     if (props?.refresh) {
@@ -3295,7 +3300,7 @@
                 data: req,
                 headers: {
                     'Authorization': TOKEN,
-                    'company-id': COMPANY_ID,
+                    'company-id': COMPANY_ID
                 },
                 beforeSend: function () {
                     customerDt.processing(true);
@@ -3609,7 +3614,7 @@
                 url: BASE_URL + "/api/v1/pos/login",
                 "headers": {
                     'Authorization': TOKEN,
-                    'company-id': COMPANY_ID,
+                    'company-id': COMPANY_ID
                 },
                 data: formData,
                 cache: false,
@@ -3637,6 +3642,7 @@
                             starting()
                         }
                     })
+                    
                 },
                 error: (jqXHR, textStatus, errorThrown) => {
 
@@ -3742,7 +3748,7 @@
                 data: req,
                 headers: {
                     'Authorization': TOKEN,
-                    'company-id': COMPANY_ID,
+                    'company-id': COMPANY_ID
                 },
                 beforeSend: function () {
                     taxesDt.processing(true);
@@ -3885,7 +3891,7 @@
                 dataType: "json",
                 headers: {
                     'Authorization': TOKEN,
-                    'company-id': COMPANY_ID,
+                    'company-id': COMPANY_ID
                 },
                 beforeSend: function() {
                     if (props?.refresh) {
@@ -3993,7 +3999,7 @@
                             url: BASE_URL + "/api/v1/pos/payments",
                             "headers": {
                                 'Authorization': TOKEN,
-                                'company-id': COMPANY_ID,
+                                'company-id': COMPANY_ID
                             },
                             data: formData,
                             cache: false,
@@ -4262,7 +4268,7 @@
                     }
                     insertPaymentToggleCount++
                     if (paymentSuggestions.length == insertPaymentToggleCount) {
-                        insertPaymentToggleHTML += '<button type="button" class="btn btn-light insert-payment-toggle" data-value="exact">Uang Pas</button>';
+                        insertPaymentToggleHTML += '<button type="button" class="btn btn-light insert-payment-toggle" data-value="exact">Uang Pas [F2]</button>';
                     }
                 });
 
@@ -4276,7 +4282,7 @@
                         data: params,
                         headers: {
                             'Authorization': TOKEN,
-                            'company-id': COMPANY_ID,
+                            'company-id': COMPANY_ID
                         },
                         beforeSend: function () {
                             $('#bonus-point-label').html(0)
@@ -4408,7 +4414,7 @@
                 url: BASE_URL + "/api/v1/pos/payments",
                 "headers": {
                     'Authorization': TOKEN,
-                    'company-id': COMPANY_ID,
+                    'company-id': COMPANY_ID
                 },
                 data: formData,
                 cache: false,
@@ -4432,7 +4438,7 @@
                         reverseButtons: true
                     }).then((result) => {
                         if (result.isConfirmed) {
-                            window.open(BASE_URL+'/pos/print-receipts/'+res?.data?.ref_number, '_blank').focus();
+                            printReceipt(res?.data?.ref_number);
                         }
                         salesInvoiceSync()
                         clear();
@@ -4585,7 +4591,7 @@
                 dataType: "json",
                 headers: {
                     'Authorization': TOKEN,
-                    'company-id': COMPANY_ID,
+                    'company-id': COMPANY_ID
                 },
                 beforeSend: function() {
                     const spinner = `<div class="w-100 d-flex justify-content-center py-4 spinner-container">
@@ -4654,7 +4660,7 @@
                             html +=         '<div class="dropdown">'
                             html +=             '<button type="button" class="btn btn-text-light btn-icon align-self-center" data-bs-toggle="dropdown" aria-expanded="false"><span class="mdi mdi-dots-horizontal"></span></button>'
                             html +=             '<ul class="dropdown-menu dropdown-menu-end">'
-                            html +=                 '<a href="'+BASE_URL+'/pos/print-receipts/'+item?.ref_number+'" target="_blank" class="dropdown-item">Print</a>'
+                            html +=                 '<a href="#" id="histories-print-toggle-'+i+'" data-ref_number="'+item?.ref_number+'" class="dropdown-item">Print</a>'
                             if (activeTab == 'hold') {
                                 html +=                 '<li><button class="dropdown-item" id="call-back-sales-invoice-'+item.id+'" data-id="'+item.id+'" type="button">Call Back</button></li>'
                             }
@@ -4685,6 +4691,28 @@
             });
         }
 
+        $(document).on('click', '[id^=histories-print-toggle-]', function (e) {
+            e.preventDefault()
+            const $this = $(this);
+            const dataRefNumber = $this.attr('data-ref_number');
+            printReceipt(dataRefNumber)
+        });
+
+        const printReceipt = (refNumber) => {
+            $.ajax({
+                type: 'post',
+                url: BASE_URL+'/api/v1/pos/print-receipts/'+refNumber,
+                "headers": {
+                    'Authorization': TOKEN,
+                    'company-id': COMPANY_ID
+                },
+                "data": {
+                    "paper_size": '{{ config('user_settings.pos_printer_paper_size') }}'
+                },
+                error: generalAjaxErrorHandler,
+            });
+        }
+
         $(document).on('click', '[id^=call-back-sales-invoice-]', function () {
             const $this = $(this);
             const dataId = $this.data('id');
@@ -4708,7 +4736,7 @@
                         dataType: "json",
                         headers: {
                             'Authorization': TOKEN,
-                            'company-id': COMPANY_ID,
+                            'company-id': COMPANY_ID
                         },
                         beforeSend: function() {
                             showLoading();
@@ -4810,8 +4838,10 @@
                         "scrollX": false,
                         "ajax": {
                             "url": BASE_URL + "/api/v1/sync/product_stock",
-                            "headers": { 'Authorization': TOKEN,
-                            'company-id': COMPANY_ID, },
+                            "headers": { 
+                                'Authorization': TOKEN,
+                                'company-id': COMPANY_ID
+                            },
                             "dataType": "json",
                             "type": "get",
                             "data": function (d) {
@@ -4872,7 +4902,10 @@
                         url: BASE_URL+'/api/v1/sync/products',
                         method: 'GET',
                         contentType: 'application/json',
-                        headers: { 'Authorization': TOKEN, 'company-id': COMPANY_ID, },
+                        headers: { 
+                            'Authorization': TOKEN,
+                            'company-id': COMPANY_ID
+                        },
                     });
         }
 
@@ -4881,7 +4914,10 @@
                         url: BASE_URL+'/api/v1/sync/product_categories',
                         method: 'GET',
                         contentType: 'application/json',
-                        headers: { 'Authorization': TOKEN, 'company-id': COMPANY_ID, },
+                        headers: { 
+                            'Authorization': TOKEN,
+                            'company-id': COMPANY_ID
+                        },
                     });
         }
 
@@ -4890,7 +4926,10 @@
                         url: BASE_URL+'/api/v1/sync/product_multi_prices',
                         method: 'GET',
                         contentType: 'application/json',
-                        headers: { 'Authorization': TOKEN, 'company-id': COMPANY_ID, },
+                        headers: {
+                            'Authorization': TOKEN,
+                            'company-id': COMPANY_ID
+                        },
                     });
         }
 
@@ -4899,7 +4938,10 @@
                         url: BASE_URL+'/api/v1/sync/product_skus',
                         method: 'GET',
                         contentType: 'application/json',
-                        headers: { 'Authorization': TOKEN, 'company-id': COMPANY_ID, },
+                        headers: {
+                            'Authorization': TOKEN,
+                            'company-id': COMPANY_ID
+                        },
                     });
         }
 
@@ -4908,7 +4950,10 @@
                         url: BASE_URL+'/api/v1/sync/product_sku_variants',
                         method: 'GET',
                         contentType: 'application/json',
-                        headers: { 'Authorization': TOKEN, 'company-id': COMPANY_ID, },
+                        headers: { 
+                            'Authorization': TOKEN,
+                            'company-id': COMPANY_ID
+                        },
                     });
         }
 
@@ -4917,7 +4962,10 @@
                         url: BASE_URL+'/api/v1/sync/units',
                         method: 'GET',
                         contentType: 'application/json',
-                        headers: { 'Authorization': TOKEN, 'company-id': COMPANY_ID, },
+                        headers: { 
+                            'Authorization': TOKEN,
+                            'company-id': COMPANY_ID
+                        },
                     });
         }
 
@@ -4926,7 +4974,10 @@
                         url: BASE_URL+'/api/v1/sync/product_unit_conversions',
                         method: 'GET',
                         contentType: 'application/json',
-                        headers: { 'Authorization': TOKEN, 'company-id': COMPANY_ID, },
+                        headers: { 
+                            'Authorization': TOKEN,
+                            'company-id': COMPANY_ID
+                        },
                     });
         }
 
@@ -4935,7 +4986,10 @@
                         url: BASE_URL+'/api/v1/sync/product_variants',
                         method: 'GET',
                         contentType: 'application/json',
-                        headers: { 'Authorization': TOKEN, 'company-id': COMPANY_ID, },
+                        headers: { 
+                            'Authorization': TOKEN,
+                            'company-id': COMPANY_ID
+                        },
                     })
         }
 
@@ -4944,7 +4998,10 @@
                         url: BASE_URL+'/api/v1/sync/variants',
                         method: 'GET',
                         contentType: 'application/json',
-                        headers: { 'Authorization': TOKEN, 'company-id': COMPANY_ID, },
+                        headers: { 
+                            'Authorization': TOKEN,
+                            'company-id': COMPANY_ID
+                        },
                     });
         }
 
@@ -4953,7 +5010,10 @@
                         url: BASE_URL+'/api/v1/sync/variant_options',
                         method: 'GET',
                         contentType: 'application/json',
-                        headers: { 'Authorization': TOKEN, 'company-id': COMPANY_ID, },
+                        headers: { 
+                            'Authorization': TOKEN,
+                            'company-id': COMPANY_ID
+                        },
                     });
         }
 
@@ -4962,7 +5022,10 @@
                         url: BASE_URL+'/api/v1/sync/taxes',
                         method: 'GET',
                         contentType: 'application/json',
-                        headers: { 'Authorization': TOKEN, 'company-id': COMPANY_ID, },
+                        headers: { 
+                            'Authorization': TOKEN,
+                            'company-id': COMPANY_ID
+                        },
                     });
         } 
 
@@ -4971,7 +5034,10 @@
                         url: BASE_URL+'/api/v1/sync/base_unit_conversions',
                         method: 'GET',
                         contentType: 'application/json',
-                        headers: { 'Authorization': TOKEN, 'company-id': COMPANY_ID, },
+                        headers: { 
+                            'Authorization': TOKEN,
+                            'company-id': COMPANY_ID
+                        },
                     });
         }
 
@@ -4980,7 +5046,10 @@
                         url: BASE_URL+'/api/v1/sync/media',
                         method: 'GET',
                         contentType: 'application/json',
-                        headers: { 'Authorization': TOKEN, 'company-id': COMPANY_ID, },
+                        headers: { 
+                            'Authorization': TOKEN,
+                            'company-id': COMPANY_ID
+                        },
                     });
         }
 
@@ -4989,8 +5058,10 @@
                 url: BASE_URL+'/api/v1/sync/product_stock',
                 method: 'GET',
                 contentType: 'application/json',
-                headers: { 'Authorization': TOKEN,
-                'company-id': COMPANY_ID, },
+                headers: {
+                    'Authorization': TOKEN,
+                    'company-id': COMPANY_ID
+                },
             });
         }
 
@@ -4999,7 +5070,10 @@
                         url: BASE_URL+'/api/v1/sync/contacts',
                         method: 'GET',
                         contentType: 'application/json',
-                        headers: { 'Authorization': TOKEN, 'company-id': COMPANY_ID, },
+                        headers: { 
+                            'Authorization': TOKEN,
+                            'company-id': COMPANY_ID
+                        },
                     });
         }
 
@@ -5008,7 +5082,10 @@
                         url: BASE_URL+'/api/v1/sync/branches',
                         method: 'GET',
                         contentType: 'application/json',
-                        headers: { 'Authorization': TOKEN, 'company-id': COMPANY_ID, },
+                        headers: { 
+                            'Authorization': TOKEN,
+                            'company-id': COMPANY_ID
+                        },
                     });
         }
 
@@ -5017,7 +5094,10 @@
                         url: BASE_URL+'/api/v1/sync/warehouses',
                         method: 'GET',
                         contentType: 'application/json',
-                        headers: { 'Authorization': TOKEN, 'company-id': COMPANY_ID, },
+                        headers: { 
+                            'Authorization': TOKEN,
+                            'company-id': COMPANY_ID
+                        },
                     });
         }
 
@@ -5026,7 +5106,10 @@
                         url: BASE_URL+'/api/v1/sync/reward_points',
                         method: 'GET',
                         contentType: 'application/json',
-                        headers: { 'Authorization': TOKEN, 'company-id': COMPANY_ID, },
+                        headers: { 
+                            'Authorization': TOKEN,
+                            'company-id': COMPANY_ID
+                        },
                     });
         }
 
@@ -5035,7 +5118,10 @@
                         url: BASE_URL+'/api/v1/sync/contact_point_rules',
                         method: 'GET',
                         contentType: 'application/json',
-                        headers: { 'Authorization': TOKEN, 'company-id': COMPANY_ID, },
+                        headers: { 
+                            'Authorization': TOKEN,
+                            'company-id': COMPANY_ID
+                        },
                     });
         }
 
@@ -5044,7 +5130,10 @@
                         url: BASE_URL+'/api/v1/sync/general_settings',
                         method: 'GET',
                         contentType: 'application/json',
-                        headers: { 'Authorization': TOKEN, 'company-id': COMPANY_ID, },
+                        headers: { 
+                            'Authorization': TOKEN,
+                            'company-id': COMPANY_ID
+                        },
                     });
         }
         
@@ -5053,7 +5142,10 @@
                         url: BASE_URL+'/api/v1/sync/bank_accounts',
                         method: 'GET',
                         contentType: 'application/json',
-                        headers: { 'Authorization': TOKEN, 'company-id': COMPANY_ID, },
+                        headers: { 
+                            'Authorization': TOKEN,
+                            'company-id': COMPANY_ID
+                        },
                     });
         }
 
@@ -5062,7 +5154,10 @@
                         url: BASE_URL+'/api/v1/sync/sales_invoices',
                         method: 'POST',
                         contentType: 'application/json',
-                        headers: { 'Authorization': TOKEN, 'company-id': COMPANY_ID, },
+                        headers: { 
+                            'Authorization': TOKEN,
+                            'company-id': COMPANY_ID
+                        },
                     });
         }
 
@@ -5071,7 +5166,10 @@
                         url: BASE_URL+'/api/v1/sync/accounting_master',
                         method: 'GET',
                         contentType: 'application/json',
-                        headers: { 'Authorization': TOKEN, 'company-id': COMPANY_ID, },
+                        headers: { 
+                            'Authorization': TOKEN,
+                            'company-id': COMPANY_ID
+                        },
                     });
         }
 
@@ -5080,7 +5178,10 @@
                         url: BASE_URL+'/api/v1/sync/contact_groups',
                         method: 'GET',
                         contentType: 'application/json',
-                        headers: { 'Authorization': TOKEN, 'company-id': COMPANY_ID, },
+                        headers: {
+                            'Authorization': TOKEN,
+                            'company-id': COMPANY_ID
+                        },
                     });
         }
 
@@ -5089,7 +5190,10 @@
                         url: BASE_URL+'/api/v1/sync/currencies',
                         method: 'GET',
                         contentType: 'application/json',
-                        headers: { 'Authorization': TOKEN, 'company-id': COMPANY_ID, },
+                        headers: { 
+                            'company-id': COMPANY_ID,
+                            'Authorization': TOKEN
+                        },
                     });
         }
 
@@ -5098,7 +5202,10 @@
                         url: BASE_URL+'/api/v1/sync/default_accounts',
                         method: 'GET',
                         contentType: 'application/json',
-                        headers: { 'Authorization': TOKEN, 'company-id': COMPANY_ID, },
+                        headers: { 
+                            'Authorization': TOKEN,
+                            'company-id': COMPANY_ID
+                        },
                     });
         }
 
@@ -5300,7 +5407,7 @@
                 dataType: "json",
                 headers: {
                     'Authorization': TOKEN,
-                    'company-id': COMPANY_ID,
+                    'company-id': COMPANY_ID
                 },
                 beforeSend: function() {
                     if (props?.refresh) {
@@ -5415,7 +5522,7 @@
                     data: params,
                     headers: {
                         'Authorization': TOKEN,
-                        'company-id': COMPANY_ID,
+                        'company-id': COMPANY_ID
                     },
                     beforeSend: function () {
                         $('#bonus-point-label').html(0)

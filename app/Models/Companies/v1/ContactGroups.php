@@ -2,6 +2,7 @@
 
 namespace App\Models\Companies\v1;
 
+use Carbon\Carbon;
 use DB;
 use Illuminate\Support\Str;
 use App\Helpers\ModelHelper;
@@ -302,5 +303,105 @@ class ContactGroups extends Model
             'message' => 'Succesfully Approved Data',
             'data' => null
         ]);
+    }
+
+    public static function generateRewardPoints($id, $params)
+    {
+        $now = Carbon::now();
+
+        $chart_items = [];
+
+        if (isset($params['chart_items']) && $params['chart_items']) {
+            $chart_items = $params['chart_items'];
+        }
+
+        $total_purchase = 0;
+
+        if (isset($params['total_purchase']) && $params['total_purchase']) {
+            $total_purchase = $params['total_purchase'];
+        }
+
+        $rules = ContactGroupPointRules::query()
+            ->where('contact_group_id', $id)
+            ->where('is_active', true)
+            ->where(function ($q) use ($now) {
+                $q->whereNull('expired_date')
+                  ->orWhere('expired_date', '>=', $now);
+            })
+            ->get();
+
+        $total_points = 0;
+
+        $products_by_id = [];
+        
+        if (count($chart_items) > 0) {
+            $products = Products::get()->toArray();
+            foreach ($products as $idx => $item) {
+                $products_by_id[$item['id']] = $item;
+            }
+        }
+
+        foreach ($rules as $rule) {
+
+            $multiplier = 0;
+            $total_reward_point = 0;
+
+            if ($rule->product_id || $rule->product_category_id) {
+                foreach ($chart_items as $item) {
+                    if (isset($item['product_id'])) {
+                        if (isset($products_by_id[$item['product_id']])) {
+                            $product_data = $products_by_id[$item['product_id']];
+                            $qty = (isset($item['qty']) && $item['qty']) ? $item['qty'] : 1; 
+                            $price = (isset($item['price']) && $item['price']) ? $item['price'] : 0; 
+                            $unit_id = (isset($item['unit_id']) && $item['unit_id']) ? $item['unit_id'] : $product_data['unit_id']; 
+                            if ($rule->type == 'product_category') {
+                                if ($product_data['product_category_id'] === $rule->product_category_id) {
+                                    if (!empty($rule->is_excluded_in_total_payment)) {
+                                        $total_purchase = $total_purchase - $price;
+                                        $total_reward_point = 0;
+                                    } else {
+                                        $total_reward_point = $rule->total_reward_point;
+                                        if ($rule->is_applicable_multiple) {
+                                            $multiplier += floor($qty);
+                                        } else {
+                                            $multiplier += 1;
+                                        }
+                                    }
+                                }
+                            } else {
+                                if ($product_data['id'] === $rule->product_id && $rule->qty && $qty >= $rule->qty && $unit_id == $rule->unit_id) {
+                                    if (!empty($rule->is_excluded_in_total_payment)) {
+                                        $total_purchase = $total_purchase - $price;
+                                        $total_reward_point = 0;
+                                    } else {
+                                        $total_reward_point = $rule->total_reward_point;
+                                        if ($rule->is_applicable_multiple) {
+                                            $multiplier += floor($qty / $rule->qty);
+                                        } else {
+                                            $multiplier += 1;
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            } else {
+                if ($rule->minimum_purchase && $total_purchase >= $rule->minimum_purchase) {
+                    $total_reward_point = 0;
+                    if ($rule->is_applicable_multiple) {
+                        $multiplier = floor($total_purchase / $rule->minimum_purchase);
+                    } else {
+                        $multiplier = 1;
+                    }
+                }
+            }
+            
+            if ($multiplier > 0) {
+                $total_points += $multiplier * $total_reward_point;
+            }
+        }
+
+        return $total_points;
     }
 }

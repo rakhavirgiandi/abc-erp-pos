@@ -6,7 +6,7 @@
             </span>
         </a>
         <span class="vr mx-1" style="height: 30px; color: rgb(255 255 255 / 0.3);"></span>
-        <h3 class="counter-name-info">{{ config('user.branch_name') ? config('user.branch_name') : config('settings.branch_name') }}</h3>
+        <h3 class="counter-name-info">{{ config('user.branch_name') ? config('user.branch_name') : config('general_settings.branch_name') }}</h3>
     </div>
     <div class="w-50 gap-1 d-flex align-items-center justify-content-end">
         <div class="btn-footer-group d-flex gap-2">

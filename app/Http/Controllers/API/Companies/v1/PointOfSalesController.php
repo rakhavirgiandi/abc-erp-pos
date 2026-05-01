@@ -19,6 +19,7 @@ use Hash;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Facades\Storage;
+use Native\Desktop\Facades\System;
 
 class PointOfSalesController extends Controller
 {
@@ -31,13 +32,14 @@ class PointOfSalesController extends Controller
         $branch = Branches::where('id', '=', config('user.branch_id'))->first();
         $currency = Currencies::where('id', '=', config('general_settings.default_currency'))->first();
 
+        
         if (isset($params['id']) && $params['id']) {
             $sales_invoice = SalesInvoices::where('id', '=', $params['id'])->first();
             $params['date'] = $sales_invoice->date;
-        } else {
-            $params['date'] = now();
-        }
-
+            } else {
+                $params['date'] = now();
+                }
+                
         $bank_account = null;
 
         if (isset($params['bank_account_id']) && $params['bank_account_id']) {
@@ -177,5 +179,23 @@ class PointOfSalesController extends Controller
         $total_discount = $total_payment - $discount_amount;
     
         return response()->json(['total_discount' => $total_discount]);
+    }
+
+    public function printerConnected (Request $request)
+    {   
+
+        $printers = System::printers();
+        
+        if (!$request->name) {
+            return response()->json($printers);
+        }
+
+        $target = $request->name;
+
+        $printer = collect($printers)->first(function ($p) use ($target) {
+            return stripos($p, $target) !== false;
+        });
+
+        return $printer;
     }
 }

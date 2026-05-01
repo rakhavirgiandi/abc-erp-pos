@@ -57,6 +57,13 @@ class ContactGroupController extends Controller
         return ContactGroups::approveById($id, $params, $request);
     }
 
+    public function generateRewardPoints (Request $request, $id)
+    {
+        $params = $request->all();
+
+        return response()->json(ContactGroups::generateRewardPoints($id, $params));
+    }
+
     public function datatables(Request $request)
     {
         $user = auth()->guard('sanctum')->user();

@@ -11,6 +11,7 @@ use App\Helpers\ModelHelper;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use Illuminate\Validation\Rule;
 
 /**
  * @property string number
@@ -197,6 +198,10 @@ class SalesInvoices extends Model
     // Functions ...
 
     // Relations ...
+    public function sales_invoice_details()
+    {
+        return $this->hasMany(SalesInvoiceDetails::class, 'sales_invoice_id', 'id');
+    }
 
     public static function mapSchema($params = [], $user = [])
     {
@@ -206,13 +211,20 @@ class SalesInvoices extends Model
             'field' => [
                 'id' => ['column' => $model->table.'.id', 'alias' => 'id', 'type' => 'int'],
 				'number' => ['column' => $model->table.'.number', 'alias' => 'number', 'type' => 'string'],
+				'ref_number' => ['column' => $model->table.'.ref_number', 'alias' => 'ref_number', 'type' => 'string'],
 				'date' => ['column' => $model->table.'.date', 'alias' => 'date', 'type' => 'date'],
 				'description' => ['column' => $model->table.'.description', 'alias' => 'description', 'type' => 'string'],
 				'is_from_sales_delivery' => ['column' => $model->table.'.is_from_sales_delivery', 'alias' => 'is_from_sales_delivery', 'type' => 'int'],
 				'sales_order_id' => ['column' => $model->table.'.sales_order_id', 'alias' => 'sales_order_id', 'type' => 'int'],
 				'sales_order_name' => ['column' => $model->table.'.sales_order_name', 'alias' => 'sales_order_name', 'type' => 'string'],
+                'sales_order_number' => ['column' => 'sales_orders.number', 'alias' => 'sales_order_number', 'type' => 'string'],
+                'sales_order_total' => ['column' => 'sales_orders.total', 'alias' => 'sales_order_total', 'type' => 'string'],
 				'customer_id' => ['column' => $model->table.'.customer_id', 'alias' => 'customer_id', 'type' => 'int'],
-				'salesman_id' => ['column' => $model->table.'.salesman_id', 'alias' => 'salesman_id', 'type' => 'int'],
+				'customer_name' => ['column' =>'contact_customer.name', 'alias' => 'customer_name', 'type' => 'string'],
+				'customer_address' => ['column' =>'contact_customer.address', 'alias' => 'customer_address', 'type' => 'string'],
+				'contact_group_id' => ['column' =>'contact_customer.contact_group_id', 'alias' => 'contact_group_id', 'type' => 'int'],
+                'salesman_id' => ['column' => $model->table.'.salesman_id', 'alias' => 'salesman_id', 'type' => 'int'],
+                'salesman_name' => ['column' =>'contact_salesman.name', 'alias' => 'salesman_name', 'type' => 'string'],
 				'top_discount_days' => ['column' => $model->table.'.top_discount_days', 'alias' => 'top_discount_days', 'type' => 'int'],
 				'top_due_days' => ['column' => $model->table.'.top_due_days', 'alias' => 'top_due_days', 'type' => 'int'],
 				'top_early_discount' => ['column' => $model->table.'.top_early_discount', 'alias' => 'top_early_discount', 'type' => 'int'],
@@ -241,9 +253,13 @@ class SalesInvoices extends Model
 				'project_name' => ['column' => $model->table.'.project_name', 'alias' => 'project_name', 'type' => 'string'],
 				'currency_id' => ['column' => $model->table.'.currency_id', 'alias' => 'currency_id', 'type' => 'int'],
 				'currency_name' => ['column' => $model->table.'.currency_name', 'alias' => 'currency_name', 'type' => 'string'],
+                'currency_code' => ['column' => 'currencies.code', 'alias' => 'currency_code', 'type' => 'string'],
 				'exchange_rate' => ['column' => $model->table.'.exchange_rate', 'alias' => 'exchange_rate', 'type' => 'int'],
 				'warehouse_id' => ['column' => $model->table.'.warehouse_id', 'alias' => 'warehouse_id', 'type' => 'int'],
 				'warehouse_name' => ['column' => $model->table.'.warehouse_name', 'alias' => 'warehouse_name', 'type' => 'string'],
+				'created_at' => ['column' => $model->table.'.created_at', 'alias' => 'created_at', 'type' => 'date'],
+				'updated_at' => ['column' => $model->table.'.updated_at', 'alias' => 'updated_at', 'type' => 'date'],
+				'deleted_at' => ['column' => $model->table.'.deleted_at', 'alias' => 'deleted_at', 'type' => 'date'],
 				'subtotal' => ['column' => $model->table.'.subtotal', 'alias' => 'subtotal', 'type' => 'int'],
 				'total_coa' => ['column' => $model->table.'.total_coa', 'alias' => 'total_coa', 'type' => 'string'],
 				'is_standard' => ['column' => $model->table.'.is_standard', 'alias' => 'is_standard', 'type' => 'int'],
@@ -253,18 +269,34 @@ class SalesInvoices extends Model
 				'other_income' => ['column' => $model->table.'.other_income', 'alias' => 'other_income', 'type' => 'int'],
 				'other_income_coa' => ['column' => $model->table.'.other_income_coa', 'alias' => 'other_income_coa', 'type' => 'string'],
 				'sales_return_status' => ['column' => $model->table.'.sales_return_status', 'alias' => 'sales_return_status', 'type' => 'string'],
-				'created_by' => ['column' => $model->table.'.created_by', 'alias' => 'created_by', 'type' => 'int'],
-				'total_payment' => ['column' => $model->table.'.total_payment', 'alias' => 'total_payment', 'type' => 'int'],
-				'total_change' => ['column' => $model->table.'.total_change', 'alias' => 'total_change', 'type' => 'int'],
-				'is_from_pos' => ['column' => $model->table.'.is_from_pos', 'alias' => 'is_from_pos', 'type' => 'int'],
-				'ref_number' => ['column' => $model->table.'.ref_number', 'alias' => 'ref_number', 'type' => 'string'],
-				'bank_account_id' => ['column' => $model->table.'.bank_account_id', 'alias' => 'bank_account_id', 'type' => 'int'],
-				'created_at' => ['column' => $model->table.'.created_at', 'alias' => 'created_at', 'type' => 'date'],
-				'updated_at' => ['column' => $model->table.'.updated_at', 'alias' => 'updated_at', 'type' => 'date'],
-				'deleted_at' => ['column' => $model->table.'.deleted_at', 'alias' => 'deleted_at', 'type' => 'date'],
+                'discount_accounting_code' => ['column' => 'discount_coa_master.accounting_code', 'alias' => 'discount_accounting_code', 'type' => 'string'],
+                'discount_coa_name' => ['column' => 'discount_coa_master.name', 'alias' => 'discount_coa_name', 'type' => 'string'],
+                'other_accounting_code' => ['column' => 'other_coa_master.accounting_code', 'alias' => 'other_accounting_code', 'type' => 'string'],
+                'other_coa_name' => ['column' => 'other_coa_master.name', 'alias' => 'other_coa_name', 'type' => 'string'],
+                'cash_accounting_code' => ['column' => 'cash_coa_master.accounting_code', 'alias' => 'cash_accounting_code', 'type' => 'string'],
+                'cash_coa_name' => ['column' => 'cash_coa_master.name', 'alias' => 'cash_coa_name', 'type' => 'string'],
+                'down_payment_accounting_code' => ['column' => 'down_payment_coa_master.accounting_code', 'alias' => 'down_payment_accounting_code', 'type' => 'string'],
+                'down_payment_coa_name' => ['column' => 'down_payment_coa_master.name', 'alias' => 'down_payment_coa_name', 'type' => 'string'],
+                'total_accounting_code' => ['column' => 'total_coa_master.accounting_code', 'alias' => 'total_accounting_code', 'type' => 'string'],
+                'total_coa_name' => ['column' => 'total_coa_master.name', 'alias' => 'total_coa_name', 'type' => 'string'],
+                'created_by' => ['column' => $model->table.'.created_by', 'alias' => 'created_by', 'type' => 'int'],
+                'created_by_name' => ['column' => 'creator.name', 'alias' => 'created_by_name', 'type' => 'string'],
+                'total_payment' => ['column' => $model->table.'.total_payment', 'alias' => 'total_payment', 'type' => 'int'],
+                'total_change' => ['column' => $model->table.'.total_change', 'alias' => 'total_change', 'type' => 'int'],
+                'is_from_pos' => ['column' => $model->table.'.is_from_pos', 'alias' => 'is_from_pos', 'type' => 'int'],
+                'bank_account_id' => ['column' => $model->table.'.bank_account_id', 'alias' => 'bank_account_id', 'type' => 'int'],
             ],
             'join' => [
-
+                ['table' => 'contacts as contact_customer', 'type' => 'left', 'on' => ['contact_customer.id', '=', $model->table . '.customer_id']],
+                ['table' => 'contacts as contact_salesman', 'type' => 'left', 'on' => ['contact_salesman.id', '=', $model->table . '.customer_id']],
+                ['table' => 'currencies', 'type' => 'left', 'on' => ['currencies.id', '=', $model->table . '.currency_id']],
+                ['table' => 'sales_orders', 'type' => 'left', 'on' => ['sales_orders.id', '=', $model->table . '.sales_order_id']],
+                ['table' => 'users as creator', 'type' => 'left', 'on' => ['creator.id', '=', $model->table . '.created_by']],
+                ['table' => 'accounting_masters as discount_coa_master', 'type' => 'left', 'on' => ['discount_coa_master.coa', '=', $model->table . '.discount_coa']],
+                ['table' => 'accounting_masters as other_coa_master', 'type' => 'left', 'on' => ['other_coa_master.coa', '=', $model->table . '.other_coa']],
+                ['table' => 'accounting_masters as cash_coa_master', 'type' => 'left', 'on' => ['cash_coa_master.coa', '=', $model->table . '.coa_cash']],
+                ['table' => 'accounting_masters as down_payment_coa_master', 'type' => 'left', 'on' => ['down_payment_coa_master.coa', '=', $model->table . '.down_payment_coa']],
+                ['table' => 'accounting_masters as total_coa_master', 'type' => 'left', 'on' => ['total_coa_master.coa', '=', $model->table . '.total_coa']],
             ],
             'where' => [
 
@@ -363,14 +395,84 @@ class SalesInvoices extends Model
         $models = new self;
 
         $append = [];
+        $with_delivery = false;
+        $with_product_detail = false;
+        $with_customer_detail = false;
+
+        if (isset($params['with_delivery']) && $params['with_delivery'] == 'true') {
+            $with_delivery = true;
+            unset($params['with_delivery']);
+        }
 
         $schema = self::mapSchema();
+
+        if (isset($params['with_product_detail']) && $params['with_product_detail'] == true) {
+            $with_product_detail = true;
+            unset($params['with_product_detail']);
+        }
+
+        if (isset($params['with_customer_detail']) && $params['with_customer_detail'] == true) {
+            $with_customer_detail = true;
+            unset($params['with_customer_detail']);
+        }
         
         $db = ModelHelper::select($schema['field'], $request, __CLASS__)->where($models->table.'.id', $id);
-        
+
+        $db->with(['sales_invoice_details']);
+
+        if ($with_product_detail) {
+
+            $db->with(['sales_invoice_details.product_detail' => function ($q) {
+                $q->with(['multi_prices' => function ($mp_qry) {
+                    $mp_qry->leftJoin('contact_groups', 'contact_groups.id', '=', 'product_multi_prices.contact_group_id')
+                    ->leftJoin('branches', 'branches.id', '=', 'product_multi_prices.branch_id')
+                    ->select(
+                      'product_multi_prices.*',
+                      'branches.name as branch_name',
+                      'branches.code as branch_code',
+                      'contact_groups.name as contact_group_name',
+                    );
+                }]);
+
+                $q->with(['unit_conversions' => function ($un_qry) {
+                    $un_qry->leftJoin('units as form_unit', 'form_unit.id', '=', 'product_unit_conversions.from_unit_id')
+                    ->leftJoin('units as to_unit', 'to_unit.id', '=', 'product_unit_conversions.to_unit_id')
+                    ->select(
+                      'product_unit_conversions.*',
+                      'form_unit.name as from_unit_name',
+                      'to_unit.name as to_unit_name',
+                    );
+                }]);
+
+                
+                $q->with(['media']);
+
+                $q->with(['product_skus.product_sku_variants' => function($sku_qry) {
+                    $sku_qry->leftJoin('variants', 'variants.id', '=', 'product_sku_variants.variant_id')
+                      ->leftJoin('variant_options', 'variant_options.id', '=', 'product_sku_variants.option_id')
+                      ->select(
+                          'product_sku_variants.*',
+                          'variants.name as variant_name',
+                          'variant_options.value as option_value'
+                      );
+                }]);
+            }]);
+
+            $db->with(['sales_invoice_details.unit_detail.conversions']);
+            $db->with(['sales_invoice_details.product_sku_detail']);
+        }
         ModelHelper::join($schema['join'], $request, $db);
-        
-        return response()->json($db->first());
+        $data = $db->first();
+
+        if ($with_customer_detail) {
+            $data->customer_detail = Contacts::getById($data->customer_id)->original;
+        }
+
+        if (!$data) {
+            return response()->json(null);
+        }
+
+        return response()->json($data);
     }
 
     public static function getAllResult($params, $request)
@@ -460,6 +562,77 @@ class SalesInvoices extends Model
         ]);
     }
 
+    public static function validate($params)
+    {
+        $rules = [
+            'date'        => ['required', 'date'],
+            'customer_id' => ['required', 'integer'],
+            'warehouse_id' => ['required', 'integer'],
+            'branch_id' => ['required', 'integer'],
+            'sales_invoice_details' => ['required', 'array', 'min:1'],
+        ];
+
+        if (isset($params['is_from_pos']) && $params['is_from_pos'] == 0) {
+            $rules['number'] = ['required', Rule::unique('sales_invoices', 'number')->withoutTrashed()];
+        }
+
+        if (isset($params['is_from_sales_delivery']) && $params['is_from_sales_delivery']) {
+            $rules['sales_invoice_details.*.sales_delivery_id'] = ['required'];
+        } else {
+            $rules['sales_invoice_details.*.product_id'] = ['nullable', 'integer', 'required_without:sales_invoice_details.*.service_name'];
+            $rules['sales_invoice_details.*.service_name'] = ['nullable', 'string', 'required_without:sales_invoice_details.*.product_id'];
+            $rules['sales_invoice_details.*.coa'] = ['nullable', 'required_with:sales_invoice_details.*.service_name',];
+            $rules['sales_invoice_details.*.qty'] = ['required', 'min:0.0001'];
+            $rules['sales_invoice_details.*.unit_price'] = ['required', 'min:0'];
+        }
+
+        if ($params['payment_type'] == 'credit') {
+            $rules['top_due_days'] = 'required';
+        } else {
+            $rules['coa_cash'] = 'required';
+        }
+
+        $messages = [
+            'number.unique' => __('validation.number_unique'),
+            'number.required' => __('validation.number_required'),
+            'date.required' => __('validation.date_required'),
+            'customer_id.required' => __('validation.customer_required'),
+            'warehouse_id.required' => __('validation.warehouse_required'),
+            'branch_id.required' => __('validation.branch_required'),
+            'top_due_days.required' =>  __('validation.top_due_days_required'),
+            'coa_cash.required' =>  __('validation.coa_cash_required'),
+            'sales_invoice_details.required' => __('validation.details_required'),
+            'sales_invoice_details.min' => __('validation.details_min'),
+
+            'sales_invoice_details.*.product_id.required_without' => __('validation.product_or_service'),
+            'sales_invoice_details.*.service_name.required_without' => __('validation.product_or_service'),
+            'sales_invoice_details.*.coa.required_with' => __('validation.coa_required'),
+            'sales_invoice_details.*.qty.required' => __('validation.qty_required'),
+            'sales_invoice_details.*.unit_price.required' => __('validation.unit_price_required'),
+            'sales_invoice_details.*.sales_delivery_id.required' => __('validation.sales_delivery_required'),
+        ];
+
+        if (isset($params['id']) && $params['id']) {
+            if (isset($params['is_from_pos']) && $params['is_from_pos'] == 0) {
+                $rules['number'] = ['required',
+                    Rule::unique('sales_invoices', 'number')->ignore($params['id'])->withoutTrashed(),
+                ];
+            }
+        }
+
+        $validator = Validator::make($params, $rules, $messages);
+
+        if ($validator->fails()) {
+            return response()->json([
+                'status'  => 'error',
+                'message' => $validator->errors()->first(),
+                'errors'  => $validator->errors()->all()
+            ], 422);
+        }
+
+        return true;
+    }
+
     public static function createPOSTransaction($params)
     {   
         $validate = self::validate($params);
@@ -467,16 +640,10 @@ class SalesInvoices extends Model
             return $validate;
         }
 
-        DB::beginTransaction();
+        DB::connection('pgsql_companies')->beginTransaction();
 
         $filename = null;
-        $debit = [];
-        $credit = [];
-        $product_ids = [];
-        $tax_ids = [];
         $deposit_histories = [];
-        $tax_by_ids = [];
-        $product_by_ids = [];
         $sales_invoice_details = null;
         $reward_point_applied_ids = [];
         $total_point_applied = 0;
@@ -490,7 +657,7 @@ class SalesInvoices extends Model
             unset($params['source_type']);
         }
 
-        if (isset($params['total_point_applied']) && $params['total_point_applied']) {
+        if (isset($params['total_point_applied'])) {
             $total_point_applied = $params['total_point_applied']; 
             unset($params['total_point_applied']);
         }
@@ -637,30 +804,6 @@ class SalesInvoices extends Model
             }
         }
 
-        $products = Products::select([
-            'product_categories.is_control_stock as is_control_stock',
-            'product_categories.inventory_coa as category_inventory_coa',
-            'product_categories.cogs_coa as category_cogs_coa',
-            'product_categories.sales_coa as category_sales_coa',
-            'products.*'
-        ])
-        ->leftJoin('product_categories', 'product_categories.id', '=', 'products.product_category_id')
-        ->whereIn('products.id', $product_ids)
-        ->get();
-        
-        foreach ($products as $product) {
-            $product_by_ids[$product['id']] = $product->toArray();
-        }
-
-        $taxes = Taxes::whereIn('id', $tax_ids)->get();
-
-        foreach ($taxes as $tax) {
-            $tax_by_ids[$tax['id']] = $tax->toArray();
-        }
-    
-        $cogs_params['date'] = $params['date'];
-        $cogs_params['product_ids'] = $product_ids;
-
         // if (isset($params['payment_type'])) {
         //     if ($params['payment_type'] == 'cash') {
         //         $params['status'] = 'paid';
@@ -679,34 +822,10 @@ class SalesInvoices extends Model
         if (isset($params['id']) && $params['id']) {
             $old = self::getById($params['id'])->original;
 
-            unset($params['discount_amount_nominal']);
             $update = self::where('id', $params['id'])->update($params);
 
-            $main_discount_percentage = 0;
-
-            if (floatval($params['discount_amount']) && $params['discount_amount']) {
-                $main_discount_percentage = $params['discount_amount'] / $params['subtotal'] * 100;
-            }
-
             if ($update) {
-                $total = 0;
-                $product_histories = [];
-                $cogs_data = [];
-
-                SalesInvoiceDetails::where('sales_invoice_id', $params['id'])->delete();
-
-                $get_cogs = ProductClosings::getCOGS($cogs_params);
-
-                foreach ($get_cogs as $get_cogs_row) {
-                    $cogs_data[$get_cogs_row['product_id']] = $get_cogs_row['cogs'];
-                }
-
                 foreach ($sales_invoice_details as $key => &$sales_invoice_detail) {
-                    $cogs_price = 0;
-                    $subtotal_cogs = 0;
-                    $product = null;
-                    $tax = null;
-
                     $sales_invoice_detail['sales_invoice_id'] = $params['id'];
                     $sales_invoice_detail['ref_number'] = $params['ref_number'];
                     $sales_invoice_detail['unit_price'] = GlobalHelper::convertSeparator($sales_invoice_detail['unit_price'] ?? 0, ',');
@@ -714,214 +833,19 @@ class SalesInvoices extends Model
                     $sales_invoice_detail['discount_amount'] = GlobalHelper::convertSeparator($sales_invoice_detail['discount_amount'] ?? 0, ',');
                     $sales_invoice_detail['tax_amount'] = GlobalHelper::convertSeparator($sales_invoice_detail['tax_amount'] ?? 0, ',');
 
-                    $subtotal = $sales_invoice_detail['unit_price'] * $sales_invoice_detail['qty'];
-
-                    if ($sales_invoice_detail['discount_type'] == 'amount') {
-                        $subtotal = $subtotal - $sales_invoice_detail['discount_amount'];
-                    } else {
-                        $subtotal = $subtotal - ($subtotal * ($sales_invoice_detail['discount_percentage'] / 100));
-                    }
-
-                    if (isset($sales_invoice_detail['product_id']) && $sales_invoice_detail['product_id']) {
-                        if (isset($cogs_data[$sales_invoice_detail['product_id']])) {
-                            $cogs_price = $cogs_data[$sales_invoice_detail['product_id']];
-                        }
-                    }
-
-                    $subtotal_cogs = $sales_invoice_detail['qty'] * $cogs_price;
-
-                    if (isset($sales_invoice_detail['product_id']) && $sales_invoice_detail['product_id']) {
-                        if (isset($product_by_ids[$sales_invoice_detail['product_id']]) && $product_by_ids[$sales_invoice_detail['product_id']]) {
-                            $product = $product_by_ids[$sales_invoice_detail['product_id']];
-                        }
-                    }
-
-                    if (isset($sales_invoice_detail['tax_id']) && $sales_invoice_detail['tax_id']) {
-                        if (isset($tax_by_ids[$sales_invoice_detail['tax_id']]) && $tax_by_ids[$sales_invoice_detail['tax_id']]) {
-                            $tax = $tax_by_ids[$sales_invoice_detail['tax_id']];
-                        }
-                    }
-
-                    $total += $subtotal;
-
-                    if ($subtotal > 0) {
-                        if ($product) {
-                            // Only record Sales Revenue, no COGS for unpaid credit invoices
-                            if (intval($product['is_control_stock']) > 0) {
-                                if (!$product['category_cogs_coa']) {
-                                    return response()->json([
-                                        'status' => 'error',
-                                        'message' => 'Akun HPP untuk produk ' . $product['name'] . ' belum diset, harap cek kategori produk, dan cek Akun HPP nya.',
-                                        'data' => null
-                                    ], 400);
-                                }
-
-                                $debit[] = [
-                                    'coa' => $product['category_cogs_coa'],
-                                    // 'coa_name' => $accounting_masters[$product['category_cogs_coa']],
-                                    'value' => $subtotal_cogs,
-                                    'description' => null
-                                ];
-
-                                if (!$product['category_inventory_coa']) {
-                                    return response()->json([
-                                        'status' => 'error',
-                                        'message' => 'Akun Persediaan untuk produk ' . $product['name'] . ' belum diset, harap cek kategori produk, dan cek Akun Persediaan nya.',
-                                        'data' => null
-                                    ], 400);
-                                }
-
-                                $credit[] = [
-                                    'coa' => $product['category_inventory_coa'],
-                                    // 'coa_name' => $accounting_masters[$product['category_inventory_coa']],
-                                    'value' => $subtotal_cogs,
-                                    'description' => null
-                                ];
-
-                                if (!$product['category_sales_coa']) {
-                                    return response()->json([
-                                        'status' => 'error',
-                                        'message' => 'Akun Penjualan untuk produk ' . $product['name'] . ' belum diset, harap cek kategori produk, dan cek Akun Persediaan nya.',
-                                        'data' => null
-                                    ], 400);
-                                }
-
-                                $credit[] = [
-                                    'coa' => ($product['category_sales_coa'] ? $product['category_sales_coa'] : config('default_accounts.sales')),
-                                    // 'coa_name' => $accounting_masters[($product['category_sales_coa'] ? $product['category_sales_coa'] : config('default_accounts.sales'))],
-                                    'value' => $subtotal,
-                                    'description' => null
-                                ];
-                            } else {
-                                $credit[] = [
-                                    'coa' => ($product['category_sales_coa'] ? $product['category_sales_coa'] : config('default_accounts.sales')),
-                                    // 'coa_name' => $accounting_masters[($product['category_sales_coa'] ? $product['category_sales_coa'] : config('default_accounts.sales'))],
-                                    'value' => $subtotal,
-                                    'description' => null
-                                ];
-                            }
-
-                            if ($tax) {
-                                $credit[] = [
-                                    'coa' => $tax['sales_coa'],
-                                    // 'coa_name' => $accounting_masters[$tax['sales_coa']],
-                                    'value' => $main_discount_percentage > 0 ? ($sales_invoice_detail['tax_amount'] - ($sales_invoice_detail['tax_amount'] * $main_discount_percentage/100)) : $sales_invoice_detail['tax_amount'],
-                                    'description' => ''
-                                ];
-                            }
-                        } else {
-                            $credit[] = [
-                                'coa' => $sales_invoice_detail['coa'],
-                                // 'coa_name' => $accounting_masters[$sales_invoice_detail['coa']],
-                                'value' => $subtotal,
-                                'description' => $sales_invoice_detail['service_name']
-                            ];
-
-                            if ($tax) {
-                                $credit[] = [
-                                    'coa' => $tax['sales_coa'],
-                                    // 'coa_name' => $accounting_masters[$tax['sales_coa']],
-                                    'value' => $main_discount_percentage > 0 ? ($sales_invoice_detail['tax_amount'] - ($sales_invoice_detail['tax_amount'] * $main_discount_percentage / 100)) : $sales_invoice_detail['tax_amount'],
-                                    'description' => ''
-                                ];
-                            }
-
-                            $sales_invoice_detail['is_product_unit_convert'] = 0;
-                        }
-                    }
-
-                    if ($product) {
-                        $unit_price = ModelDetailHelper::calculateBaseUnitPrice($sales_invoice_detail['unit_price'], $sales_invoice_detail['qty'], $sales_invoice_detail['base_qty']);
-                        
-                        $product_history = [
-                            'model' => self::class,
-                            'model_id' => $params['id'],
-                            'ref_number' => $old['ref_number'],
-                            'product_id' => $sales_invoice_detail['product_id'],
-                            'product_code' => $sales_invoice_detail['product_code'],
-                            'product_name' => $sales_invoice_detail['product_name'],
-                            'qty' => $sales_invoice_detail['base_qty'],
-                            'type' => 'OUT',
-                            'date' => $params['date'],
-                            'project_id' => $params['project_id'] ?? null,
-                            'project_name' => $params['project_name'] ?? '',
-                            'unit_id' => $sales_invoice_detail['base_unit_id'] ?? null,
-                            'unit_name' => $sales_invoice_detail['unit_name'] ?? '',
-                            'unit_price' => $unit_price ?? 0,
-                            'cogs_price' => $cogs_price ?? null,
-                            'branch_id' => $params['branch_id'] ?? null,
-                            'branch_name' => $params['branch_name'] ?? null,
-                            'currency_id' => $params['currency_id'] ?? null,
-                            'currency_name' => $params['currency_name'] ?? '',
-                            'exchange_rate' => $params['exchange_rate'] ?? 1,
-                            'warehouse_id' => $params['warehouse_id'] ?? null,
-                            'warehouse_name' => $params['warehouse_name'] ?? '',
-                        ];
-                    }
-
                     if (isset($sales_invoice_detail['id']) && $sales_invoice_detail['id']) {
                         $sales_invoice_detail['deleted_at'] = null;
                         unset($sales_invoice_detail['created_at']);
                         SalesInvoiceDetails::onlyTrashed()->where('id', $sales_invoice_detail['id'])->update($sales_invoice_detail);
-                        unset($sales_invoice_details[$key]);
-                        
-                        if ($product) {
-                            $product_history['deleted_at'] = null;
-                            unset($product_history['created_at']);
-                            $product_history['update_by_model'] = true;
-                            ProductHistories::createOrUpdateService($product_history);
-                        }
-                    } else {
-                        if ($product) {
-                            unset($product_history['update_by_model']);
-                            $product_histories[] = $product_history;
-                        }
+                        unset($sales_invoice_details[$key]);   
                     }
 
                     unset($sales_invoice_detail['id']);
                 }
                 
-                ProductHistories::bulkCreate($product_histories);
                 SalesInvoiceDetails::insert($sales_invoice_details);
 
                 $customer = Contacts::where('id', $params['customer_id'])->withTrashed()->first();
-
-                if ($params['payment_type'] == 'credit') {
-                    $accounting_params['description'] = 'Penjualan Kredit dari Pengiriman Barang '.$customer['name'];
-                } else {
-                    $accounting_params['description'] = 'Penjualan Cash dari Supplier '.$customer['name'];
-                }
-
-                $accounting_params['ref_number'] = $old['ref_number'];
-                $accounting_params['date'] = $params['date'];
-                $accounting_params['total'] = $params['total'];
-                $accounting_params['currency_id'] = $params['currency_id'] ?? 0;
-                $accounting_params['currency_name'] = $params['currency_name'] ?? '';
-                $accounting_params['branch_id'] = $params['branch_id'] ?? 0;
-                $accounting_params['branch_name'] = $params['branch_name'] ?? '';
-                $accounting_params['project_id'] = $params['project_id'] ?? 0;
-                $accounting_params['project_name'] = $params['project_name'] ?? '';
-                $accounting_params['exchange_rate'] = $params['exchange_rate'] ?? 1;
-                // $accounting_params['created_by'] = config('user.id');
-                $accounting_params['model_id'] = $params['id'];
-                $accounting_params['model'] = self::class;
-
-                AccountingJournals::writeAccounting($debit, $credit, $accounting_params, $accounting_params['model']);
-
-                // DepositHistories::where('model_id', $params['id'])->where('model', 'SalesInvoices')->where('type', 'out')->delete();
-
-                // if ($deposit_histories) {
-                //     foreach($deposit_histories as  &$deposit_history){
-                //         $deposit_history['date'] = $params['date'];
-                //         $deposit_history['model'] = 'SalesInvoices';
-                //         $deposit_history['model_id'] = $update->id;
-                //         $deposit_history['type'] = 'out';
-                //         $deposit_history['created_at'] = date('Y-m-d');
-                //         $deposit_history['updated_at'] = date('Y-m-d');
-                //     }
-    
-                //     DepositHistories::insert($deposit_histories);
-                // }
 
                 if (empty($params['is_draft'])) {
                     $bonus_points = ContactGroups::generateRewardPoints($customer->contact_group_id, [
@@ -968,223 +892,22 @@ class SalesInvoices extends Model
         $params['is_from_pos'] = 1;
 
         $save = self::create($params);
-
-        $main_discount_percentage = 0;
-
-        if (floatval($params['discount_amount']) && $params['discount_amount']) {
-            $main_discount_percentage = $params['discount_amount'] / $params['subtotal'] * 100;
-        }
         
         if ($save) {
-            $total = 0;
-            $product_histories = [];
-            // $product_by_ids = [];
-            $cogs_data = [];
-
-            // AMBIL NILAI HPP
-            $get_cogs = ProductClosings::getCOGS($cogs_params);
-    
-            foreach ($get_cogs as $get_cogs_row) {
-                $cogs_data[$get_cogs_row['product_id']] = $get_cogs_row['cogs'];
-            }
-            
             foreach ($sales_invoice_details as &$sales_invoice_detail) {
-                $cogs_price = 0;
-                $subtotal_cogs = 0;
-                $product = null;
-                $tax = null;
-
                 $sales_invoice_detail['sales_invoice_id'] = $save->id;
                 $sales_invoice_detail['ref_number'] = $params['ref_number'];
                 $sales_invoice_detail['qty'] = GlobalHelper::convertSeparator($sales_invoice_detail['qty'] ?? 0, ',');
                 $sales_invoice_detail['unit_price'] = GlobalHelper::convertSeparator($sales_invoice_detail['unit_price'] ?? 0, ',');
                 $sales_invoice_detail['discount_amount'] = GlobalHelper::convertSeparator($sales_invoice_detail['discount_amount'] ?? 0, ',');
                 $sales_invoice_detail['tax_amount'] = GlobalHelper::convertSeparator($sales_invoice_detail['tax_amount'] ?? 0, ',');
-
-                $subtotal = $sales_invoice_detail['unit_price'] * $sales_invoice_detail['qty'];
-
-                if ($sales_invoice_detail['discount_type'] == 'amount') {
-                    $subtotal = $subtotal - $sales_invoice_detail['discount_amount'];
-                } else {
-                    $subtotal = $subtotal - ($subtotal * ($sales_invoice_detail['discount_percentage'] / 100));
-                }
-
-                if (isset($sales_invoice_detail['product_id']) && $sales_invoice_detail['product_id']) {
-                    if (isset($cogs_data[$sales_invoice_detail['product_id']])) {
-                        $cogs_price = $cogs_data[$sales_invoice_detail['product_id']];
-                    }
-                }
-
-                if (isset($sales_invoice_detail['product_id']) && $sales_invoice_detail['product_id']) {
-                    if (isset($product_by_ids[$sales_invoice_detail['product_id']]) && $product_by_ids[$sales_invoice_detail['product_id']]) {
-                        $product = $product_by_ids[$sales_invoice_detail['product_id']];
-                    }
-                }
-
-                if (isset($sales_invoice_detail['tax_id']) && $sales_invoice_detail['tax_id']) {
-                    if (isset($tax_by_ids[$sales_invoice_detail['tax_id']]) && $tax_by_ids[$sales_invoice_detail['tax_id']]) {
-                        $tax = $tax_by_ids[$sales_invoice_detail['tax_id']];
-                    }
-                }
-
-                $subtotal_cogs = $sales_invoice_detail['qty'] * $cogs_price;
-                $total += $subtotal;
-
-                if ($subtotal > 0) {
-                    if ($product) {
-                        // Only record Sales Revenue, no COGS for unpaid credit invoices
-                        if (intval($product['is_control_stock']) > 0) {
-                            if (!$product['category_cogs_coa']) {
-                                return response()->json([
-                                    'status' => 'error',
-                                    'message' => 'Akun HPP untuk produk ' . $product['name'] . ' belum diset, harap cek kategori produk, dan cek Akun HPP nya.',
-                                    'data' => null
-                                ], 400);
-                            }
-
-                            $debit[] = [
-                                'coa' => $product['category_cogs_coa'],
-                                // 'coa_name' => $accounting_masters[$product['category_cogs_coa']],
-                                'value' => $subtotal_cogs,
-                                'description' => null
-                            ];
-
-                            if (!$product['category_inventory_coa']) {
-                                return response()->json([
-                                    'status' => 'error',
-                                    'message' => 'Akun Persediaan untuk produk ' . $product['name'] . ' belum diset, harap cek kategori produk, dan cek Akun Persediaan nya.',
-                                    'data' => null
-                                ], 400);
-                            }
-
-                            $credit[] = [
-                                'coa' => $product['category_inventory_coa'],
-                                // 'coa_name' => $accounting_masters[$product['category_inventory_coa']],
-                                'value' => $subtotal_cogs,
-                                'description' => null
-                            ];
-
-                            if (!$product['category_sales_coa']) {
-                                return response()->json([
-                                    'status' => 'error',
-                                    'message' => 'Akun Penjualan untuk produk ' . $product['name'] . ' belum diset, harap cek kategori produk, dan cek Akun Persediaan nya.',
-                                    'data' => null
-                                ], 400);
-                            }
-
-                            $credit[] = [
-                                'coa' => ($product['category_sales_coa'] ? $product['category_sales_coa'] : config('default_accounts.sales')),
-                                // 'coa_name' => $accounting_masters[($product['category_sales_coa'] ? $product['category_sales_coa'] : config('default_accounts.sales'))],
-                                'value' => $subtotal,
-                                'description' => null
-                            ];
-                        } else {
-                            $credit[] = [
-                                'coa' => ($product['category_sales_coa'] ? $product['category_sales_coa'] : config('default_accounts.sales')),
-                                // 'coa_name' => $accounting_masters[($product['category_sales_coa'] ? $product['category_sales_coa'] : config('default_accounts.sales'))],
-                                'value' => $subtotal,
-                                'description' => null
-                            ];
-                        }
-
-                        if ($tax) {
-                            $credit[] = [
-                                'coa' => $tax['sales_coa'],
-                                // 'coa_name' => $accounting_masters[$tax['sales_coa']],
-                                'value' => $main_discount_percentage > 0 ? ($sales_invoice_detail['tax_amount'] - ($sales_invoice_detail['tax_amount'] * $main_discount_percentage/100)) : $sales_invoice_detail['tax_amount'],
-                                'description' => ''
-                            ];
-                        }
-                    } else {
-                        $sales_invoice_detail['is_product_unit_convert'] = 0;
-
-                        $credit[] = [
-                            'coa' => $sales_invoice_detail['coa'],
-                            // 'coa_name' => $accounting_masters[$sales_invoice_detail['coa']],
-                            'value' => $subtotal,
-                            'description' => $sales_invoice_detail['service_name']
-                        ];
-
-                        if ($tax) {
-                            $credit[] = [
-                                'coa' => $tax['sales_coa'],
-                                // 'coa_name' => $accounting_masters[$tax['sales_coa']],
-                                'value' => $main_discount_percentage > 0 ? ($sales_invoice_detail['tax_amount'] - ($sales_invoice_detail['tax_amount'] * $main_discount_percentage/100)) : $sales_invoice_detail['tax_amount'],
-                                'description' => ''
-                            ];
-                        }
-                    }
-                }
-
-                if ($params['status'] != 'draft') {
-                    if ($product) {
-                        $product_histories[] = [
-                            'model' => self::class,
-                            'model_id' => $save->id,
-                            'ref_number' => $params['ref_number'],
-                            'product_id' => $sales_invoice_detail['product_id'],
-                            'product_code' => $sales_invoice_detail['product_code'],
-                            'product_name' => $sales_invoice_detail['product_name'],
-                            'qty' => $sales_invoice_detail['qty'],
-                            'date' => $params['date'],
-                            'type' => 'OUT',
-                            'project_id' => $params['project_id'] ?? null,
-                            'project_name' => $params['project_name'] ?? '',
-                            'unit_id' => $sales_invoice_detail['unit_id'] ?? null,
-                            'unit_name' => $sales_invoice_detail['unit_name'] ?? '',
-                            'unit_price' => $sales_invoice_detail['unit_price'] ?? null,
-                            'cogs_price' => $cogs_price ?? null,
-                            'branch_id' => $params['branch_id'] ?? null,
-                            'branch_name' => $params['branch_name'] ?? null,
-                            'currency_id' => $params['currency_id'] ?? null,
-                            'currency_name' => $params['currency_name'] ?? '',
-                            'exchange_rate' => $params['exchange_rate'] ?? 1,
-                            'warehouse_id' => $params['warehouse_id'] ?? null,
-                            'warehouse_name' => $params['warehouse_name'] ?? '',
-                            'product_sku_id' => $params['product_sku_id'] ?? null
-                        ];
-                    }
-                }
             }
-
-            ProductHistories::bulkCreate($product_histories);
 
             SalesInvoiceDetails::insert($sales_invoice_details);
 
             if ($params['status'] != 'draft') {
                 $customer = Contacts::where('id', $params['customer_id'])->withTrashed()->first();
-    
-                $accounting_params['number'] = AutoNumberHelper::initGenerateNumber('JU', $params['date']);
-                $accounting_params['ref_number'] = $params['ref_number'];
-                $accounting_params['date'] = $params['date'];
-                $accounting_params['total'] = $params['total'];
-                $accounting_params['currency_id'] = $params['currency_id'] ?? 0;
-                $accounting_params['currency_name'] = $params['currency_name'] ?? '';
-                $accounting_params['branch_id'] = $params['branch_id'] ?? 0;
-                $accounting_params['branch_name'] = $params['branch_name'] ?? '';
-                $accounting_params['project_id'] = $params['project_id'] ?? 0;
-                $accounting_params['project_name'] = $params['project_name'] ?? '';
-                $accounting_params['exchange_rate'] = $params['exchange_rate'] ?? 1;
-                // $accounting_params['created_by'] = config('user.id');
-                $accounting_params['description'] = 'Invoice Penjualan ke ' . $customer['name'];
-                $accounting_params['model_id'] = $save['id'];
-                $accounting_params['model'] = self::class;
-    
-                AccountingJournals::writeAccounting($debit, $credit, $accounting_params, $accounting_params['model']);
-                    
-                // if (!empty($deposit_histories)) {
-                //     foreach($deposit_histories as  &$deposit_history){
-                //         $deposit_history['date'] = $params['date'];
-                //         $deposit_history['model'] = 'SalesInvoices';
-                //         $deposit_history['model_id'] = $save->id;
-                //         $deposit_history['type'] = 'out';
-                //         $deposit_history['created_at'] = date('Y-m-d');
-                //         $deposit_history['updated_at'] = date('Y-m-d');
-                //     }
-        
-                //     DepositHistories::insert($deposit_histories);
-                // }
-            
+
                 if (empty($params['is_draft'])) {
                     $bonus_points = ContactGroups::generateRewardPoints($customer->contact_group_id, [
                         'total_purchase' => $params['total'],
@@ -1235,7 +958,7 @@ class SalesInvoices extends Model
             }
         }
 
-        DB::commit();
+        DB::connection('pgsql_companies')->commit();
         return response()->json([
             'status' => 'success',
             'message' => 'Succesfully Added Data',

@@ -4,6 +4,7 @@ namespace App\Http\Middleware;
 
 use App\Helpers\DateHelper;
 use App\Helpers\GlobalHelper;
+use App\Models\Companies\v1\Branches;
 use App\Models\Companies\v1\Users;
 use App\Models\Companies\v1\GeneralSettings;
 use App\Models\Companies\v1\DefaultAccounts;
@@ -108,6 +109,14 @@ class Companies
 
             foreach ($settings->toArray() as $row) {
                 config(['general_settings.' . $row['key'] => $row['value']]);
+
+                if ($row['type'] == 'App\Models\Branches') {
+                    config(['general_settings.branch_name' => 'N/A']);
+                    $branch = Branches::select('id', 'name')->where('id', $row['value'])->first();
+                    if ($branch) {
+                        config(['general_settings.branch_name' => $branch['name']]);
+                    }
+                }
             }
 
             $default_accounts = DefaultAccounts::get();

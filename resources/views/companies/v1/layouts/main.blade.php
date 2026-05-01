@@ -2619,9 +2619,10 @@
                 dropdownCssClass: "select2-sm",
                 minimumResultsForSearch: '',
                 ajax: {
-                    url: BASE_URL + "/api/units?per_page=10&order[id]=desc&is_active=1" + filter,
+                    url: BASE_URL + "/api/v1/units?per_page=10&order[id]=desc&is_active=1" + filter,
                     headers: {
                         'Authorization': TOKEN,
+                        'company-id': COMPANY_ID
                     },
                     dataType: "json",
                     type: "GET",

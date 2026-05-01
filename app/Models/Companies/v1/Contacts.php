@@ -181,7 +181,29 @@ class Contacts extends Model
 				'created_at' => ['column' => $model->table.'.created_at', 'alias' => 'created_at', 'type' => 'date'],
 				'updated_at' => ['column' => $model->table.'.updated_at', 'alias' => 'updated_at', 'type' => 'date'],
 				'deleted_at' => ['column' => $model->table.'.deleted_at', 'alias' => 'deleted_at', 'type' => 'date'],
-            ],
+                'point_balance' => [
+                    'column' => '(
+                        COALESCE((
+                            SELECT SUM(ph.point)
+                            FROM point_histories ph
+                            WHERE ph.contact_id = contacts.id
+                            AND ph.type = \'in\'
+                            AND ph.deleted_at IS NULL
+                        ),0)
+                        -
+                        COALESCE((
+                            SELECT SUM(ph.point)
+                            FROM point_histories ph
+                            WHERE ph.contact_id = contacts.id
+                            AND ph.type = \'out\'
+                            AND ph.deleted_at IS NULL
+                        ),0)
+                    )',
+                    'alias' => 'point_balance',
+                    'type' => 'int',
+                    'is_raw' => true
+                ],
+                ],
             'join' => [
 
             ],
