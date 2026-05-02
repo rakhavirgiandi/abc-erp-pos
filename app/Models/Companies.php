@@ -620,7 +620,6 @@ class Companies extends Model
 
     public static function databaseStarter($params, $request)
     {
-        dd($params);
         if (!NetworkHelper::isConnected()) {
             return;
         }
@@ -632,15 +631,18 @@ class Companies extends Model
         DB::connection('pgsql')->beginTransaction();
 
         try {
-            $companyPayload = $params['company'] ?? null;
-            $subscriptionPayload = $params['subscription'] ?? null;
+            $company_payload = $params['company'] ?? null;
+            $subscription_payload = $params['subscription'] ?? null;
             $slug = null;
 
-            if (!$companyPayload || !$subscriptionPayload) {
+            if (!$company_payload || !$subscription_payload) {
                 throw new \Exception('Invalid payload: company or subscription missing');
             }
 
-            $company = Companies::join('company_credentials', 'company_credentials.company_id', '=', 'companies.id')->where('companies.id', $params['company_id'])->select('companies.*', 'company_credentials.*')->first();
+            $company = Companies::join('company_credentials', 'company_credentials.company_id', '=', 'companies.id')
+                ->where('companies.id', $params['company_id'])
+                ->select('companies.*', 'company_credentials.*')
+                ->first();
 
             /**
              * =====================================
@@ -649,23 +651,23 @@ class Companies extends Model
              */
             if (!$company) {
                 $company = Companies::create([
-                    'id' => $companyPayload['id'],
-                    'user_id' => $companyPayload['user_id'],
-                    'name' => $companyPayload['name'],
-                    'address' => $companyPayload['address'],
-                    'phone' => $companyPayload['phone'],
-                    'city' => $companyPayload['city'],
-                    'email' => $companyPayload['email'],
-                    'tax_id_number' => $companyPayload['tax_id_number'],
-                    'tax_id_address' => $companyPayload['tax_id_address'],
-                    'business_type' => $companyPayload['business_type'],
-                    'main_project_quota' => $companyPayload['main_project_quota'],
-                    'main_lot_quota' => $companyPayload['main_lot_quota'],
-                    'is_storefront' => $companyPayload['is_storefront'],
-                    'domain' => $companyPayload['domain'],
-                    'subdomain' => $companyPayload['subdomain'],
-                    'storefront_project_quota' => $companyPayload['storefront_project_quota'],
-                    'number_of_branches' => $companyPayload['number_of_branches'],
+                    'id' => $company_payload['id'],
+                    'user_id' => $company_payload['user_id'],
+                    'name' => $company_payload['name'],
+                    'address' => $company_payload['address'],
+                    'phone' => $company_payload['phone'],
+                    'city' => $company_payload['city'],
+                    'email' => $company_payload['email'],
+                    'tax_id_number' => $company_payload['tax_id_number'],
+                    'tax_id_address' => $company_payload['tax_id_address'],
+                    'business_type' => $company_payload['business_type'],
+                    'main_project_quota' => $company_payload['main_project_quota'],
+                    'main_lot_quota' => $company_payload['main_lot_quota'],
+                    'is_storefront' => $company_payload['is_storefront'],
+                    'domain' => $company_payload['domain'],
+                    'subdomain' => $company_payload['subdomain'],
+                    'storefront_project_quota' => $company_payload['storefront_project_quota'],
+                    'number_of_branches' => $company_payload['number_of_branches'],
                 ]);
 
                 /**
@@ -686,12 +688,12 @@ class Companies extends Model
                  * =====================================
                  */
                 Subscriptions::create([
-                    'id' => $subscriptionPayload['id'],
-                    'company_id' => $subscriptionPayload['company_id'],
-                    'start_at' => $subscriptionPayload['start_at'],
-                    'finish_at' => $subscriptionPayload['finish_at'],
-                    'status' => strtolower($subscriptionPayload['status']),
-                    'referral_code' => $subscriptionPayload['referral_code'],
+                    'id' => $subscription_payload['id'],
+                    'company_id' => $subscription_payload['company_id'],
+                    'start_at' => $subscription_payload['start_at'],
+                    'finish_at' => $subscription_payload['finish_at'],
+                    'status' => strtolower($subscription_payload['status']),
+                    'referral_code' => $subscription_payload['referral_code'],
                 ]);
 
                 /**
@@ -701,13 +703,13 @@ class Companies extends Model
                  */
                 SubscriptionHistories::create([
                     'id' => Str::orderedUuid()->toString(),
-                    'subscription_id' => $subscriptionPayload['id'],
-                    'company_id' => $subscriptionPayload['company_id'],
-                    'start_at' => $subscriptionPayload['start_at'],
-                    'finish_at' => $subscriptionPayload['finish_at'],
-                    'status' => strtolower($subscriptionPayload['status']),
-                    'type' => strtolower($subscriptionPayload['status']),
-                    'referral_code' => $subscriptionPayload['referral_code'],
+                    'subscription_id' => $subscription_payload['id'],
+                    'company_id' => $subscription_payload['company_id'],
+                    'start_at' => $subscription_payload['start_at'],
+                    'finish_at' => $subscription_payload['finish_at'],
+                    'status' => strtolower($subscription_payload['status']),
+                    'type' => strtolower($subscription_payload['status']),
+                    'referral_code' => $subscription_payload['referral_code'],
                 ]);
 
                 /**
@@ -715,7 +717,7 @@ class Companies extends Model
                  * DATABASE SLUG SAFE
                  * =====================================
                  */
-                $slug = 'erp_' . preg_replace('/[^a-z0-9]/', '', strtolower($companyPayload['name'])) . '_' . date('ymdHis');
+                $slug = $params['slug'];
 
                 /**
                  * CHECK DB EXISTS
@@ -732,12 +734,12 @@ class Companies extends Model
                 CompanyCredentials::create([
                     'id' => Str::orderedUuid()->toString(),
                     'company_id' => $params['company_id'],
-                    'db_driver' => config('default_db_driver'),
-                    'db_host' => config('default_db_host'),
-                    'db_username' => config('default_db_user'),
-                    'db_password' => config('default_db_password'),
+                    'db_driver' => config('database.connections.pgsql.driver'),
+                    'db_host' => config('database.connections.pgsql.host'),
+                    'db_username' => config('database.connections.pgsql.username'),
+                    'db_password' => config('database.connections.pgsql.password'),
                     'db_database' => $slug,
-                    'db_port' => config('default_db_port')
+                    'db_port' => config('database.connections.pgsql.port')
                 ]);
 
                 DB::connection('pgsql')->commit();
@@ -752,11 +754,11 @@ class Companies extends Model
              */
             config(['database.connections.pgsql_companies' => [
                 'driver' => 'pgsql',
-                'host' => config('default_db_host'),
-                'port' => config('default_db_port'),
+                'host' => config('database.connections.pgsql.host'),
+                'port' => config('database.connections.pgsql.port'),
                 'database' => $slug ?: $company->db_database,
-                'username' => config('default_db_user'),
-                'password' => config('default_db_password'),
+                'username' => config('database.connections.pgsql.username'),
+                'password' => config('database.connections.pgsql.password'),
                 'charset' => 'utf8',
                 'prefix' => '',
                 'prefix_indexes' => true,
@@ -781,7 +783,7 @@ class Companies extends Model
             }
 
             if ($result == 0) {
-                $user = Users::find($companyPayload['user_id']);
+                $user = Users::find($company_payload['user_id']);
 
                 if ($user) {
                     $company_user = CompanyUsers::where('email', $user->email)->first();
