@@ -164,7 +164,7 @@ class Companies
                 config(['default_accounts.' . $row['key'] => $row['value']]);
             }
 
-            $user_settings = UserSettings::get();
+            $user_settings = UserSettings::where('user_id', '=', $user['id'])->get();
 
             foreach ($user_settings->toArray() as $row) {
                 config(['local_user_settings.' . $row['key'] => $row['value']]);
