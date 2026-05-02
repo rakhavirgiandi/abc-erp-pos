@@ -275,11 +275,10 @@ class UserCompanies extends Model
 
         $company_credentials = CompanyCredentials::select('id', 'db_database')->whereIn('company_id', $company_ids)->get()->pluck('db_database', 'id')->toArray();
 
-        dd($company_credentials);
-
         foreach ($results as $key => $row) {
             $results[$key]['slug'] = null;
 
+            dd($row['company_id'], $company_credentials[$row['company_id']]);
             if (isset($company_credentials[$row['company_id']]) && $company_credentials[$row['company_id']]) {
                 $results[$key]['slug'] = $company_credentials[$row['company_id']];
             }
