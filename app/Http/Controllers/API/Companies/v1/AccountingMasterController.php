@@ -133,6 +133,9 @@ class AccountingMasterController extends Controller
         $page = 1;
         $perPage = 500;
 
+        $model = new AccountingMasters();
+        $fillable = array_flip($model->getFillable());
+
         do {
             $url = config('services.admin_credentials.server_url') . "/api/v1/accounting_masters?page={$page}&per_page={$perPage}&is_simple=true";
             $result = NetworkHelper::curlWithToken($url);
@@ -149,11 +152,11 @@ class AccountingMasterController extends Controller
 
                 $insert_coa = [];
                 foreach ($rows as $row) {
-                    
                     if (!isset($row['coa'])) continue;
                     $coa = $exist_coa[$row['coa']] ?? null;
                     
-                    
+                    $row = array_intersect_key($row, $fillable);
+
                     if ($coa) {
                         unset($row['id']);
                         $coa->update($row); // UPDATE

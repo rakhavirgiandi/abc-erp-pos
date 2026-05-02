@@ -57,7 +57,10 @@ class NetworkHelper
         $result = json_decode($response, true);
 
         if (!isset($result['access_token'])) {
-            throw new \Exception('Failed to get token');
+            return [
+                'status' => 'error',
+                'message' => 'Failed to get token'
+            ];
         }
 
         $token = $result['access_token'];
@@ -189,7 +192,11 @@ class NetworkHelper
         if (curl_errno($curl)) {
             $error = curl_error($curl);
             curl_close($curl);
-            throw new \Exception($error);
+
+            return [
+                'status' => 'error',
+                'message' => 'Curl error: ' . $error
+            ];
         }
 
         $httpCode = curl_getinfo($curl, CURLINFO_HTTP_CODE);

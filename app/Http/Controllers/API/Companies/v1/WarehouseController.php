@@ -133,6 +133,9 @@ class WarehouseController extends Controller
         $page = 1;
         $perPage = 500;
 
+        $model = new Warehouses();
+        $fillable = array_flip($model->getFillable());
+
         do {
             $url = config('services.admin_credentials.server_url') . "/api/v1/warehouses?page={$page}&per_page={$perPage}&is_simple=true";
             $result = NetworkHelper::curlWithToken($url);
@@ -149,20 +152,17 @@ class WarehouseController extends Controller
 
                 $insert_warehouse = [];
                 foreach ($rows as $row) {
-                    
                     if (!isset($row['id'])) continue;
                     $warehouse = $exist_warehouse[$row['id']] ?? null;
+                    $id = $row['id'];
                     
-                    unset(
-                        $row['country_name'], 
-                        $row['province_name'],
-                        $row['city_name'],
-                    );
+                    $row = array_intersect_key($row, $fillable);
                     
                     if ($warehouse) {
                         unset($row['id']);
                         $warehouse->update($row); // UPDATE
                     } else {
+                        $row['id'] = $id;
                         $insert_warehouse[] = $row; // INSERT
                     }
                 }

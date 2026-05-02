@@ -117,7 +117,7 @@ class ContactController extends Controller
         return json_encode($json_data);
     }
 
-        public static function syncToLocal(Request $request)
+    public static function syncToLocal(Request $request)
     {
         if (!NetworkHelper::isConnected()) {
             $params = $request->all();
@@ -132,6 +132,9 @@ class ContactController extends Controller
 
         $page = 1;
         $perPage = 500;
+
+        $model = new Contacts();
+        $fillable = array_flip($model->getFillable());
 
         do {
             $url = config('services.admin_credentials.server_url') . "/api/v1/contacts?is_customer=1&page={$page}&per_page={$perPage}&is_simple=true";
@@ -149,23 +152,17 @@ class ContactController extends Controller
 
                 $insert_contact = [];
                 foreach ($rows as $row) {
-                    
                     if (!isset($row['id'])) continue;
                     $contact = $exist_contact[$row['id']] ?? null;
-                    
-                    unset(
-                        $row['country_name'], 
-                        $row['province_name'],
-                        $row['city_name'],
-                        $row['contact_group_name'],
-                        $row['currency_name'],
-                        $row['point_balance'],
-                    );
+                    $id = $row['id'];
+
+                    $row = array_intersect_key($row, $fillable);
                     
                     if ($contact) {
                         unset($row['id']);
                         $contact->update($row); // UPDATE
                     } else {
+                        $row['id'] = $id;
                         $insert_contact[] = $row; // INSERT
                     }
                 }

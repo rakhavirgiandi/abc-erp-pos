@@ -133,6 +133,9 @@ class BaseUnitConversionController extends Controller
         $page = 1;
         $perPage = 500;
 
+        $model = new BaseUnitConversions();
+        $fillable = array_flip($model->getFillable());
+
         do {
             $url = config('services.admin_credentials.server_url') . "/api/v1/base_unit_conversions?page={$page}&per_page={$perPage}&is_simple=true";
             $result = NetworkHelper::curlWithToken($url);
@@ -149,19 +152,17 @@ class BaseUnitConversionController extends Controller
 
                 $insert_base_unit = [];
                 foreach ($rows as $row) {
-                    
                     if (!isset($row['id'])) continue;
                     $base_unit = $exist_base_unit[$row['id']] ?? null;
-                    
-                    unset(
-                        $row['to_unit_name'], 
-                        $row['from_unit_name']
-                    );
+                    $id = $row['id'];
+
+                    $row = array_intersect_key($row, $fillable);
                     
                     if ($base_unit) {
                         unset($row['id']);
                         $base_unit->update($row); // UPDATE
                     } else {
+                        $row['id'] = $id;
                         $insert_base_unit[] = $row; // INSERT
                     }
                 }
@@ -170,7 +171,7 @@ class BaseUnitConversionController extends Controller
                     BaseUnitConversions::insert($insert_base_unit);
                 }
 
-                DB::connection('pgsql_companies')->statement("SELECT SETVAL('base_unit_convertions_id_seq', COALESCE((SELECT MAX(id) + 1 FROM base_unit_conversions), 1))");
+                DB::connection('pgsql_companies')->statement("SELECT SETVAL('base_unit_conversions_id_seq', COALESCE((SELECT MAX(id) + 1 FROM base_unit_conversions), 1))");
                 DB::connection('pgsql_companies')->commit();
 
             } catch (\Exception $e) {

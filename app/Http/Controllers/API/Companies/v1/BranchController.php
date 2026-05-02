@@ -117,7 +117,7 @@ class BranchController extends Controller
         return json_encode($json_data);
     }
 
-        public static function syncToLocal(Request $request)
+    public static function syncToLocal(Request $request)
     {
         if (!NetworkHelper::isConnected()) {
             $params = $request->all();
@@ -132,6 +132,9 @@ class BranchController extends Controller
 
         $page = 1;
         $perPage = 500;
+
+        $model = new Branches();
+        $fillable = array_flip($model->getFillable());
 
         do {
             $url = config('services.admin_credentials.server_url') . "/api/v1/branches?page={$page}&per_page={$perPage}&is_simple=true";
@@ -149,16 +152,17 @@ class BranchController extends Controller
 
                 $insert_branch = [];
                 foreach ($rows as $row) {
-                    
                     if (!isset($row['id'])) continue;
                     $branch = $exist_branch[$row['id']] ?? null;
-                    
-                    unset($row['branch_head_name']);
+                    $id = $row['id'];
+
+                    $row = array_intersect_key($row, $fillable);
                     
                     if ($branch) {
                         unset($row['id']);
                         $branch->update($row); // UPDATE
                     } else {
+                        $row['id'] = $id;
                         $insert_branch[] = $row; // INSERT
                     }
                 }

@@ -137,6 +137,9 @@ class UserController extends Controller
         $page = 1;
         $perPage = 500;
 
+        $model = new Users();
+        $fillable = array_flip($model->getFillable());
+
         do {
             $url = config('services.admin_credentials.server_url') . "/api/v1/users?page={$page}&per_page={$perPage}&is_simple=true";
             $result = NetworkHelper::curlWithToken($url);
@@ -155,8 +158,10 @@ class UserController extends Controller
 
                 foreach ($rows as $row) {
                     if (!isset($row['email'])) continue;
-
                     $user = $existing_users[$row['email']] ?? null;
+                    $id = $row['id'];
+
+                    $row = array_intersect_key($row, $fillable);
 
                     if ($user) {
                         unset($row['id']);
@@ -176,6 +181,7 @@ class UserController extends Controller
                             $row['password'] = bcrypt($row['password']);
                         }
 
+                        $row['id'] = $id;
                         $row['username'] = $row['email'];
 
                         $insert[] = $row;

@@ -133,6 +133,9 @@ class ProductHistoryController extends Controller
         $page = 1;
         $perPage = 500;
 
+        $model = new ProductHistories();
+        $fillable = array_flip($model->getFillable());
+
         $warehouse_id = config('general_settings.default_warehouse') ?? '';
         $period = now()->format('Y-m');
 
@@ -148,26 +151,27 @@ class ProductHistoryController extends Controller
 
             try {
                 $ids = collect($rows)->pluck('id')->filter()->toArray();
-                $exist_bank = ProductHistories::whereIn('id', $ids)->get()->keyBy('id');
+                $exist_history = ProductHistories::whereIn('id', $ids)->get()->keyBy('id');
+                $id = $row['id'];
 
-                $insert_bank = [];
+                $insert_history = [];
                 foreach ($rows as $row) {
-                    
                     if (!isset($row['id'])) continue;
-                    $bank = $exist_bank[$row['id']] ?? null;
+                    $history = $exist_history[$row['id']] ?? null;
                     
-                    unset($row['id']);
-                    unset($row['coa_name']);
+                    $row = array_intersect_key($row, $fillable);
                     
-                    if ($bank) {
-                        $bank->update($row); // UPDATE
+                    if ($history) {
+                        unset($row['id']);
+                        $history->update($row); // UPDATE
                     } else {
-                        $insert_bank[] = $row; // INSERT
+                        $row['id'] = $id;
+                        $insert_history[] = $row; // INSERT
                     }
                 }
 
-                if (!empty($insert_bank)) {
-                    ProductHistories::insert($insert_bank);
+                if (!empty($insert_history)) {
+                    ProductHistories::insert($insert_history);
                 }
 
                 DB::connection('pgsql_companies')->statement("SELECT SETVAL('product_histories_id_seq', COALESCE((SELECT MAX(id) + 1 FROM product_histories), 1))");
@@ -177,7 +181,7 @@ class ProductHistoryController extends Controller
                 DB::connection('pgsql_companies')->rollBack();
                 return response()->json([
                     'status' => 'error',
-                    'message' => 'Gagal sync bank',
+                    'message' => 'Gagal sync history',
                     'error' => $e->getMessage()
                 ], 500);
             }
@@ -188,7 +192,7 @@ class ProductHistoryController extends Controller
 
         return response()->json([
             'status' => 'success',
-            'message' => 'Sync bank berhasil',
+            'message' => 'Sync history berhasil',
         ]);
     }
 }

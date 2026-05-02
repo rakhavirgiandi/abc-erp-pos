@@ -133,6 +133,9 @@ class TaxController extends Controller
         $page = 1;
         $perPage = 500;
 
+        $model = new Taxes();
+        $fillable = array_flip($model->getFillable());
+
         do {
             $url = config('services.admin_credentials.server_url') . "/api/v1/taxes?page={$page}&per_page={$perPage}&is_simple=true";
             $result = NetworkHelper::curlWithToken($url);
@@ -151,16 +154,15 @@ class TaxController extends Controller
                 foreach ($rows as $row) {
                     if (!isset($row['id'])) continue;
                     $tax = $exist_tax[$row['id']] ?? null;
+                    $id = $row['id'];
                     
-                    unset(
-                        $row['purchase_coa_name'], 
-                        $row['sales_coa_name'],
-                    );
+                    $row = array_intersect_key($row, $fillable);
                     
                     if ($tax) {
                         unset($row['id']);
                         $tax->update($row); // UPDATE
                     } else {
+                        $row['id'] = $id;
                         $insert_tax[] = $row; // INSERT
                     }
                 }

@@ -133,6 +133,9 @@ class MediumController extends Controller
         $page = 1;
         $perPage = 500;
 
+        $model = new Media();
+        $fillable = array_flip($model->getFillable());
+
         do {
             $url = config('services.admin_credentials.server_url') . "/api/v1/media?model=Products&page={$page}&per_page={$perPage}&is_simple=true";
             $result = NetworkHelper::curlWithToken($url);
@@ -143,7 +146,7 @@ class MediumController extends Controller
             DB::connection('pgsql_companies')->beginTransaction();
 
             try {
-                $existing = Media::where('model', 'Products')->keyBy(function ($item) {
+                $existing = Media::where('model', 'Products')->get()->keyBy(function ($item) {
                     return $item->model.'-'.$item->model_id.'-'.$item->filename;
                 });
 
@@ -152,9 +155,11 @@ class MediumController extends Controller
                 foreach ($rows as $row) {
                     $key = $row['model'].'-'.$row['model_id'].'-'.$row['filename'];
                     $media = $existing[$key] ?? null;
-                    unset($row['id']);
 
+                    $row = array_intersect_key($row, $fillable);
+                    
                     if ($media) {
+                        unset($row['id']);
                         $media->update($row);
                     } else {
                         $insert[] = $row;

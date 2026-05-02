@@ -133,6 +133,9 @@ class ContactGroupPointRuleController extends Controller
         $page = 1;
         $perPage = 500;
 
+        $model = new ContactGroupPointRules();
+        $fillable = array_flip($model->getFillable());
+
         do {
             $url = config('services.admin_credentials.server_url') . "/api/v1/contact_group_point_rules?page={$page}&per_page={$perPage}&is_simple=true";
             $result = NetworkHelper::curlWithToken($url);
@@ -149,19 +152,17 @@ class ContactGroupPointRuleController extends Controller
 
                 $insert_point_rules = [];
                 foreach ($rows as $row) {
-                    
                     if (!isset($row['id'])) continue;
                     $point_rules = $exist_point_rules[$row['id']] ?? null;
+                    $id = $row['id'];
                     
-                    unset(
-                        $row['product_name'],
-                        $row['contact_group_name'],
-                    );
+                    $row = array_intersect_key($row, $fillable);
                     
                     if ($point_rules) {
                         unset($row['id']);
                         $point_rules->update($row); // UPDATE
                     } else {
+                        $row['id'] = $id;
                         $insert_point_rules[] = $row; // INSERT
                     }
                 }

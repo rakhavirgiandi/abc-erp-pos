@@ -134,6 +134,9 @@ class ProductUnitConversionController extends Controller
         $page = 1;
         $perPage = 500;
 
+        $model = new ProductUnitConversions();
+        $fillable = array_flip($model->getFillable());
+
         do {
             $url = config('services.admin_credentials.server_url') . "/api/v1/product_unit_conversions?page={$page}&per_page={$perPage}&is_simple=true";
             $result = NetworkHelper::curlWithToken($url);
@@ -160,9 +163,7 @@ class ProductUnitConversionController extends Controller
                     if (!$product) continue;
                     
                     $row['product_id'] = $product->id;
-                    unset($row['to_unit_name'],);
-                    unset($row['code']);
-                    unset($row['id']);
+                    $row = array_intersect_key($row, $fillable);
 
                     $insert_unit_conversion[] = $row;
                 }
@@ -171,7 +172,7 @@ class ProductUnitConversionController extends Controller
                     ProductUnitConversions::insert($insert_unit_conversion);
                 }
 
-                DB::connection('pgsql_companies')->statement("SELECT SETVAL('product_unit_convertions_id_seq', COALESCE((SELECT MAX(id) + 1 FROM product_unit_conversions), 1))");
+                DB::connection('pgsql_companies')->statement("SELECT SETVAL('product_unit_conversions_id_seq', COALESCE((SELECT MAX(id) + 1 FROM product_unit_conversions), 1))");
                 DB::connection('pgsql_companies')->commit();
 
             } catch (\Exception $e) {

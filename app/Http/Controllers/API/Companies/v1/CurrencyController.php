@@ -133,6 +133,9 @@ class CurrencyController extends Controller
         $page = 1;
         $perPage = 500;
 
+        $model = new Currencies();
+        $fillable = array_flip($model->getFillable());
+
         do {
             $url = config('services.admin_credentials.server_url') . "/api/v1/currencies?page={$page}&per_page={$perPage}&is_simple=true";
             $result = NetworkHelper::curlWithToken($url);
@@ -149,19 +152,17 @@ class CurrencyController extends Controller
 
                 $insert_currency = [];
                 foreach ($rows as $row) {
-                    
                     if (!isset($row['id'])) continue;
                     $currency = $exist_currency[$row['id']] ?? null;
+                    $id = $row['id'];
                     
-                    unset($row['default_receivable_coa_name']);
-                    unset($row['default_payable_coa_name']);
-                    unset($row['default_cash_coa_name']);
-                    unset($row['default_bank_coa_name']);
+                    $row = array_intersect_key($row, $fillable);
                     
                     if ($currency) {
                         unset($row['id']);
                         $currency->update($row); // UPDATE
                     } else {
+                        $row['id'] = $id;
                         $insert_currency[] = $row; // INSERT
                     }
                 }

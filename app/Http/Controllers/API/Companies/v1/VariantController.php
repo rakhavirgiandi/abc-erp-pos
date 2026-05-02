@@ -133,6 +133,9 @@ class VariantController extends Controller
         $page = 1;
         $perPage = 500;
 
+        $model = new Variants();
+        $fillable = array_flip($model->getFillable());
+
         do {
             $url = config('services.admin_credentials.server_url') . "/api/v1/variants?page={$page}&per_page={$perPage}&is_simple=true";
             $result = NetworkHelper::curlWithToken($url);
@@ -151,11 +154,15 @@ class VariantController extends Controller
                 foreach ($rows as $row) {
                     if (!isset($row['id'])) continue;
                     $variant = $exist_variant[$row['id']] ?? null;
+                    $id = $row['id'];
+
+                    $row = array_intersect_key($row, $fillable);
 
                     if ($variant) {
                         unset($row['id']);
                         $variant->update($row); // UPDATE
                     } else {
+                        $row['id'] = $id;
                         $insert_variant[] = $row; // INSERT
                     }
                 }
