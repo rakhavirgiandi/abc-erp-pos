@@ -65,7 +65,9 @@ return [
     |
     */
 
-    'timezone' => 'UTC',
+    'timezone' => 'Asia/Jakarta',
+
+    'is_onpremise' => env('IS_ONPREMISE', false),
 
     /*
     |--------------------------------------------------------------------------

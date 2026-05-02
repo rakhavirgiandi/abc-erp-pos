@@ -74,29 +74,37 @@ class NetworkHelper
     }
 
     public static function curlWithToken($url, $server_token = false)
-    {
+    {   
         if ($server_token) {
             $token = Cache::get('server_token');
         } else {
             $token = self::getAccessToken();
         }
 
-        $response = self::executeCurl($url, $token, $httpCode);
+        $response = self::executeCurl($url, $token, $httpCode, $server_token);
 
         // token expired
         if ($httpCode == 401) {
             // ambil token baru
             $token = self::requestNewToken();
             // retry connect
-            $response = self::executeCurl($url, $token, $httpCode);
+            $response = self::executeCurl($url, $token, $httpCode, $server_token);
         }
 
         return json_decode($response, true);
     }
 
-    private static function executeCurl($url, $token, &$httpCode)
+    private static function executeCurl($url, $token, &$httpCode, $server = false)
     {
-        $COMPANY_ID = self::getCompanyId();
+        $headers = [
+            'Authorization: Bearer ' . $token,
+            'Accept: application/json'
+        ];
+
+        if (!$server) {
+            $COMPANY_ID = self::getCompanyId();
+            $headers[] = 'company-id: ' . $COMPANY_ID;
+        }
 
         $curl = curl_init();
 
@@ -105,11 +113,7 @@ class NetworkHelper
             CURLOPT_RETURNTRANSFER => true,
             CURLOPT_TIMEOUT => 30,
             CURLOPT_FOLLOWLOCATION => true,
-            CURLOPT_HTTPHEADER => [
-                'Authorization: Bearer ' . $token,
-                'company-id: ' . $COMPANY_ID,
-                'Accept: application/json'
-            ],
+            CURLOPT_HTTPHEADER => $headers,
         ]);
 
         $response = curl_exec($curl);
@@ -200,8 +204,6 @@ class NetworkHelper
 
     private static function getCompanyId()
     {
-        return config('company_id') 
-            ?? Session::get('_company_id') 
-            ?? request()->header('company-id')[0];
+        return config('company_id') ?? Session::get('_company_id') ?? request()->header('company-id')[0];
     }
 }
