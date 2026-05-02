@@ -197,6 +197,10 @@ class NetworkHelper
 
         $result = json_decode($response, true);
 
+        if (!isset($result['access_token']) || !$result['access_token']) {
+            return $result;
+        }
+
         Cache::put('server_token', $result['access_token'], now()->addDay());
 
         return $result;

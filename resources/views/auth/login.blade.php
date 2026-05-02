@@ -145,7 +145,7 @@
                     setTimeout(function() {
                         Swal.fire({
                             title: "Success",
-                            text: "Login Success!",
+                            html: "Login Success!",
                             icon: "success"
                         }).then((result) => {
                             res.data.access_token = res.access_token;
@@ -171,7 +171,7 @@
                 } else {
                     Swal.fire({
                         title: "Gagal",
-                        text: msg.message,
+                        html: msg.message,
                         showConfirmButton: true,
                         confirmButtonColor: '#0760ef',
                         icon: "error"
@@ -181,7 +181,7 @@
             error: function(request, status, error) {
                 Swal.fire({
                     title: "Gagal",
-                    text: request.responseJSON.message,
+                    html: request.responseJSON.message,
                     showConfirmButton: true,
                     confirmButtonColor: '#0760ef',
                     icon: "error"

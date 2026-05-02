@@ -620,6 +620,7 @@ class Companies extends Model
 
     public static function databaseStarter($params, $request)
     {
+        dd($params);
         if (!NetworkHelper::isConnected()) {
             return;
         }
