@@ -473,7 +473,7 @@
     <script src="{{ asset('assets/libs/datatables.net-buttons/js/dataTables.buttons.min.js')}}"></script>
     <script src="{{ asset('assets/libs/datatables.net-buttons-bs5/js/buttons.bootstrap5.min.js')}}"></script>
     <script src="{{ asset('assets/libs/bootstrap-touchspin/jquery.bootstrap-touchspin.min.js')}}"></script>
-    
+
 <script>
     $(function() {
 
@@ -621,7 +621,8 @@
                     $('#customer-modal-toggle').html('Pelanggan<br><span class="fw-normal">[F7]</span>');
                 },
                 complete: () => {
-                    $('#customer-modal-toggle').prop('disabled', false)
+                    $('#customer-modal-toggle').prop('disabled', false);
+                    setTotalInfo()
                 }
             })
         } 
@@ -3945,6 +3946,7 @@
                         refresh: true
                     })
                 }
+                $('#input-total_payment_edc').numericInput('setValue', getCalculateTotal()?.grandTotal)
                 
                 EDCTabHasBeenOpen = true
             } else {
@@ -4255,6 +4257,7 @@
                     $('#input-total_payment').focus()
                 } else if ($('#payment-method-tab-content .tab-pane.active').attr('id') === 'payment-method-edc-tab') {
                     $('#input-total_payment_edc').focus()
+                    $('#input-total_payment_edc').numericInput('setValue', getCalculateTotal()?.grandTotal)
                 }
 
                 $('#payment-rounded-container').html('');
@@ -4440,7 +4443,9 @@
                         if (result.isConfirmed) {
                             printReceipt(res?.data?.ref_number);
                         }
-                        salesInvoiceSync()
+                        if ('{{ config('app.is_onpremise') }}') {
+                            salesInvoiceSync()
+                        }
                         clear();
                         setCustomerDefaultValue()
                         historiesModalHasBeenOpen = false
@@ -4707,7 +4712,7 @@
                     'company-id': COMPANY_ID
                 },
                 "data": {
-                    "paper_size": '{{ config('user_settings.pos_printer_paper_size') }}'
+                    "paper_size": '{{ config('local_user_settings.pos_printer_paper_size') }}'
                 },
                 error: generalAjaxErrorHandler,
             });

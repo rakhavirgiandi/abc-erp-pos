@@ -23,16 +23,16 @@
                                 </div>
                                 <div class="form-text" id="printer-text-status">Try to get all printer devices...</div>
                             @else
-                                <h5>Default Printer Device</h5>
+                                <input type="text" name="pos_printer_selected_printer" class="form-control" value="{{ config('local_user_settings.pos_printer_selected_printer') }}">
                             @endif
                         </div>
                         <div class="mb-3">
                             <label class="form-label">Ukuran Kertas Printer</label>
                             <select name="pos_printer_paper_size" class="form-select form-select-lg form-select2" id="input-printer_size">
                                 <option value="">Pilih Ukuran</option>
-                                <option value="58" {{ config('user_settings.pos_printer_paper_size') == '58' ? 'selected' : '' }}>58mm</option>
-                                <option value="75" {{ config('user_settings.pos_printer_paper_size') == '75' ? 'selected' : '' }}>75mm</option>
-                                <option value="80" {{ config('user_settings.pos_printer_paper_size') == '80' ? 'selected' : '' }}>80mm</option>
+                                <option value="58" {{ config('local_user_settings.pos_printer_paper_size') == '58' ? 'selected' : '' }}>58mm</option>
+                                <option value="75" {{ config('local_user_settings.pos_printer_paper_size') == '75' ? 'selected' : '' }}>75mm</option>
+                                <option value="80" {{ config('local_user_settings.pos_printer_paper_size') == '80' ? 'selected' : '' }}>80mm</option>
                             </select>
                         </div>
                     </div>
@@ -55,7 +55,10 @@
 
     $('.form-select2').select2();
 
-    let  selectedPrinter = '{{ config('user_settings.pos_printer_selected_printer') }}';
+    let  selectedPrinter = '{{ config('local_user_settings.pos_printer_selected_printer') }}';
+
+    console.log('{{ config('database.connections.pgsql_companies.database') }}');
+    
 
     const getAllPrinterDevices = () => {
 
@@ -109,7 +112,7 @@
         });
     }
 
-    if (!config('app.is_onpremise')) {   
+    if ('{{ !!config('app.is_onpremise') }}') {   
         getAllPrinterDevices();
     }
         
@@ -125,9 +128,10 @@
     $(document).on('submit', '#main-form', function (e) {
         e.preventDefault();
         var formData = new FormData(this);
+
         $.ajax({
             type: 'POST',
-            url: BASE_URL + '/api/v1/user_settings',
+            url: BASE_URL + '/api/v1/local_user_settings',
             headers: { 
                 'Authorization': TOKEN,
                 'company-id': COMPANY_ID

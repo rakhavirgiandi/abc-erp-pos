@@ -2,28 +2,22 @@
 
 namespace App\Http\Controllers\API;
 
-use App\Helpers\NetworkHelper;
 use App\Http\Controllers\Controller;
-use App\Models\UserCompanies;
+use App\Models\Companies\v1\UserSettings;
 use Illuminate\Http\Request;
 
-class UserCompanyController extends Controller
+class UserSettingController extends Controller
 {
     public function get(Request $request, $id = null)
     {
         $params = $request->all();
 
         if ($id != null) {
-            $res = UserCompanies::getById($id, $params, $request);
+            $res = UserSettings::getById($id, $params, $request);
         } else if (isset($params['all']) && $params['all']) {
-            if (env('IS_ONPREMISE', false) && NetworkHelper::isConnected()) {
-                $url = config('services.admin_credentials.server_url') . "/api/user_companies?all=true";
-                $res = NetworkHelper::curlWithToken($url, true);
-            } else {
-                $res = UserCompanies::getAllResult($params, $request);
-            }
+            $res = UserSettings::getAllResult($params, $request);
         } else {
-            $res = UserCompanies::getPaginatedResult($params, $request);
+            $res = UserSettings::getPaginatedResult($params, $request);
         }
 
         return $res;
@@ -32,28 +26,35 @@ class UserCompanyController extends Controller
     public function post(Request $request)
     {
         $params = $request->all();
-        return UserCompanies::createOrUpdate($params, $request->method(), $request);
+        return UserSettings::createOrUpdate($params, $request->method(), $request);
     }
 
     public function put(Request $request, $id)
     {
         $params = $request->all();
         $params['id'] = $id;
-        return UserCompanies::createOrUpdate($params, $request->method());
+        return UserSettings::createOrUpdate($params, $request->method(), $request);
     }
 
     public function patch(Request $request, $id)
     {
         $params = $request->all();
         $params['id'] = $id;
-        return UserCompanies::createOrUpdate($params, $request->method());
+        return UserSettings::createOrUpdate($params, $request->method(), $request);
     }
 
     public function delete(Request $request, $id)
     {
         $params = $request->all();
 
-        return UserCompanies::deleteById($id, $params, $request);
+        return UserSettings::deleteById($id, $params, $request);
+    }
+
+    public function approve(Request $request, $id)
+    {
+        $params = $request->all();
+
+        return UserSettings::approveById($id, $params, $request);
     }
 
     public function datatables(Request $request)
@@ -61,7 +62,7 @@ class UserCompanyController extends Controller
         $user = auth()->guard('sanctum')->user();
 
         $columns = [
-            0 => 'user_companies.id'
+            'user_settings.id'
         ];
 
         $dataOrder = [];
@@ -83,9 +84,9 @@ class UserCompanyController extends Controller
 
         $search = $request->search['value'];
 
-        $filter = $request->only(['sDate', 'eDate']);
+        $filter = $request->filter;
 
-        $res = UserCompanies::datatables($start, $limit, $order, $dir, $search, $filter);
+        $res = UserSettings::datatables($start, $limit, $order, $dir, $search, $filter);
 
         $data = [];
 
@@ -94,9 +95,9 @@ class UserCompanyController extends Controller
                 $nestedData = $row;
                 $nestedData['action'] = '';
                 $nestedData['action'] .= '<div class="actions">';
-                $nestedData['action'] .= '<a href="#" class="btn btn-icon btn-warning" id="edit-data" data-id="'.$row['id'].'"><i class="fas fa-pencil-alt"></i></a>';
+                $nestedData['action'] .= '<a href="#" class="btn btn-icon btn-warning" id="edit-data" data-id="'.$row['id'].'"><i class="fa fa-pencil"></i></a>';
                 $nestedData['action'] .= '&nbsp;';
-                $nestedData['action'] .= '<a href="#" class="btn btn-icon btn-danger" id="delete-data" data-id="'.$row['id'].'"><i class="fas fa-trash-alt-o"></i></a>';
+                $nestedData['action'] .= '<a href="#" class="btn btn-icon btn-danger" id="delete-data" data-id="'.$row['id'].'"><i class="fa fa-trash-o"></i></a>';
                 $nestedData['action'] .= '</div>';
 
                 $data[] = $nestedData;

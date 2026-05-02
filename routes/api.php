@@ -53,6 +53,7 @@ use App\Http\Controllers\API\Companies\v1\VariantOptionController;
 use App\Http\Controllers\API\Companies\v1\WarehouseController;
 use App\Http\Controllers\API\CompanyController;
 use App\Http\Controllers\API\SubscriptionController;
+use App\Http\Controllers\API\UserSettingController;
 use App\Models\Companies;
 use App\Models\Users;
 use App\Models\CompanyCredentials;
@@ -735,6 +736,7 @@ Route::group(['prefix' => 'v1', 'middleware' => ['auth:api', 'api.companies']], 
         Route::get('discount_point_exchange', 'discountPointExchange')->name('v1.pos.discount_point_exchange');
         Route::post('login', 'login')->name('v1.pos.login');
         Route::get('printer_connected', 'printerConnected')->name('v1.pos.printerConnected');
+        Route::post('print-receipts/{number}', 'printReceipt')->name('pos.print_receipt');
     });
 
     Route::prefix('sync')->group(function (){
@@ -770,6 +772,17 @@ Route::group(['prefix' => 'v1', 'middleware' => ['auth:api', 'api.companies']], 
         Route::get('/warehouses', [WarehouseController::class, 'syncToLocal'])->name('sync.warehouses');
         Route::post('/sales_invoices', [SalesInvoiceController::class, 'syncToServer'])->name('sync.post_sales_invoices');
         Route::get('/stock_cards', [ProductClosingController::class, 'getStockCard'])->name('sync.stock_card');
+    });
+
+        
+    Route::controller(UserSettingController::class)->group(function() {
+        Route::get('local_user_settings/{id?}', 'get')->name('get.local_user_settings');
+        Route::post('local_user_settings', 'post')->name('post.user_settings');
+        Route::patch('local_user_settings/{id}', 'patch')->name('patch.user_settings');
+        Route::put('local_user_settings/{id}', 'put')->name('put.user_settings');
+        Route::delete('local_user_settings/{id}', 'delete')->name('delete.user_settings');
+        Route::post('local_user_settings_datatables', 'datatables')->name('datatable.user_settings');
+        Route::patch('local_user_settings/{id}/approve', 'approve')->name('approve.user_settings');
     });
 
     Route::get('/persib_bandung_juara', function (Request $request) {

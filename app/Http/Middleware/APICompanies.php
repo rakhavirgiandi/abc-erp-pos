@@ -12,6 +12,7 @@ use App\Models\Companies\v1\Users;
 use App\Models\Companies\v1\DefaultAccounts;
 use App\Models\Companies\v1\GeneralSettings;
 use App\Models\Companies\v1\Projects;
+use App\Models\Companies\v1\UserSettings;
 use App\Models\Companies\v1\Warehouses;
 use App\Models\CompanyCredentials;
 use Closure;
@@ -36,7 +37,6 @@ class APICompanies {
         $user_central = $request->user();
         // $user_central_email = $request->user()->email;
         // $user_central_phone = $request->user()->phone;
-
         if ($company_id) {
             $company = CompanyCredentials::select([
                 'company_credentials.db_host',
@@ -152,6 +152,12 @@ class APICompanies {
 
             foreach($default_accounts->toArray() as $row) {
                 config(['default_accounts.'.$row['key'] => $row['value']]);
+            }
+
+            $user_settings = UserSettings::where('user_id', '=', $user['id'])->get();
+
+            foreach ($user_settings->toArray() as $row) {
+                config(['local_user_settings.' . $row['key'] => $row['value']]);
             }
 
             config(['company_id' => $company_id]);

@@ -32,7 +32,7 @@
                 </a>
                 @php
                 @endphp
-                @if (env('IS_ONPREMISE'))
+                @if (config('app.is_onpremise'))
                     <span class="vr mx-1"></span>
                     <button type="button" class="btn btn-navbar-action btn-lg btn-icon" id="sync-toggle">
                         <span class="mdi mdi-cloud-sync"></span>

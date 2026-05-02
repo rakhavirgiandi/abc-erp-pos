@@ -10,6 +10,7 @@ use App\Models\Companies\v1\Users;
 use App\Models\Companies\v1\GeneralSettings;
 use App\Models\Companies\v1\DefaultAccounts;
 use App\Models\Companies\v1\Projects;
+use App\Models\Companies\v1\UserSettings;
 use App\Models\Companies\v1\Warehouses;
 use App\Models\CompanyCredentials;
 use App\Models\Users as ModelsUsers;
@@ -161,6 +162,12 @@ class Companies
 
             foreach ($default_accounts->toArray() as $row) {
                 config(['default_accounts.' . $row['key'] => $row['value']]);
+            }
+
+            $user_settings = UserSettings::get();
+
+            foreach ($user_settings->toArray() as $row) {
+                config(['local_user_settings.' . $row['key'] => $row['value']]);
             }
 
             config(['company_id' => $request->session()->get('_company_id')]);

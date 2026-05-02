@@ -771,6 +771,7 @@ class Companies extends Model
              * RUN MIGRATION
              * =====================================
              */
+            $request->session()->put('_company_id', $params['company_id']);
 
             $result = Artisan::call('migrate', [ '--path' => 'database/migration_company', '--database' => 'pgsql_companies', '--force' => true]);
 

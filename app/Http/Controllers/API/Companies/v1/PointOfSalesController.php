@@ -15,10 +15,13 @@ use App\Models\Companies\v1\SalesInvoices;
 use App\Models\Companies\v1\User as CentralUser;
 use App\Models\Companies\v1\Warehouses;
 use Carbon\Carbon;
+use Exception;
 use Hash;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Facades\Storage;
+use Mike42\Escpos\PrintConnectors\WindowsPrintConnector;
+use Mike42\Escpos\Printer;
 use Native\Desktop\Facades\System;
 
 class PointOfSalesController extends Controller
@@ -197,5 +200,215 @@ class PointOfSalesController extends Controller
         });
 
         return $printer;
+    }
+
+    public function printReceipt (Request $request, $number)
+    {
+        $find_sales_invoice = SalesInvoices::where('ref_number', '=', $number)->first();
+        
+        if (!$find_sales_invoice) {
+            return response()->json(['status' => 'error', 'message' => 'Receipt Not found'], 404);
+        }
+
+        $data = SalesInvoices::getById($find_sales_invoice['id'])->original;
+
+        $paper_size = '58';
+        
+        if ($request->paper_size) {
+            $paper_size = $request->paper_size;
+        }
+
+        function format_amount($n) {
+            return fmod($n, 1) == 0
+                ? number_format($n, 0, ',', '.')
+                : number_format($n, 2, ',', '.');
+        }
+
+        function col($text, $width, $align = 'left') {
+            $text = (string)$text;
+
+            if (strlen($text) > $width) {
+                $text = substr($text, 0, $width);
+            }
+
+            return $align === 'right'
+                ? str_pad($text, $width, ' ', STR_PAD_LEFT)
+                : str_pad($text, $width, ' ', STR_PAD_RIGHT);
+        }
+
+        try {
+
+            $paper = $paper_size;
+
+            if ($paper == 58) {
+                $width = 32;
+                $col_qty = 5;
+                $col_unit = 5;
+                $col_price = 6;
+                $col_disc = 6;
+                $col_total = 10;
+            } else if ($paper == 75) {
+                $width = 42;
+                $col_qty = 4;
+                $col_unit = 6;
+                $col_price = 8;
+                $col_disc = 7;
+                $col_total = 17;
+            } else {
+                $width = 48;
+                $col_qty = 4;
+                $col_unit = 6;
+                $col_price = 10;
+                $col_disc = 8;
+                $col_total = 20;
+            }
+
+            $line = str_repeat('-', $width);
+
+            if (!config('local_user_settings.pos_printer_selected_printer')) {
+                return response()->json(['status' => 'error', 'message' => 'Printer Not found'], 404);
+            }
+
+            $connector = new WindowsPrintConnector(config('local_user_settings.pos_printer_selected_printer'));
+
+            if (!$connector) {
+                return response()->json(['status' => 'error', 'message' => 'Printer Not found'], 404);
+            }
+
+            $printer = new Printer($connector);
+ 
+            $printer->initialize();
+
+            $printer->setJustification(Printer::JUSTIFY_CENTER);
+            $printer->setEmphasis(true);
+            $printer->text(config('general_settings.company_name') . "\n");
+
+            $printer->setEmphasis(false);
+            $printer->text(config('general_settings.company_address') . "\n");
+            $printer->text(config('general_settings.company_phone') . "\n");
+
+            $printer->text($line . "\n");
+
+            // ================= META =================
+            $printer->setJustification(Printer::JUSTIFY_LEFT);
+            $printer->text("No   : {$data['ref_number']}\n");
+            $printer->text("Kasir: {$data['created_by_name']}\n");
+            $printer->text("Tgl  : " . date('d/m/Y H:i:s', strtotime($data['created_at'])) . "\n");
+            $printer->text("Cust : {$data['customer_name']}\n");
+
+            $printer->text($line . "\n");
+
+            // ================= TABLE HEADER =================
+            $printer->setEmphasis(true);
+            $printer->text(
+                col("Qty", $col_qty) .
+                col("Unit", $col_unit) .
+                col("Harga", $col_price, 'right') .
+                col("Disc", $col_disc, 'right') .
+                col("Total", $col_total, 'right') . "\n"
+            );
+            $printer->setEmphasis(false);
+
+            $printer->text($line . "\n");
+
+            // ================= GROUPING =================
+            $sales_invoice_details = [];
+
+            foreach ($data['sales_invoice_details'] as $item) {
+                if (isset($sales_invoice_details[$item['product_id']])) {
+                    $sales_invoice_details[$item['product_id']]['child'][] = $item;
+                } else {
+                    $item['child'] = [];
+                    $sales_invoice_details[$item['product_id']] = $item;
+                }
+            }
+
+            // ================= ITEMS =================
+            foreach ($sales_invoice_details as $item) {
+
+                $price = floatval($item['unit_price']);
+                $qty = floatval($item['qty']);
+
+                $disc = $item['discount_amount'] > 0
+                    ? ($item['discount_type'] == 'percentage'
+                        ? $price * ($item['discount_amount'] / 100)
+                        : $item['discount_amount'])
+                    : 0;
+
+                $subtotal = ($price * $qty) - $disc;
+
+                // Nama produk (auto wrap)
+                $printer->setEmphasis(true);
+                $printer->text(wordwrap($item['product_name'], $width, "\n", true) . "\n");
+                $printer->setEmphasis(false);
+
+                // Row utama
+                $printer->text(
+                    col($qty, $col_qty) .
+                    col($item['unit_name'], $col_unit) .
+                    col(format_amount($price), $col_price, 'right') .
+                    col("-" . format_amount($disc), $col_disc, 'right') .
+                    col(format_amount($subtotal), $col_total, 'right') . "\n"
+                );
+
+                if (!empty($item['note'])) {
+                    $printer->text("  " . wordwrap($item['note'], $width - 2, "\n  ") . "\n");
+                }
+
+                // CHILD
+                foreach ($item['child'] as $child) {
+
+                    $price = floatval($child['unit_price']);
+                    $qty = floatval($child['qty']);
+
+                    $disc = $child['discount_amount'] > 0
+                        ? ($child['discount_type'] == 'percentage'
+                            ? $price * ($child['discount_amount'] / 100)
+                            : $child['discount_amount'])
+                        : 0;
+
+                    $subtotal = ($price * $qty) - $disc;
+
+                    $printer->text(
+                        col($qty, $col_qty) .
+                        col($child['unit_name'], $col_unit) .
+                        col(format_amount($price), $col_price, 'right') .
+                        col("-" . format_amount($disc), $col_disc, 'right') .
+                        col(format_amount($subtotal), $col_total, 'right') . "\n"
+                    );
+
+                    if (!empty($child['note'])) {
+                        $printer->text("  " . wordwrap($child['note'], $width - 2, "\n  ") . "\n");
+                    }
+                }
+            }
+
+            $printer->text($line . "\n");
+
+            // ================= SUMMARY =================
+            $printer->text(sprintf("%-".($width-13)."s %12s\n", "Subtotal", format_amount($data['subtotal'])));
+            $printer->text(sprintf("%-".($width-13)."s %12s\n", "Diskon", "-" . format_amount($data['discount_amount'])));
+
+            $printer->setEmphasis(true);
+            $printer->text(sprintf("%-".($width-13)."s %12s\n", "Total", format_amount($data['total'])));
+            $printer->setEmphasis(false);
+
+            $printer->text(sprintf("%-".($width-13)."s %12s\n", "Bayar", format_amount($data['total_payment'])));
+            $printer->text(sprintf("%-".($width-13)."s %12s\n", "Kembali", format_amount($data['total_change'])));
+
+            $printer->text($line . "\n");
+
+            // ================= FOOTER =================
+            $printer->setJustification(Printer::JUSTIFY_CENTER);
+            $printer->text(wordwrap(config('general_settings.pos_receipt_footer_text'), $width) . "\n");
+
+            $printer->feed(2);
+            $printer->cut();
+            $printer->close();
+
+        } catch (\Throwable $th) {
+            return response()->json(['status' => 'error', 'message' => 'Tolong cek ulang pengaturan printer anda'], 500);
+        }
+
     }
 }

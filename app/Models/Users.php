@@ -560,6 +560,12 @@ class Users extends Model
                     $response = NetworkHelper::loginToServer($params);
                 } catch (\Throwable $e) {
                     \Log::warning('Login server gagal: ' . $e->getMessage());
+                
+                    return response()->json([
+                        'status' => 'error',
+                        'message' => 'Username dan Password Tidak Sesuai',
+                        'data' => null  
+                    ], 401);
                 }
 
                 if ($response) {
