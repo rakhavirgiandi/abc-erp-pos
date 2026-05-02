@@ -275,15 +275,16 @@ class UserSettings extends Model
             unset($params['_token']);
         }
 
+        $create_settings = [];
+
         foreach ($params as $key => $value) {
-            $data = self::where('key', $key)->first();
+            $data = self::where('key', $key)->where('user_id', '=', config('user_companies.id'))->first();
             if ($data) {
                 if ($data->type == 'file') {
                     $upload_file = self::uploadImage($request->file($key), 'general_setting');
                     if ($upload_file['status']) {
                         $data->update([
                             'value' => $upload_file['value'],
-                            'user_id' => config('user_companies.id')
                         ]);
                     } else {
                         return response()->json([
@@ -295,9 +296,42 @@ class UserSettings extends Model
                 } else {
                     $data->update([
                         'value' => $value ?? $data->value,
-                        'user_id' => config('user_companies.id')
                     ]);
                 }
+            } else {
+                $user_settings = self::where('user_id', '=', config('user_companies.id'))->orderBy('order', 'desc')->first();
+                
+                $settings_property = [
+                    "pos_printer_paper_size" => [
+                        "name" => "Printer Size",
+                        "type" => "select",
+                    ],
+                    "pos_printer_selected_printer" => [
+                        "name" => "Printer",
+                        "type" => "text"
+                    ],
+                ];
+
+                if (!empty($settings_property[$key])) {
+                    $create_settings[] = [
+                        "name" => $settings_property[$key]['name'],
+                        "key" => $key,
+                        "value" => $value,
+                        "type" => $settings_property[$key]['type'],
+                        "description" => "",
+                        "is_protected" => "0",
+                        "is_hidden" => "0",
+                        "user_id" => config('user_companies.id'),
+                        "order" => 0,
+                        "created_at" => date('Y-m-d H:i:s'),
+                        "updated_at" => date('Y-m-d H:i:s'),
+                        "deleted_at" => null
+                    ];
+                }
+            }
+
+            if (count($create_settings) > 0) {
+                UserSettings::insert($create_settings);
             }
         }
 
