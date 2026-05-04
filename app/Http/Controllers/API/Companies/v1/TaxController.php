@@ -148,7 +148,7 @@ class TaxController extends Controller
 
             try {
                 $ids = collect($rows)->pluck('id')->filter()->toArray();
-                $exist_tax = Taxes::whereIn('id', $ids)->get()->keyBy('id');
+                $exist_tax = Taxes::withTrashed()->whereIn('id', $ids)->get()->keyBy('id');
 
                 $insert_tax = [];
                 foreach ($rows as $row) {
@@ -161,6 +161,16 @@ class TaxController extends Controller
                     if ($tax) {
                         unset($row['id']);
                         $tax->update($row); // UPDATE
+
+                        if (!empty($row['deleted_at'])) {
+                            if (!$tax->trashed()) {
+                                $tax->delete();
+                            }
+                        } else {
+                            if ($tax->trashed()) {
+                                $tax->restore();
+                            }
+                        }
                     } else {
                         $row['id'] = $id;
                         $insert_tax[] = $row; // INSERT

@@ -148,7 +148,7 @@ class UnitController extends Controller
 
             try {
                 $ids = collect($rows)->pluck('id')->filter()->toArray();
-                $exist_unit = Units::whereIn('id', $ids)->get()->keyBy('id');
+                $exist_unit = Units::withTrashed()->whereIn('id', $ids)->get()->keyBy('id');
 
                 $insert_unit = [];
                 foreach ($rows as $row) {
@@ -161,6 +161,16 @@ class UnitController extends Controller
                     if ($unit) {
                         unset($row['id']);
                         $unit->update($row); // UPDATE
+
+                        if (!empty($row['deleted_at'])) {
+                            if (!$unit->trashed()) {
+                                $unit->delete();
+                            }
+                        } else {
+                            if ($unit->trashed()) {
+                                $unit->restore();
+                            }
+                        }
                     } else {
                         $row['id'] = $id;
                         $insert_unit[] = $row; // INSERT

@@ -148,7 +148,7 @@ class CurrencyController extends Controller
 
             try {
                 $ids = collect($rows)->pluck('id')->filter()->toArray();
-                $exist_currency = Currencies::whereIn('id', $ids)->get()->keyBy('id');
+                $exist_currency = Currencies::withTrashed()->whereIn('id', $ids)->get()->keyBy('id');
 
                 $insert_currency = [];
                 foreach ($rows as $row) {
@@ -161,6 +161,16 @@ class CurrencyController extends Controller
                     if ($currency) {
                         unset($row['id']);
                         $currency->update($row); // UPDATE
+
+                        if (!empty($row['deleted_at'])) {
+                            if (!$currency->trashed()) {
+                                $currency->delete();
+                            }
+                        } else {
+                            if ($currency->trashed()) {
+                                $currency->restore();
+                            }
+                        }
                     } else {
                         $row['id'] = $id;
                         $insert_currency[] = $row; // INSERT

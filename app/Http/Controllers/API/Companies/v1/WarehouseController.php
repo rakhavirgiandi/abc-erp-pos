@@ -148,7 +148,7 @@ class WarehouseController extends Controller
 
             try {
                 $ids = collect($rows)->pluck('id')->filter()->toArray();
-                $exist_warehouse = Warehouses::whereIn('id', $ids)->get()->keyBy('id');
+                $exist_warehouse = Warehouses::withTrashed()->whereIn('id', $ids)->get()->keyBy('id');
 
                 $insert_warehouse = [];
                 foreach ($rows as $row) {
@@ -161,6 +161,16 @@ class WarehouseController extends Controller
                     if ($warehouse) {
                         unset($row['id']);
                         $warehouse->update($row); // UPDATE
+
+                        if (!empty($row['deleted_at'])) {
+                            if (!$warehouse->trashed()) {
+                                $warehouse->delete();
+                            }
+                        } else {
+                            if ($warehouse->trashed()) {
+                                $warehouse->restore();
+                            }
+                        }
                     } else {
                         $row['id'] = $id;
                         $insert_warehouse[] = $row; // INSERT

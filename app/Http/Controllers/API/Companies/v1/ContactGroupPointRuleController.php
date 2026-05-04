@@ -148,7 +148,7 @@ class ContactGroupPointRuleController extends Controller
 
             try {
                 $ids = collect($rows)->pluck('id')->filter()->toArray();
-                $exist_point_rules = ContactGroupPointRules::whereIn('id', $ids)->get()->keyBy('id');
+                $exist_point_rules = ContactGroupPointRules::withTrashed()->whereIn('id', $ids)->get()->keyBy('id');
 
                 $insert_point_rules = [];
                 foreach ($rows as $row) {
@@ -161,6 +161,16 @@ class ContactGroupPointRuleController extends Controller
                     if ($point_rules) {
                         unset($row['id']);
                         $point_rules->update($row); // UPDATE
+
+                        if (!empty($row['deleted_at'])) {
+                            if (!$point_rules->trashed()) {
+                                $point_rules->delete();
+                            }
+                        } else {
+                            if ($point_rules->trashed()) {
+                                $point_rules->restore();
+                            }
+                        }
                     } else {
                         $row['id'] = $id;
                         $insert_point_rules[] = $row; // INSERT

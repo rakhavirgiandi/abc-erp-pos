@@ -148,7 +148,7 @@ class RewardPointController extends Controller
 
             try {
                 $ids = collect($rows)->pluck('id')->filter()->toArray();
-                $exist_reward = RewardPoints::whereIn('id', $ids)->get()->keyBy('id');
+                $exist_reward = RewardPoints::withTrashed()->whereIn('id', $ids)->get()->keyBy('id');
 
                 $insert_reward = [];
                 foreach ($rows as $row) {
@@ -161,6 +161,16 @@ class RewardPointController extends Controller
                     if ($reward) {
                         unset($row['id']);
                         $reward->update($row); // UPDATE
+
+                        if (!empty($row['deleted_at'])) {
+                            if (!$reward->trashed()) {
+                                $reward->delete();
+                            }
+                        } else {
+                            if ($reward->trashed()) {
+                                $reward->restore();
+                            }
+                        }
                     } else {
                         $row['id'] = $id;
                         $insert_reward[] = $row; // INSERT

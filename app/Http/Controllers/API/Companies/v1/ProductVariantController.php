@@ -148,7 +148,7 @@ class ProductVariantController extends Controller
 
             try {
                 $ids = collect($rows)->pluck('product_id')->filter()->unique()->toArray();
-                $products = Products::whereIn('id', $ids)->get()->keyBy('id');
+                $products = Products::withTrashed()->whereIn('id', $ids)->get()->keyBy('id');
                 $product_ids = $products->pluck('id')->toArray();
 
                 if (!empty($product_ids)) {

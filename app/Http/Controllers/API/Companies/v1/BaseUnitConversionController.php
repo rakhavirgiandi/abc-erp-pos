@@ -148,7 +148,7 @@ class BaseUnitConversionController extends Controller
 
             try {
                 $ids = collect($rows)->pluck('id')->filter()->toArray();
-                $exist_base_unit = BaseUnitConversions::whereIn('id', $ids)->get()->keyBy('id');
+                $exist_base_unit = BaseUnitConversions::withTrashed()->whereIn('id', $ids)->get()->keyBy('id');
 
                 $insert_base_unit = [];
                 foreach ($rows as $row) {
@@ -161,6 +161,16 @@ class BaseUnitConversionController extends Controller
                     if ($base_unit) {
                         unset($row['id']);
                         $base_unit->update($row); // UPDATE
+
+                        if (!empty($row['deleted_at'])) {
+                            if (!$base_unit->trashed()) {
+                                $base_unit->delete();
+                            }
+                        } else {
+                            if ($base_unit->trashed()) {
+                                $base_unit->restore();
+                            }
+                        }
                     } else {
                         $row['id'] = $id;
                         $insert_base_unit[] = $row; // INSERT

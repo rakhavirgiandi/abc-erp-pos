@@ -148,7 +148,7 @@ class ProductSkuController extends Controller
 
             try {
                 $ids = collect($rows)->pluck('id')->filter()->toArray();
-                $exist_sku = ProductSkus::whereIn('id', $ids)->get()->keyBy('id');
+                $exist_sku = ProductSkus::withTrashed()->whereIn('id', $ids)->get()->keyBy('id');
 
                 $insert_sku = [];
                 foreach ($rows as $row) {
@@ -161,6 +161,16 @@ class ProductSkuController extends Controller
                     if ($sku) {
                         unset($row['id']);
                         $sku->update($row); // UPDATE
+
+                        if (!empty($row['deleted_at'])) {
+                            if (!$sku->trashed()) {
+                                $sku->delete();
+                            }
+                        } else {
+                            if ($sku->trashed()) {
+                                $sku->restore();
+                            }
+                        }
                     } else {
                         $row['id'] = $id;
                         $insert_sku[] = $row; // INSERT

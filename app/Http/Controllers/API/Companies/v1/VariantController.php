@@ -148,7 +148,7 @@ class VariantController extends Controller
 
             try {
                 $ids = collect($rows)->pluck('id')->filter()->toArray();
-                $exist_variant = Variants::whereIn('id', $ids)->get()->keyBy('id');
+                $exist_variant = Variants::withTrashed()->whereIn('id', $ids)->get()->keyBy('id');
 
                 $insert_variant = [];
                 foreach ($rows as $row) {
@@ -161,6 +161,16 @@ class VariantController extends Controller
                     if ($variant) {
                         unset($row['id']);
                         $variant->update($row); // UPDATE
+
+                        if (!empty($row['deleted_at'])) {
+                            if (!$variant->trashed()) {
+                                $variant->delete();
+                            }
+                        } else {
+                            if ($variant->trashed()) {
+                                $variant->restore();
+                            }
+                        }
                     } else {
                         $row['id'] = $id;
                         $insert_variant[] = $row; // INSERT

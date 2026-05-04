@@ -148,7 +148,7 @@ class BankAccountController extends Controller
 
             try {
                 $ids = collect($rows)->pluck('id')->filter()->toArray();
-                $exist_bank = BankAccounts::whereIn('id', $ids)->get()->keyBy('id');
+                $exist_bank = BankAccounts::withTrashed()->whereIn('id', $ids)->get()->keyBy('id');
 
                 $insert_bank = [];
                 foreach ($rows as $row) {
@@ -161,6 +161,16 @@ class BankAccountController extends Controller
                     if ($bank) {
                         unset($row['id']);
                         $bank->update($row); // UPDATE
+
+                        if (!empty($row['deleted_at'])) {
+                            if (!$bank->trashed()) {
+                                $bank->delete();
+                            }
+                        } else {
+                            if ($bank->trashed()) {
+                                $bank->restore();
+                            }
+                        }
                     } else {
                         $row['id'] = $id;
                         $insert_bank[] = $row; // INSERT

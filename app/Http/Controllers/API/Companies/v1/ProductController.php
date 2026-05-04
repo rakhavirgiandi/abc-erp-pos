@@ -178,7 +178,7 @@ class ProductController extends Controller
 
             try {
                 $ids = collect($rows)->pluck('id')->filter()->toArray();
-                $exist_product = Products::whereIn('id', $ids)->get()->keyBy('id');
+                $exist_product = Products::withTrashed()->whereIn('id', $ids)->get()->keyBy('id');
 
                 $category_map = ProductCategories::pluck('id', 'code'); 
                 $tax_map = Taxes::pluck('id', 'code');
@@ -213,6 +213,16 @@ class ProductController extends Controller
                     if ($product) {
                         unset($row['id']);
                         $product->update($row);
+
+                        if (!empty($row['deleted_at'])) {
+                            if (!$product->trashed()) {
+                                $product->delete();
+                            }
+                        } else {
+                            if ($product->trashed()) {
+                                $product->restore();
+                            }
+                        }
                     } else {
                         $row['id'] = $id;
                         $insert_product[] = $row;

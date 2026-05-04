@@ -148,7 +148,7 @@ class AccountingMasterController extends Controller
 
             try {
                 $coas = collect($rows)->pluck('coa')->filter()->toArray();
-                $exist_coa = AccountingMasters::whereIn('coa', $coas)->get()->keyBy('coa');
+                $exist_coa = AccountingMasters::withTrashed()->whereIn('coa', $coas)->get()->keyBy('coa');
 
                 $insert_coa = [];
                 foreach ($rows as $row) {
@@ -160,6 +160,16 @@ class AccountingMasterController extends Controller
                     if ($coa) {
                         unset($row['id']);
                         $coa->update($row); // UPDATE
+
+                        if (!empty($row['deleted_at'])) {
+                            if (!$coa->trashed()) {
+                                $coa->delete();
+                            }
+                        } else {
+                            if ($coa->trashed()) {
+                                $coa->restore();
+                            }
+                        }
                     } else {
                         $insert_coa[] = $row; // INSERT
                     }

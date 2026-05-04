@@ -130,65 +130,65 @@ class ProductHistoryController extends Controller
             ]);
         }
 
-        $page = 1;
-        $perPage = 500;
+        // $page = 1;
+        // $perPage = 500;
 
-        $model = new ProductHistories();
-        $fillable = array_flip($model->getFillable());
+        // $model = new ProductHistories();
+        // $fillable = array_flip($model->getFillable());
 
-        $warehouse_id = config('general_settings.default_warehouse') ?? '';
-        $period = now()->format('Y-m');
+        // $warehouse_id = config('general_settings.default_warehouse') ?? '';
+        // $period = now()->format('Y-m');
 
-        do {
-            $url = config('services.admin_credentials.server_url') . "/api/v1/product_histories?page={$page}&per_page={$perPage}&is_simple=true&warehouse_id={$warehouse_id}&periode={$period}";
-            $result = NetworkHelper::curlWithToken($url);
+        // do {
+        //     $url = config('services.admin_credentials.server_url') . "/api/v1/product_histories?page={$page}&per_page={$perPage}&is_simple=true&warehouse_id={$warehouse_id}&periode={$period}";
+        //     $result = NetworkHelper::curlWithToken($url);
 
-            $rows = $result['data'] ?? [];
+        //     $rows = $result['data'] ?? [];
 
-            if (empty($rows)) break;
+        //     if (empty($rows)) break;
 
-            DB::connection('pgsql_companies')->beginTransaction();
+        //     DB::connection('pgsql_companies')->beginTransaction();
 
-            try {
-                $ids = collect($rows)->pluck('id')->filter()->toArray();
-                $exist_history = ProductHistories::whereIn('id', $ids)->get()->keyBy('id');
-                $id = $row['id'];
+        //     try {
+        //         $ids = collect($rows)->pluck('id')->filter()->toArray();
+        //         $exist_history = ProductHistories::whereIn('id', $ids)->get()->keyBy('id');
+        //         $id = $row['id'];
 
-                $insert_history = [];
-                foreach ($rows as $row) {
-                    if (!isset($row['id'])) continue;
-                    $history = $exist_history[$row['id']] ?? null;
+        //         $insert_history = [];
+        //         foreach ($rows as $row) {
+        //             if (!isset($row['id'])) continue;
+        //             $history = $exist_history[$row['id']] ?? null;
                     
-                    $row = array_intersect_key($row, $fillable);
+        //             $row = array_intersect_key($row, $fillable);
                     
-                    if ($history) {
-                        unset($row['id']);
-                        $history->update($row); // UPDATE
-                    } else {
-                        $row['id'] = $id;
-                        $insert_history[] = $row; // INSERT
-                    }
-                }
+        //             if ($history) {
+        //                 unset($row['id']);
+        //                 $history->update($row); // UPDATE
+        //             } else {
+        //                 $row['id'] = $id;
+        //                 $insert_history[] = $row; // INSERT
+        //             }
+        //         }
 
-                if (!empty($insert_history)) {
-                    ProductHistories::insert($insert_history);
-                }
+        //         if (!empty($insert_history)) {
+        //             ProductHistories::insert($insert_history);
+        //         }
 
-                DB::connection('pgsql_companies')->statement("SELECT SETVAL('product_histories_id_seq', COALESCE((SELECT MAX(id) + 1 FROM product_histories), 1))");
-                DB::connection('pgsql_companies')->commit();
+        //         DB::connection('pgsql_companies')->statement("SELECT SETVAL('product_histories_id_seq', COALESCE((SELECT MAX(id) + 1 FROM product_histories), 1))");
+        //         DB::connection('pgsql_companies')->commit();
 
-            } catch (\Exception $e) {
-                DB::connection('pgsql_companies')->rollBack();
-                return response()->json([
-                    'status' => 'error',
-                    'message' => 'Gagal sync history',
-                    'error' => $e->getMessage()
-                ], 500);
-            }
+        //     } catch (\Exception $e) {
+        //         DB::connection('pgsql_companies')->rollBack();
+        //         return response()->json([
+        //             'status' => 'error',
+        //             'message' => 'Gagal sync history',
+        //             'error' => $e->getMessage()
+        //         ], 500);
+        //     }
 
-            $page++;
+        //     $page++;
 
-        } while ($page <= ($result['nav']['totalPage'] ?? 1));
+        // } while ($page <= ($result['nav']['totalPage'] ?? 1));
 
         return response()->json([
             'status' => 'success',

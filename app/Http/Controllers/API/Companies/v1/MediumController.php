@@ -135,6 +135,8 @@ class MediumController extends Controller
 
         $model = new Media();
         $fillable = array_flip($model->getFillable());
+        $all_server_keys = [];
+        $is_success = true;
 
         do {
             $url = config('services.admin_credentials.server_url') . "/api/v1/media?model=Products&page={$page}&per_page={$perPage}&is_simple=true";
@@ -154,10 +156,11 @@ class MediumController extends Controller
 
                 foreach ($rows as $row) {
                     $key = $row['model'].'-'.$row['model_id'].'-'.$row['filename'];
+                    $all_server_keys[] = $key;
                     $media = $existing[$key] ?? null;
 
                     $row = array_intersect_key($row, $fillable);
-                    
+
                     if ($media) {
                         unset($row['id']);
                         $media->update($row);
@@ -174,6 +177,7 @@ class MediumController extends Controller
                 DB::connection('pgsql_companies')->commit();
             } catch (\Exception $e) {
                 DB::connection('pgsql_companies')->rollBack();
+                $is_success = false;
                 return response()->json([
                     'status' => 'error',
                     'message' => 'Gagal sync media',
@@ -183,6 +187,24 @@ class MediumController extends Controller
 
             $page++;
         } while ($page <= ($result['nav']['totalPage'] ?? 1));
+
+        /**
+         * DELETE PHASE (SETELAH SEMUA PAGE SELESAI)
+         */
+        if ($is_success && !empty($all_server_keys)) {
+            $all_server_keys = array_unique($all_server_keys);
+            $existing_all = Media::where('model', 'Products')->get();
+
+            foreach ($existing_all as $item) {
+                $key = $item->model.'-'.$item->model_id.'-'.$item->filename;
+
+                if (!in_array($key, $all_server_keys)) {
+                    $item->forceDelete();
+                }
+            }
+        }
+
+        DB::connection('pgsql_companies')->statement("SELECT SETVAL('media_id_seq', COALESCE((SELECT MAX(id) + 1 FROM media), 1))");
 
         return response()->json([
             'status' => 'success',

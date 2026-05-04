@@ -148,7 +148,7 @@ class BranchController extends Controller
 
             try {
                 $ids = collect($rows)->pluck('id')->filter()->toArray();
-                $exist_branch = Branches::whereIn('id', $ids)->get()->keyBy('id');
+                $exist_branch = Branches::withTrashed()->whereIn('id', $ids)->get()->keyBy('id');
 
                 $insert_branch = [];
                 foreach ($rows as $row) {
@@ -161,6 +161,16 @@ class BranchController extends Controller
                     if ($branch) {
                         unset($row['id']);
                         $branch->update($row); // UPDATE
+
+                        if (!empty($row['deleted_at'])) {
+                            if (!$branch->trashed()) {
+                                $branch->delete();
+                            }
+                        } else {
+                            if ($branch->trashed()) {
+                                $branch->restore();
+                            }
+                        }
                     } else {
                         $row['id'] = $id;
                         $insert_branch[] = $row; // INSERT
