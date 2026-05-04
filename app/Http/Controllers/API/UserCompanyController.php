@@ -16,7 +16,7 @@ class UserCompanyController extends Controller
         if ($id != null) {
             $res = UserCompanies::getById($id, $params, $request);
         } else if (isset($params['all']) && $params['all']) {
-            if (env('IS_ONPREMISE', false)) {
+            if (config('services.is_onpremise')) {
                 $internet_connection = NetworkHelper::isConnected();
                 if ($internet_connection) {
                     $url = config('services.admin_credentials.server_url') . "/api/user_companies?all=true";
@@ -30,7 +30,7 @@ class UserCompanyController extends Controller
                             'message' => 'Data Perusahaan Anda belum tersinkron dengan Data Perusahaan Server. Pastikan koneksi internet Anda Aktif untuk melakukan proses sinkron',
                             'data' => [
                                 'internet_connection' => $internet_connection,
-                                'is_onpremise' => env('IS_ONPREMISE')
+                                'is_onpremise' => config('services.is_onpremise')
                             ]
                         ], 400);
                     }

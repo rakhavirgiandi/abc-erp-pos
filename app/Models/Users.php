@@ -511,8 +511,8 @@ class Users extends Model
     }
 
     public static function generateToken($params, $method, $request, $type = 'member')
-    {
-        if (env('IS_ONPREMISE', false)) {
+    {   
+        if (config('services.is_onpremise')) {
             if (NetworkHelper::isConnected()) {
                 $response = null;
 

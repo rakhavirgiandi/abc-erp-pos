@@ -46,13 +46,13 @@ class ChooseCompanyController extends Controller
             }
         } else {
             $internet_connection = NetworkHelper::isConnected();
-            if (!$internet_connection && env('IS_ONPREMISE', false)) {
+            if (!$internet_connection && config('services.is_onpremise')) {
                 return response()->json([
                     'status' => 'error',
                     'message' => 'Database Anda belum tersinkron dengan Database Server. Pastikan koneksi internet Anda Aktif untuk melakukan proses sinkron',
                     'data' => [
                         'internet_connection' => $internet_connection,
-                        'is_onpremise' => env('IS_ONPREMISE')
+                        'is_onpremise' => config('services.is_onpremise')
                     ]
                 ], 400);
             }

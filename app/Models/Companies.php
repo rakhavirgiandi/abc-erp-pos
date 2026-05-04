@@ -624,7 +624,7 @@ class Companies extends Model
             return;
         }
 
-        if (!env('IS_ONPREMISE', false)) {
+        if (!config('services.is_onpremise')) {
             return;
         }
 

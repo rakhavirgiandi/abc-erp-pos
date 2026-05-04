@@ -15,7 +15,7 @@ class MiscellaneousController extends Controller
     {
         $res = [];
 
-        if (env('IS_ONPREMISE')) {
+        if (config('services.is_onpremise')) {
             Artisan::call('migrate', ['--path' => 'database/migration_company', '--database' => 'pgsql_companies']);
             $res[] = Artisan::output();
             Artisan::call('migrate', ['--path' => 'database/migration_company_alter', '--database' => 'pgsql_companies']);

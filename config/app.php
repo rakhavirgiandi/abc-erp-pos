@@ -67,8 +67,6 @@ return [
 
     'timezone' => 'Asia/Jakarta',
 
-    'is_onpremise' => env('IS_ONPREMISE', false),
-
     /*
     |--------------------------------------------------------------------------
     | Application Locale Configuration

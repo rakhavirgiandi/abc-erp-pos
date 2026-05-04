@@ -4443,7 +4443,7 @@
                         if (result.isConfirmed) {
                             printReceipt(res?.data?.ref_number);
                         }
-                        if ('{{ config('app.is_onpremise') }}') {
+                        if ('{{ config('services.is_onpremise') }}') {
                             salesInvoiceSync()
                         }
                         clear();

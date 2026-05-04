@@ -14,7 +14,7 @@
                     <div class="col-3">
                         <div class="mb-3">
                             <label class="form-label">Printer</label>
-                            @if (config('app.is_onpremise'))
+                            @if (config('services.is_onpremise'))
                                 <div class="d-flex gap-3">
                                     <div class="flex-fill">
                                         <select name="pos_printer_selected_printer" class="form-select form-select-lg form-select2" id="input-selected_printer"></select>
@@ -112,7 +112,7 @@
         });
     }
 
-    if ('{{ !!config('app.is_onpremise') }}') {   
+    if ('{{ !!config('services.is_onpremise') }}') {   
         getAllPrinterDevices();
     }
         
