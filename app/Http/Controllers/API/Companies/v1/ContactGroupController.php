@@ -140,6 +140,9 @@ class ContactGroupController extends Controller
         $page = 1;
         $perPage = 500;
 
+        $model = new ContactGroups();
+        $fillable = array_flip($model->getFillable());
+
         do {
             $url = config('services.admin_credentials.server_url') . "/api/v1/contact_groups?page={$page}&per_page={$perPage}&is_simple=true";
             $result = NetworkHelper::curlWithToken($url);
@@ -152,18 +155,31 @@ class ContactGroupController extends Controller
 
             try {
                 $ids = collect($rows)->pluck('id')->filter()->toArray();
-                $exist_contact = ContactGroups::whereIn('id', $ids)->get()->keyBy('id');
+                $exist_contact = ContactGroups::withTrashed()->whereIn('id', $ids)->get()->keyBy('id');
 
                 $insert_contact = [];
                 foreach ($rows as $row) {
-                    
                     if (!isset($row['id'])) continue;
                     $contact = $exist_contact[$row['id']] ?? null;
+                    $id = $row['id'];
+
+                    $row = array_intersect_key($row, $fillable);
                     
                     if ($contact) {
                         unset($row['id']);
                         $contact->update($row); // UPDATE
+
+                        if (!empty($row['deleted_at'])) {
+                            if (!$contact->trashed()) {
+                                $contact->delete();
+                            }
+                        } else {
+                            if ($contact->trashed()) {
+                                $contact->restore();
+                            }
+                        }
                     } else {
+                        $row['id'] = $id;
                         $insert_contact[] = $row; // INSERT
                     }
                 }

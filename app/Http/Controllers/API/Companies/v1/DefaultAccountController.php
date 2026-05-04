@@ -133,6 +133,9 @@ class DefaultAccountController extends Controller
         $page = 1;
         $perPage = 500;
 
+        $model = new DefaultAccounts();
+        $fillable = array_flip($model->getFillable());
+
         do {
             $url = config('services.admin_credentials.server_url') . "/api/v1/default_accounts?page={$page}&per_page={$perPage}&is_simple=true";
             $result = NetworkHelper::curlWithToken($url);
@@ -150,11 +153,12 @@ class DefaultAccountController extends Controller
                 $insert_default_account = [];
                 foreach ($rows as $row) {
                     if (!isset($row['key'])) continue;
-
                     $default_account = $exist_default_account[$row['key']] ?? null;
-                    unset($row['id']);
 
+                    $row = array_intersect_key($row, $fillable);
+                    
                     if ($default_account) {
+                        unset($row['id']);
                         $default_account->update($row); // UPDATE
                     } else {
                         $insert_default_account[] = $row; // INSERT

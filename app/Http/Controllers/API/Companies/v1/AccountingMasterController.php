@@ -133,6 +133,9 @@ class AccountingMasterController extends Controller
         $page = 1;
         $perPage = 500;
 
+        $model = new AccountingMasters();
+        $fillable = array_flip($model->getFillable());
+
         do {
             $url = config('services.admin_credentials.server_url') . "/api/v1/accounting_masters?page={$page}&per_page={$perPage}&is_simple=true";
             $result = NetworkHelper::curlWithToken($url);
@@ -145,18 +148,28 @@ class AccountingMasterController extends Controller
 
             try {
                 $coas = collect($rows)->pluck('coa')->filter()->toArray();
-                $exist_coa = AccountingMasters::whereIn('coa', $coas)->get()->keyBy('coa');
+                $exist_coa = AccountingMasters::withTrashed()->whereIn('coa', $coas)->get()->keyBy('coa');
 
                 $insert_coa = [];
                 foreach ($rows as $row) {
-                    
                     if (!isset($row['coa'])) continue;
                     $coa = $exist_coa[$row['coa']] ?? null;
                     
-                    
+                    $row = array_intersect_key($row, $fillable);
+
                     if ($coa) {
                         unset($row['id']);
                         $coa->update($row); // UPDATE
+
+                        if (!empty($row['deleted_at'])) {
+                            if (!$coa->trashed()) {
+                                $coa->delete();
+                            }
+                        } else {
+                            if ($coa->trashed()) {
+                                $coa->restore();
+                            }
+                        }
                     } else {
                         $insert_coa[] = $row; // INSERT
                     }

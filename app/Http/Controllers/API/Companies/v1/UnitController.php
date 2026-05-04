@@ -133,6 +133,9 @@ class UnitController extends Controller
         $page = 1;
         $perPage = 500;
 
+        $model = new Units();
+        $fillable = array_flip($model->getFillable());
+
         do {
             $url = config('services.admin_credentials.server_url') . "/api/v1/units?page={$page}&per_page={$perPage}&is_simple=true";
             $result = NetworkHelper::curlWithToken($url);
@@ -145,17 +148,31 @@ class UnitController extends Controller
 
             try {
                 $ids = collect($rows)->pluck('id')->filter()->toArray();
-                $exist_unit = Units::whereIn('id', $ids)->get()->keyBy('id');
+                $exist_unit = Units::withTrashed()->whereIn('id', $ids)->get()->keyBy('id');
 
                 $insert_unit = [];
                 foreach ($rows as $row) {
                     if (!isset($row['id'])) continue;
                     $unit = $exist_unit[$row['id']] ?? null;
+                    $id = $row['id'];
+
+                    $row = array_intersect_key($row, $fillable);
                     
                     if ($unit) {
                         unset($row['id']);
                         $unit->update($row); // UPDATE
+
+                        if (!empty($row['deleted_at'])) {
+                            if (!$unit->trashed()) {
+                                $unit->delete();
+                            }
+                        } else {
+                            if ($unit->trashed()) {
+                                $unit->restore();
+                            }
+                        }
                     } else {
+                        $row['id'] = $id;
                         $insert_unit[] = $row; // INSERT
                     }
                 }

@@ -133,6 +133,9 @@ class ProductSkuVariantController extends Controller
         $page = 1;
         $perPage = 500;
 
+        $model = new ProductSkuVariants();
+        $fillable = array_flip($model->getFillable());
+
         do {
             $url = config('services.admin_credentials.server_url') . "/api/v1/product_sku_variants?page={$page}&per_page={$perPage}&is_simple=true";
             $result = NetworkHelper::curlWithToken($url);
@@ -145,17 +148,31 @@ class ProductSkuVariantController extends Controller
 
             try {
                 $ids = collect($rows)->pluck('id')->filter()->toArray();
-                $exist_sku_variant = ProductSkuVariants::whereIn('id', $ids)->get()->keyBy('id');
+                $exist_sku_variant = ProductSkuVariants::withTrashed()->whereIn('id', $ids)->get()->keyBy('id');
 
                 $insert_sku_variant = [];
                 foreach ($rows as $row) {
                     if (!isset($row['id'])) continue;
                     $sku_variant = $exist_sku_variant[$row['id']] ?? null;
+                    $id = $row['id'];
+
+                    $row = array_intersect_key($row, $fillable);
                      
                     if ($sku_variant) {
                         unset($row['id']);
                         $sku_variant->update($row); // UPDATE
+
+                        if (!empty($row['deleted_at'])) {
+                            if (!$sku_variant->trashed()) {
+                                $sku_variant->delete();
+                            }
+                        } else {
+                            if ($sku_variant->trashed()) {
+                                $sku_variant->restore();
+                            }
+                        }
                     } else {
+                        $row['id'] = $id;
                         $insert_sku_variant[] = $row; // INSERT
                     }
                 }
