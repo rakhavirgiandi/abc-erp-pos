@@ -514,61 +514,70 @@ class Users extends Model
     {
         if (env('IS_ONPREMISE', false)) {
             if (NetworkHelper::isConnected()) {
-                $db = env('DB_DATABASE');
-    
-                $exists = DB::connection('pgsql_admin')->select("SELECT 1 FROM pg_database WHERE datname = ?", [$db]);
-    
-                if (empty($exists)) {
-                    DB::connection('pgsql_admin')->statement("CREATE DATABASE \"{$db}\"");
-                }
-    
-                DB::purge('pgsql');
-                DB::reconnect('pgsql');
-    
-                Artisan::call('migrate', [ '--database' => 'pgsql', '--force' => true ]);
-
-                $clientExists = DB::connection('pgsql')->table('oauth_clients')->where('personal_access_client', true)->exists();
-
-                if (!$clientExists) {
-                    $clientId = Str::uuid()->toString();
-                    $clientSecret = Str::random(40);
-
-                    DB::connection('pgsql')->table('oauth_clients')->insert([
-                        'id' => $clientId,
-                        'user_id' => null,
-                        'name' => 'Personal Access Client',
-                        'secret' => hash('sha256', $clientSecret),
-                        'provider' => 'users',
-                        'redirect' => 'http://localhost',
-                        'personal_access_client' => true,
-                        'password_client' => false,
-                        'revoked' => false,
-                        'created_at' => now(),
-                        'updated_at' => now(),
-                    ]);
-
-                    DB::connection('pgsql')->table('oauth_personal_access_clients')->insert([
-                        'client_id' => $clientId,
-                        'created_at' => now(),
-                        'updated_at' => now(),
-                    ]);
-                }
-
                 $response = null;
 
                 try {
                     $response = NetworkHelper::loginToServer($params);
+
+                    if (isset($response['status']) && $response['status'] == 'error') {
+                        return response()->json([
+                            'status' => 'error',
+                            'message' => '[SERVER <a href="https://app.abcerp.id">https://app.abcerp.id</a>] : '.$response['message'],
+                            'data' => null  
+                        ], 401);
+                    }
                 } catch (\Throwable $e) {
                     \Log::warning('Login server gagal: ' . $e->getMessage());
                 
                     return response()->json([
                         'status' => 'error',
-                        'message' => 'Username dan Password Tidak Sesuai',
+                        'message' => 'Username dan Password Pada <a href="https://app.abcerp.id">https://app.abcerp.id</a> Tidak Sesuai',
                         'data' => null  
                     ], 401);
                 }
 
+                // CREATE DB Hanya ketika login nya sukses, kalo gagal jangan create db di local
                 if ($response) {
+                    $db = config('database.connections.pgsql.database');
+        
+                    $exists = DB::connection('pgsql_admin')->select("SELECT 1 FROM pg_database WHERE datname = ?", [$db]);
+        
+                    if (empty($exists)) {
+                        DB::connection('pgsql_admin')->statement("CREATE DATABASE \"{$db}\"");
+                    }
+        
+                    DB::purge('pgsql');
+                    DB::reconnect('pgsql');
+        
+                    Artisan::call('migrate', [ '--database' => 'pgsql', '--force' => true ]);
+
+                    $client_exists = DB::connection('pgsql')->table('oauth_clients')->where('personal_access_client', true)->exists();
+
+                    if (!$client_exists) {
+                        $clientId = Str::uuid()->toString();
+                        $clientSecret = Str::random(40);
+
+                        DB::connection('pgsql')->table('oauth_clients')->insert([
+                            'id' => $clientId,
+                            'user_id' => null,
+                            'name' => 'Personal Access Client',
+                            'secret' => hash('sha256', $clientSecret),
+                            'provider' => 'users',
+                            'redirect' => 'http://localhost',
+                            'personal_access_client' => true,
+                            'password_client' => false,
+                            'revoked' => false,
+                            'created_at' => now(),
+                            'updated_at' => now(),
+                        ]);
+
+                        DB::connection('pgsql')->table('oauth_personal_access_clients')->insert([
+                            'client_id' => $clientId,
+                            'created_at' => now(),
+                            'updated_at' => now(),
+                        ]);
+                    }
+
                     $data = $response['data'];
 
                     $user = self::where('email', $data['email'])->first();

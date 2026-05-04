@@ -12,7 +12,7 @@
     <meta name="Author" content="ABC Group Teknologi Indonesia">
     <meta name="keywords" content="ABC, Aplikasi Sekolah, Software Sekolah, PT Alimrugi Bisnis Creative, ABC Group Teknologi Indonesia">
     <!-- Favicon -->
-    <link rel="icon" href="{{ asset('assets/images/brand-logos/favicon.ico') }}" type="image/x-icon">
+    <link rel="shortcut icon" href="{{ asset('assets/images/logo-sm-new.ico')}}">
 
     {{-- <script src="{{ asset('assets/js/authentication-main.js') }}"></script> --}}
 
@@ -235,9 +235,21 @@
 
 	                $('#company-content').html(html);
 	            },
-	            error: function(jqXHR, textStatus, errorThrown){
+                error: function(jqXHR, textStatus, errorThrown){
+                    let html = '';
 
-	            },
+                    let res = JSON.parse(jqXHR.responseText);
+
+                    html += '<div class="col-md-12">';
+                    html += '    <div class="card border rounded-4 shadow-sm company-card">';
+                    html += '        <div class="card-body bg-warning">';
+                    html += '           <p class="fw-bold">'+res.message+'</p>'
+                    html += '        </div>';
+                    html += '    </div>';
+                    html += '</div>';
+
+                    $('#company-content').html(html);
+                },
 	        });
 	    }
 
@@ -260,7 +272,8 @@
                 company_id: data.company_id,
                 type: data.type,
                 company: data.company,
-                subscription: data.subscription
+                subscription: data.subscription,
+                slug: data.slug
             };
 
             $.ajax({
@@ -307,6 +320,18 @@
 
 			            return true;
                 	}
+                },
+                error: function(jqXHR, textStatus, errorThrown){
+                    let res = JSON.parse(jqXHR.responseText);
+                    Swal.fire({
+                        title: "Gagal",
+                        text: res.message,
+                        showConfirmButton: true,
+                        confirmButtonColor: '#0760ef',
+                        icon: "error"
+                    });
+
+                    return true;
                 },
             });
 		});

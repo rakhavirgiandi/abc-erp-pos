@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Web;
 
+use App\Helpers\NetworkHelper;
 use App\Http\Controllers\Controller;
 use App\Models\Companies;
 use App\Models\Subscriptions;
@@ -42,6 +43,18 @@ class ChooseCompanyController extends Controller
                     'status' => 'error',
                     'message' => 'Status data Anda telah Not Active. Data anda telah dihapus dari database kami.'
                 ]);
+            }
+        } else {
+            $internet_connection = NetworkHelper::isConnected();
+            if (!$internet_connection && env('IS_ONPREMISE', false)) {
+                return response()->json([
+                    'status' => 'error',
+                    'message' => 'Database Anda belum tersinkron dengan Database Server. Pastikan koneksi internet Anda Aktif untuk melakukan proses sinkron',
+                    'data' => [
+                        'internet_connection' => $internet_connection,
+                        'is_onpremise' => env('IS_ONPREMISE')
+                    ]
+                ], 400);
             }
         }
 

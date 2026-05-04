@@ -43,5 +43,14 @@ return [
         'server_url' => 'https://app.abcerp.id',
         'email' => 'admin@gmail.com',
         'password' => '123abc',
-    ]
+    ],
+
+    // 'on_premise_db_central_cred' => [
+    //     'DB_CONNECTION' => env('DB_CONNECTION', 'pgsql'),
+    //     'DB_HOST' => env('DB_HOST', '127.0.0.1'),
+    //     'DB_PORT' => env('DB_PORT', '5432'),
+    //     'DB_DATABASE' => env('DB_DATABASE', 'abcerp_central'),
+    //     'DB_USERNAME' => env('DB_USERNAME', 'bukanadmin'),
+    //     'DB_PASSWORD' => env('DB_PASSWORD', 'B15mi1Ll@h'),
+    // ],
 ];

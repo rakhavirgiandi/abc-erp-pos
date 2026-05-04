@@ -4,10 +4,11 @@ namespace App\Models;
 
 use App\Helpers\ModelHelper;
 use App\Models\Companies;
+use App\Models\CompanyCredentials;
 use App\Models\Subscriptions;
-use Illuminate\Support\Facades\DB;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 
 /**
@@ -265,6 +266,22 @@ class UserCompanies extends Model
         $db->where('type', $type);
 
         $results = ModelHelper::generateAllResults($schema, $params, $request, $db, $append);
+
+        $company_ids = [];
+
+        foreach ($results as $row) {
+            $company_ids[] = $row['company_id'];
+        }
+
+        $company_credentials = CompanyCredentials::select('company_id', 'db_database')->whereIn('company_id', $company_ids)->get()->pluck('db_database', 'company_id')->toArray();
+
+        foreach ($results as $key => $row) {
+            $results[$key]['slug'] = null;
+
+            if (isset($company_credentials[$row['company_id']]) && $company_credentials[$row['company_id']]) {
+                $results[$key]['slug'] = $company_credentials[$row['company_id']];
+            }
+        }
 
         return response()->json($results);
     }
