@@ -156,9 +156,9 @@ class GeneralSettingController extends Controller
                     }
 
                     $general_setting = $exist_general_setting[$row['key']] ?? null;
+                    unset($row['id']);
                     
                     if ($general_setting) {
-                        unset($row['id']);
                         $general_setting->update($row); // UPDATE
                     } else {
                         $insert_general_setting[] = $row; // INSERT
