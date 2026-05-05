@@ -157,8 +157,8 @@ class DefaultAccountController extends Controller
 
                     $row = array_intersect_key($row, $fillable);
                     
+                    unset($row['id']);
                     if ($default_account) {
-                        unset($row['id']);
                         $default_account->update($row); // UPDATE
                     } else {
                         $insert_default_account[] = $row; // INSERT
