@@ -619,13 +619,101 @@ class Companies extends Model
     }
 
     public static function databaseStarter($params, $request)
-    {
-        if (!NetworkHelper::isConnected()) {
-            return;
-        }
+    {   
 
         if (!config('services.is_onpremise')) {
             return;
+        }
+
+        if (!NetworkHelper::isConnected()) {
+
+            DB::connection('pgsql')->beginTransaction();
+
+            try {
+
+                $company_payload = $params['company'] ?? null;
+                $subscription_payload = $params['subscription'] ?? null;
+                $slug = null;
+    
+                if (!$company_payload || !$subscription_payload) {
+                    DB::connection('pgsql')->rollBack();
+                    return response()->json([
+                        'status' => 'error',
+                        'message' => 'Invalid payload: company or subscription missing'
+                    ], 400);
+                }
+
+                $slug = $params['slug'];
+
+                $check_db = DB::connection('pgsql_admin')->select("SELECT 1 FROM pg_catalog.pg_database WHERE datname = ?", [$slug]);
+
+                if (empty($check_db)) {
+                    DB::connection('pgsql_admin')->rollBack();
+                    return response()->json([
+                        'status' => 'error',
+                        'message' => 'Database tidak ditemukan, Harap sinkron ulang'
+                    ], 400);
+                }
+
+                config(['database.connections.pgsql_companies' => [
+                    'driver' => 'pgsql',
+                    'host' => config('database.connections.pgsql.host'),
+                    'port' => config('database.connections.pgsql.port'),
+                    'database' => $slug,
+                    'username' => config('database.connections.pgsql.username'),
+                    'password' => config('database.connections.pgsql.password'),
+                    'charset' => 'utf8',
+                    'prefix' => '',
+                    'prefix_indexes' => true,
+                    'schema' => 'public',
+                    'sslmode' => 'prefer',
+                ]]);
+
+                DB::purge('pgsql_companies');
+                DB::reconnect('pgsql_companies');
+
+                $request->session()->put('_company_id', $params['company_id']);
+
+                $result = Artisan::call('migrate', [ '--path' => 'database/migration_company', '--database' => 'pgsql_companies', '--force' => true]);
+
+                if ($result != 0) {
+                    DB::connection('pgsql_companies')->rollBack();
+                    return response()->json([
+                        'status' => 'error',
+                        'message' => 'Migration failed: ' . Artisan::output()
+                    ], 500);
+                }
+
+                if ($result == 0) {
+                    $user = Users::find($company_payload['user_id']);
+
+                    if ($user) {
+                        $company_user = CompanyUsers::where('email', $user->email)->first();
+
+                        if (!$company_user) {
+                            DB::connection('pgsql_companies')->rollBack();
+                            return response()->json([
+                                'status' => 'error',
+                                'message' => 'Pengguna tidak ditemukan. Harap tambahkan pengguna di href abc erp'
+                            ], 400);
+                        }
+                    } else {
+                        DB::connection('pgsql_companies')->rollBack();
+                        return response()->json([
+                            'status' => 'error',
+                            'message' => 'Pengguna tidak ditemukan di database central'
+                        ], 400);
+                    }
+                }
+            
+            } catch (\Throwable $th) {
+
+                DB::connection('pgsql')->rollBack();
+                return response()->json([
+                    'status' => 'error',
+                    'message' => $th->getMessage()
+                ]);
+            }
         }
 
         DB::connection('pgsql')->beginTransaction();

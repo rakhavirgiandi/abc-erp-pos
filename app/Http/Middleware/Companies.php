@@ -6,6 +6,7 @@ use App\Helpers\DateHelper;
 use App\Helpers\GlobalHelper;
 use App\Models\Companies\v1\Branches;
 use App\Models\Companies\v1\Currencies;
+use App\Models\Companies\v1\Products;
 use App\Models\Companies\v1\Users;
 use App\Models\Companies\v1\GeneralSettings;
 use App\Models\Companies\v1\DefaultAccounts;
@@ -177,6 +178,8 @@ class Companies
                     config(['user_companies.' . $userKey => $userVal]);
                 }
                 config(['user_companies.details' => $user]);
+                config(['user_companies.is_access_to_pos' => $request->session()->get('_is_access_to_pos')]);
+                config(['user_companies.is_first' => Branches::count() > 0 ? 0 : 1]);
             } else {
                 return response()->json([
                     'status' => 'error',

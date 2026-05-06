@@ -31,8 +31,8 @@ class PointOfSalesController extends Controller
     {
         $params = $request->all();
 
-        $warehouse = Warehouses::where('id', '=', config('user.warehouse_id'))->first();
-        $branch = Branches::where('id', '=', config('user.branch_id'))->first();
+        $warehouse = Warehouses::where('id', '=', config('user_companies.warehouse_id'))->first();
+        $branch = Branches::where('id', '=', config('user_companies.branch_id'))->first();
         $currency = Currencies::where('id', '=', config('general_settings.default_currency'))->first();
 
         
@@ -72,7 +72,7 @@ class PointOfSalesController extends Controller
         $params['project_name'] = config('general_settings.project_name');
         $params['down_payment_amount'] = 0;
         $params['discount_percentage'] = 0;
-        $params['created_by'] = config('user.id');
+        $params['created_by'] = config('user_companies.id');
 
         if (isset($params['is_draft']) && $params['is_draft']) {
             unset($params['is_draft']);
@@ -106,9 +106,9 @@ class PointOfSalesController extends Controller
     public function getRefNumber (Request $request)
     {   
         $now = Carbon::now();
-        $branch_id = config('user.branch_id') ? config('user.branch_id') : config('general_settings.default_branch');
+        $branch_id = config('user_companies.branch_id') ? config('user_companies.branch_id') : config('general_settings.default_branch');
         $branch = Branches::where('id', '=', $branch_id)->first();
-        $user_id = config('user.id');
+        $user_id = config('user_companies.id');
         $prefix = 'POS';
 
         if (!$branch) {

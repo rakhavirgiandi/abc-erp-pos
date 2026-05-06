@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Web;
 use App\Helpers\NetworkHelper;
 use App\Http\Controllers\Controller;
 use App\Models\Companies;
+use App\Models\Companies\v1\Products;
 use App\Models\Subscriptions;
 use Illuminate\Http\Request;
 
@@ -59,6 +60,11 @@ class ChooseCompanyController extends Controller
         }
 
         $request->session()->put('_company_id', $params['company_id']);
+
+        // dd(config('database.connections.pgsql_companies.database'));
+
+        $exists = Products::count();
+        $request->session()->put('_is_first', $exists > 0 ? 0 : 1);
 
         return response()->json([
             'status' => 'success'

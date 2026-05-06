@@ -580,6 +580,7 @@
 
         const SCAN_SPEED_THRESHOLD = 30;
         const MIN_BARCODE_LENGTH = 6;
+        let IS_FIRST = parseFloat('{{config('user_companies.is_first')}}');
 
         let productStockDt;
 
@@ -3098,7 +3099,7 @@
                     ) &&
                     (
                         d.branch_id === null ||
-                        d.branch_id == '{{ config('user.branch_id') }}'
+                        d.branch_id == '{{ config('user_companies.branch_id') }}'
                     ) &&
                     (
                         !d.product_sku_id ||
@@ -3117,7 +3118,7 @@
                             s += 1;
                         }
 
-                        if (d.branch_id !== null && d.branch_id == '{{ config('user.branch_id') }}') {
+                        if (d.branch_id !== null && d.branch_id == '{{ config('user_companies.branch_id') }}') {
                             s += 1;
                         }
                     
@@ -3588,6 +3589,10 @@
 
         $(document).on('shown.bs.modal', '#authenticate-modal', function () {
             $('#input-password').focus()
+        })
+
+        $(document).on('shown.bs.hidden', '#authenticate-modal', function () {
+            $('#input-password').value('');
         })
 
         $(document).on('click', '#lockscreen-toggle', function() {
@@ -4478,21 +4483,6 @@
             });
         });
 
-        const starting = () => {
-            generateRefNumber();
-            loadProducts({
-                refresh: true
-            });
-            $('#input-search-product').focus();
-            loadProductCategories();
-            setCustomerDefaultValue()
-        }
-
-        if (!IS_ACCESS_TO_POS) {
-            $('#authenticate-modal').modal('show');
-        } else {
-            starting()
-        }
 
         $(document).on('hidden.bs.modal', '.modal', function () {
             $('#input-search-product').focus();
@@ -4567,7 +4557,7 @@
                 page: historiesPages[activeTab],
                 is_active: 1,
                 is_from_pos: 1,
-                created_by: '{{ config('user.id') }}',
+                created_by: '{{ config('user_companies.id') }}',
                 ...props?.params
             }
 
@@ -5578,6 +5568,80 @@
 
             }, 500);
         });
+
+        const starting = () => {
+            if (IS_FIRST) {
+                Swal.fire({
+                    title: 'Mohon Tunggu',
+                    html: `<div style="margin-bottom: .25rem;">Sedang menyinkronkan data</div> <br> <div class="progress">
+                                <div class="progress-bar bg-secondary" id="sync-progress-bar" style="width: 0%"></div>
+                            </div>`,
+                    showConfirmButton: false
+                });
+
+                processSync({
+                    options: [
+                        'product',
+                        'transaction',
+                        'stock_product',
+                        'customer',
+                        'branch',
+                        'warehouse',
+                        'reward_point_and_point_rule',
+                        'accounting_master',
+                        'settings',
+                        'payment_method',
+                        'currencies',
+                        'permissions'
+                    ],
+                    processUpdated: (res) => {
+                        $('#sync-progress-bar').css('width', res+'%')
+                    },
+                    done: (errs) => {
+                        let errMessage = '';
+
+                        if (errs?.length > 0) {
+                            errs?.forEach((item, idx) => {
+                                errMessage += '<div style="margin-bottom: .25rem">'+item+'<div>';
+                            })
+                        }
+
+                        IS_FIRST = 0
+
+                        setTimeout(() => {
+                            Swal.fire({
+                                icon: (errs?.length > 0) ? 'warning' : 'success',
+                                title: 'Proses Selesai',
+                                html: (errs?.length > 0) ? errMessage : 'Proses sinkron berhasil'
+                            }).then((result) => {
+                                generateRefNumber();
+                                loadProducts({
+                                    refresh: true
+                                });
+                                $('#input-search-product').focus();
+                                loadProductCategories();
+                                setCustomerDefaultValue();
+                            });
+                        }, 1000)
+                    }
+                })
+            } else {
+                generateRefNumber();
+                loadProducts({
+                    refresh: true
+                });
+                $('#input-search-product').focus();
+                loadProductCategories();
+                setCustomerDefaultValue();
+            }
+
+        }
+
+        if (!IS_ACCESS_TO_POS) {
+            $('#authenticate-modal').modal('show');
+        } else {
+            starting()
+        }
     });
 </script>
 @endsection

@@ -45,6 +45,7 @@ class AuthController extends Controller
         $request->session()->put('_name', $params['name']);
         $request->session()->put('_email', $params['email']);
         $request->session()->put('_phone', $params['phone']);
+        $request->session()->put('_is_access_to_pos', true);
 
         return response()->json([
             'status' => 'success'
