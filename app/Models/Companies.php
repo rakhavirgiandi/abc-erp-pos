@@ -694,7 +694,7 @@ class Companies extends Model
                             DB::connection('pgsql_companies')->rollBack();
                             return response()->json([
                                 'status' => 'error',
-                                'message' => 'Pengguna tidak ditemukan. Harap tambahkan pengguna di href abc erp'
+                                'message' => 'Pengguna tidak ditemukan. Harap tambahkan pengguna di <a href="https://app.abcerp.id">https://app.abcerp.id</a>'
                             ], 400);
                         }
                     } else {
