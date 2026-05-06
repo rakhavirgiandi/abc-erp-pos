@@ -160,7 +160,7 @@ class Users extends Model
     {
         $totalData = self::count();
 
-        $qry = ModelHelper::select(self::mapSchema()['field'], null, _CLASS_);
+        $qry = ModelHelper::select(self::mapSchema()['field'], null, __CLASS__);
         ModelHelper::join(self::mapSchema()['join'], null, $qry);
         
         if (count($filter) > 0) {
@@ -226,15 +226,15 @@ class Users extends Model
             unset($params['or']);
         }
 
-        $db = ModelHelper::select(self::mapSchema()['field'], $request, _CLASS_);
+        $db = ModelHelper::select(self::mapSchema()['field'], $request, __CLASS__);
         ModelHelper::join(self::mapSchema()['join'], $request, $db);
 
         if ($params) {
-            ModelHelper::dynamicFilterAnd($params, $request, $db, _CLASS_);
+            ModelHelper::dynamicFilterAnd($params, $request, $db, __CLASS__);
         }
 
         if ($or) {
-            ModelHelper::dynamicFilterOr($or, $request, $db, _CLASS_);
+            ModelHelper::dynamicFilterOr($or, $request, $db, __CLASS__);
         }
 
         $results = ModelHelper::generatePagingResults($schema, $paramsPage, $params, $request, $db, $append);
@@ -248,7 +248,7 @@ class Users extends Model
 
         $append = [];
         
-        $db = ModelHelper::select(self::mapSchema()['field'], $request, _CLASS_)->where($models->table.'.id', $id);
+        $db = ModelHelper::select(self::mapSchema()['field'], $request, __CLASS__)->where($models->table.'.id', $id);
         
         ModelHelper::join(self::mapSchema()['join'], $request, $db);
         
@@ -273,15 +273,15 @@ class Users extends Model
             unset($params['or']);
         }
 
-        $db = ModelHelper::select(self::mapSchema()['field'], $request, _CLASS_);
+        $db = ModelHelper::select(self::mapSchema()['field'], $request, __CLASS__);
         ModelHelper::join(self::mapSchema()['join'], $request, $db);
 
         if ($params) {
-            ModelHelper::dynamicFilterAnd($params, $request, $db, _CLASS_);
+            ModelHelper::dynamicFilterAnd($params, $request, $db, __CLASS__);
         }
 
         if ($or) {
-            ModelHelper::dynamicFilterOr($or, $request, $db, _CLASS_);
+            ModelHelper::dynamicFilterOr($or, $request, $db, __CLASS__);
         }
 
         $results = ModelHelper::generateAllResults($schema, $params, $request, $db, $append);
