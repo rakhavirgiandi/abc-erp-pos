@@ -23,6 +23,8 @@ use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Str;
+use Laravel\Passport\ClientRepository;
+use Laravel\Passport\Client;
 
 /**
  * @property string name
@@ -158,7 +160,7 @@ class Users extends Model
     {
         $totalData = self::count();
 
-        $qry = ModelHelper::select(self::mapSchema()['field'], null, __CLASS__);
+        $qry = ModelHelper::select(self::mapSchema()['field'], null, _CLASS_);
         ModelHelper::join(self::mapSchema()['join'], null, $qry);
         
         if (count($filter) > 0) {
@@ -224,15 +226,15 @@ class Users extends Model
             unset($params['or']);
         }
 
-        $db = ModelHelper::select(self::mapSchema()['field'], $request, __CLASS__);
+        $db = ModelHelper::select(self::mapSchema()['field'], $request, _CLASS_);
         ModelHelper::join(self::mapSchema()['join'], $request, $db);
 
         if ($params) {
-            ModelHelper::dynamicFilterAnd($params, $request, $db, __CLASS__);
+            ModelHelper::dynamicFilterAnd($params, $request, $db, _CLASS_);
         }
 
         if ($or) {
-            ModelHelper::dynamicFilterOr($or, $request, $db, __CLASS__);
+            ModelHelper::dynamicFilterOr($or, $request, $db, _CLASS_);
         }
 
         $results = ModelHelper::generatePagingResults($schema, $paramsPage, $params, $request, $db, $append);
@@ -246,7 +248,7 @@ class Users extends Model
 
         $append = [];
         
-        $db = ModelHelper::select(self::mapSchema()['field'], $request, __CLASS__)->where($models->table.'.id', $id);
+        $db = ModelHelper::select(self::mapSchema()['field'], $request, _CLASS_)->where($models->table.'.id', $id);
         
         ModelHelper::join(self::mapSchema()['join'], $request, $db);
         
@@ -271,15 +273,15 @@ class Users extends Model
             unset($params['or']);
         }
 
-        $db = ModelHelper::select(self::mapSchema()['field'], $request, __CLASS__);
+        $db = ModelHelper::select(self::mapSchema()['field'], $request, _CLASS_);
         ModelHelper::join(self::mapSchema()['join'], $request, $db);
 
         if ($params) {
-            ModelHelper::dynamicFilterAnd($params, $request, $db, __CLASS__);
+            ModelHelper::dynamicFilterAnd($params, $request, $db, _CLASS_);
         }
 
         if ($or) {
-            ModelHelper::dynamicFilterOr($or, $request, $db, __CLASS__);
+            ModelHelper::dynamicFilterOr($or, $request, $db, _CLASS_);
         }
 
         $results = ModelHelper::generateAllResults($schema, $params, $request, $db, $append);
@@ -514,6 +516,7 @@ class Users extends Model
     {   
         if (config('services.is_onpremise')) {
             if (NetworkHelper::isConnected()) {
+
                 $response = null;
 
                 try {
@@ -650,7 +653,29 @@ class Users extends Model
             //     ]); 
             // }
         }
+        
+        $exists = Client::where('personal_access_client', true)
+            ->where('revoked', false)
+            ->exists();
 
+        if (!$exists) {
+            $client = \Laravel\Passport\Client::forceCreate([
+                'id'                     => (string) \Illuminate\Support\Str::uuid(),
+                'user_id'                => null,
+                'name'                   => config('app.name') . ' Personal Access Client',
+                'secret'                 => \Illuminate\Support\Str::random(40),
+                'provider'               => 'users',
+                'redirect'               => '',
+                'personal_access_client' => true,
+                'password_client'        => false,
+                'revoked'                => false,
+            ]);
+
+            \Laravel\Passport\PersonalAccessClient::forceCreate([
+                'client_id' => $client->id,
+            ]);
+        }
+        
         $tokenResult = $user->createToken('login_member_'.$user_value);
 
         $token = $tokenResult->token;
