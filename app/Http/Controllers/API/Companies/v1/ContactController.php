@@ -117,7 +117,7 @@ class ContactController extends Controller
         return json_encode($json_data);
     }
 
-        public static function syncToLocal(Request $request)
+    public static function syncToLocal(Request $request)
     {
         if (!NetworkHelper::isConnected()) {
             $params = $request->all();
@@ -133,6 +133,9 @@ class ContactController extends Controller
         $page = 1;
         $perPage = 500;
 
+        $model = new Contacts();
+        $fillable = array_flip($model->getFillable());
+
         do {
             $url = config('services.admin_credentials.server_url') . "/api/v1/contacts?is_customer=1&page={$page}&per_page={$perPage}&is_simple=true";
             $result = NetworkHelper::curlWithToken($url);
@@ -145,27 +148,31 @@ class ContactController extends Controller
 
             try {
                 $ids = collect($rows)->pluck('id')->filter()->toArray();
-                $exist_contact = Contacts::whereIn('id', $ids)->get()->keyBy('id');
+                $exist_contact = Contacts::withTrashed()->whereIn('id', $ids)->get()->keyBy('id');
 
                 $insert_contact = [];
                 foreach ($rows as $row) {
-                    
                     if (!isset($row['id'])) continue;
                     $contact = $exist_contact[$row['id']] ?? null;
-                    
-                    unset(
-                        $row['country_name'], 
-                        $row['province_name'],
-                        $row['city_name'],
-                        $row['contact_group_name'],
-                        $row['currency_name'],
-                        $row['point_balance'],
-                    );
+                    $id = $row['id'];
+
+                    $row = array_intersect_key($row, $fillable);
                     
                     if ($contact) {
                         unset($row['id']);
                         $contact->update($row); // UPDATE
+
+                        if (!empty($row['deleted_at'])) {
+                            if (!$contact->trashed()) {
+                                $contact->delete();
+                            }
+                        } else {
+                            if ($contact->trashed()) {
+                                $contact->restore();
+                            }
+                        }
                     } else {
+                        $row['id'] = $id;
                         $insert_contact[] = $row; // INSERT
                     }
                 }

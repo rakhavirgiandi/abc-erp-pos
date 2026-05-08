@@ -137,8 +137,11 @@ class UserController extends Controller
         $page = 1;
         $perPage = 500;
 
+        $model = new Users();
+        $fillable = array_flip($model->getFillable());
+
         do {
-            $url = config('services.admin_credentials.server_url') . "/api/v1/users?page={$page}&per_page={$perPage}&is_simple=true";
+            $url = config('services.admin_credentials.server_url') . "/api/v1/users?page={$page}&per_page={$perPage}&is_simple=true&with_trashed=1";
             $result = NetworkHelper::curlWithToken($url);
 
             $rows = $result['data'] ?? [];
@@ -149,14 +152,24 @@ class UserController extends Controller
 
             try {
                 $emails = collect($rows)->pluck('email')->filter()->unique()->toArray();
-                $existing_users = Users::whereIn('email', $emails)->get()->keyBy('email');
+
+                $existing_users = Users::withTrashed()->whereIn('email', $emails)->get()->keyBy('email');
+                $centralUsers = CentralUser::whereIn('email', $emails)->get()->keyBy('email');
 
                 $insert = [];
 
                 foreach ($rows as $row) {
                     if (!isset($row['email'])) continue;
 
-                    $user = $existing_users[$row['email']] ?? null;
+                    $email = $row['email'];
+                    $user = $existing_users[$email] ?? null;
+                    $id = $row['id'];
+
+                    $row = array_intersect_key($row, $fillable);
+
+                    if (isset($row['password']) && !str_starts_with($row['password'], '$2y$')) {
+                        $row['password'] = bcrypt($row['password']);
+                    }
 
                     if ($user) {
                         unset($row['id']);
@@ -165,18 +178,21 @@ class UserController extends Controller
                             unset($row['password']);
                         }
 
-                        if (isset($row['password']) && !str_starts_with($row['password'], '$2y$')) {
-                            $row['password'] = bcrypt($row['password']);
-                        }
-
                         $user->update($row);
 
-                    } else {
-                        if (isset($row['password']) && !str_starts_with($row['password'], '$2y$')) {
-                            $row['password'] = bcrypt($row['password']);
+                        if (!empty($row['deleted_at'])) {
+                            if (!$user->trashed()) {
+                                $user->delete();
+                            }
+                        } else {
+                            if ($user->trashed()) {
+                                $user->restore();
+                            }
                         }
 
-                        $row['username'] = $row['email'];
+                    } else {
+                        $row['id'] = $id;
+                        $row['username'] = $email;
 
                         $insert[] = $row;
                     }
@@ -184,13 +200,14 @@ class UserController extends Controller
 
                 if (!empty($insert)) {
                     foreach ($insert as $row) {
-                        $customer = CentralUser::where('email', $row['email'])->first();
+                        $email = $row['email'];
+                        $customer = $centralUsers[$email] ?? null;
 
                         if (!$customer) {
                             $customer = CentralUser::create([
                                 'id' => Str::orderedUuid()->toString(),
                                 'name' => $row['name'],
-                                'email' => $row['email'],
+                                'email' => $email,
                                 'phone' => $row['phone'] ?? null,
                                 'password' => $row['password'],
                             ]);
@@ -215,7 +232,7 @@ class UserController extends Controller
                 DB::connection('pgsql_companies')->rollBack();
                 return response()->json([
                     'status' => 'error',
-                    'message' => 'Gagal sync bank',
+                    'message' => 'Gagal sync user',
                     'error' => $e->getMessage()
                 ], 500);
             }
@@ -226,7 +243,7 @@ class UserController extends Controller
 
         return response()->json([
             'status' => 'success',
-            'message' => 'Sync bank berhasil',
+            'message' => 'Sync user berhasil',
         ]);
     }
 }

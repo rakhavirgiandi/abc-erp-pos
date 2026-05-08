@@ -133,6 +133,9 @@ class ProductCategoryController extends Controller
         $page = 1;
         $perPage = 500;
 
+        $model = new ProductCategories();
+        $fillable = array_flip($model->getFillable());
+
         do {
             $url = config('services.admin_credentials.server_url') . "/api/v1/product_categories?page={$page}&per_page={$perPage}&is_simple=true";
             $result = NetworkHelper::curlWithToken($url);
@@ -151,21 +154,15 @@ class ProductCategoryController extends Controller
                 foreach ($rows as $row) {
                     if (!isset($row['id'])) continue;
                     $categories = $exist_categories[$row['id']] ?? null;
+                    $id = $row['id'];
                     
-                    unset(
-                        $row['inventory_coa_name'],
-                        $row['delivery_goods_coa_name'],
-                        $row['receipt_goods_coa_name'],
-                        $row['cogs_coa_name'],
-                        $row['purchase_return_coa_name'],
-                        $row['sales_coa_name'],
-                        $row['sales_return_coa_name']
-                    );
+                    $row = array_intersect_key($row, $fillable);
                     
                     if ($categories) {
                         unset($row['id']);
                         $categories->update($row); // UPDATE
                     } else {
+                        $row['id'] = $id;
                         $insert_categories[] = $row; // INSERT
                     }
                 }
@@ -189,13 +186,9 @@ class ProductCategoryController extends Controller
 
         } while ($page <= ($result['nav']['totalPage'] ?? 1));
 
-        $params = $request->all();
-        $res = ProductCategories::getPaginatedResult($params, $request);
-
         return response()->json([
             'status' => 'success',
             'message' => 'Sync product categories berhasil',
-            'data' => $res
         ]);
     }
 }

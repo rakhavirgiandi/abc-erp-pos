@@ -163,6 +163,9 @@ class ProductController extends Controller
         $page = 1;
         $perPage = 500;
 
+        $model = new Products();
+        $fillable = array_flip($model->getFillable());
+
         do {
             $url = config('services.admin_credentials.server_url') . "/api/v1/products?page={$page}&per_page={$perPage}&is_simple=true&order_by=id&sort=asc";
             $result = NetworkHelper::curlWithToken($url);
@@ -175,7 +178,7 @@ class ProductController extends Controller
 
             try {
                 $ids = collect($rows)->pluck('id')->filter()->toArray();
-                $exist_product = Products::whereIn('id', $ids)->get()->keyBy('id');
+                $exist_product = Products::withTrashed()->whereIn('id', $ids)->get()->keyBy('id');
 
                 $category_map = ProductCategories::pluck('id', 'code'); 
                 $tax_map = Taxes::pluck('id', 'code');
@@ -187,6 +190,7 @@ class ProductController extends Controller
                     if (!isset($row['id'])) continue;
 
                     $product = $exist_product[$row['id']] ?? null;
+                    $id = $row['id'];
 
                     if (!empty($row['category_code'])) {
                         $row['product_category_id'] = $category_map[$row['category_code']] ?? null;
@@ -204,23 +208,23 @@ class ProductController extends Controller
                         $row['purchase_tax_id'] = $tax_map[$row['purchase_tax_code']] ?? null;
                     }
 
-                    unset(
-                        $row['category_name'], 
-                        $row['category_code'],
-                        $row['unit_name'],
-                        $row['unit_code'],
-                        $row['sale_tax_name'],
-                        $row['sale_tax_code'],
-                        $row['purchase_tax_name'],
-                        $row['purchase_tax_code'],
-                        $row['qty_on_hand'],
-                        $row['is_product_unit_convert'],
-                    );
+                    $row = array_intersect_key($row, $fillable);
 
                     if ($product) {
                         unset($row['id']);
                         $product->update($row);
+
+                        if (!empty($row['deleted_at'])) {
+                            if (!$product->trashed()) {
+                                $product->delete();
+                            }
+                        } else {
+                            if ($product->trashed()) {
+                                $product->restore();
+                            }
+                        }
                     } else {
+                        $row['id'] = $id;
                         $insert_product[] = $row;
                     }
                 }

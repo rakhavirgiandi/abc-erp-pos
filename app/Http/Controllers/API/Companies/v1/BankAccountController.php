@@ -133,6 +133,9 @@ class BankAccountController extends Controller
         $page = 1;
         $perPage = 500;
 
+        $model = new BankAccounts();
+        $fillable = array_flip($model->getFillable());
+
         do {
             $url = config('services.admin_credentials.server_url') . "/api/v1/bank_accounts?page={$page}&per_page={$perPage}&is_simple=true";
             $result = NetworkHelper::curlWithToken($url);
@@ -145,20 +148,31 @@ class BankAccountController extends Controller
 
             try {
                 $ids = collect($rows)->pluck('id')->filter()->toArray();
-                $exist_bank = BankAccounts::whereIn('id', $ids)->get()->keyBy('id');
+                $exist_bank = BankAccounts::withTrashed()->whereIn('id', $ids)->get()->keyBy('id');
 
                 $insert_bank = [];
                 foreach ($rows as $row) {
-                    
                     if (!isset($row['id'])) continue;
                     $bank = $exist_bank[$row['id']] ?? null;
+                    $id = $row['id'];
                     
-                    unset($row['coa_name']);
+                    $row = array_intersect_key($row, $fillable);
                     
                     if ($bank) {
                         unset($row['id']);
                         $bank->update($row); // UPDATE
+
+                        if (!empty($row['deleted_at'])) {
+                            if (!$bank->trashed()) {
+                                $bank->delete();
+                            }
+                        } else {
+                            if ($bank->trashed()) {
+                                $bank->restore();
+                            }
+                        }
                     } else {
+                        $row['id'] = $id;
                         $insert_bank[] = $row; // INSERT
                     }
                 }

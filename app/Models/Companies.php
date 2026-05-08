@@ -636,7 +636,11 @@ class Companies extends Model
             $slug = null;
 
             if (!$company_payload || !$subscription_payload) {
-                throw new \Exception('Invalid payload: company or subscription missing');
+                DB::connection('pgsql')->rollBack();
+                return response()->json([
+                    'status' => 'error',
+                    'message' => 'Invalid payload: company or subscription missing'
+                ], 400);
             }
 
             $company = Companies::join('company_credentials', 'company_credentials.company_id', '=', 'companies.id')
@@ -725,7 +729,11 @@ class Companies extends Model
                 $check_db = DB::connection('pgsql_admin')->select("SELECT 1 FROM pg_catalog.pg_database WHERE datname = ?", [$slug]);
 
                 if (!empty($check_db)) {
-                    throw new \Exception('Database already exists');
+                    DB::connection('pgsql_admin')->rollBack();
+                    return response()->json([
+                        'status' => 'error',
+                        'message' => 'Database already exists'
+                    ], 400);
                 }
 
                 /**
@@ -779,7 +787,11 @@ class Companies extends Model
             $result = Artisan::call('migrate', [ '--path' => 'database/migration_company', '--database' => 'pgsql_companies', '--force' => true]);
 
             if ($result != 0) {
-                throw new \Exception('Migration failed: ' . Artisan::output());
+                DB::connection('pgsql_companies')->rollBack();
+                return response()->json([
+                    'status' => 'error',
+                    'message' => 'Migration failed: ' . Artisan::output()
+                ], 500);
             }
 
             if ($result == 0) {
@@ -832,10 +844,10 @@ class Companies extends Model
             }
         } catch (\Exception $e) {
             DB::connection('pgsql')->rollBack();
-            return [
+            return response()->json([
                 'status' => 'error',
                 'message' => $e->getMessage()
-            ];
+            ]);
         }
     }
 }

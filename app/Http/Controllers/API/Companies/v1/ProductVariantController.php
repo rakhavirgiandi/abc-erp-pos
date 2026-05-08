@@ -134,6 +134,9 @@ class ProductVariantController extends Controller
         $page = 1;
         $perPage = 500;
 
+        $model = new ProductVariants();
+        $fillable = array_flip($model->getFillable());
+
         do {
             $url = config('services.admin_credentials.server_url') . "/api/v1/product_variants?page={$page}&per_page={$perPage}&is_simple=true";
             $result = NetworkHelper::curlWithToken($url);
@@ -145,7 +148,7 @@ class ProductVariantController extends Controller
 
             try {
                 $ids = collect($rows)->pluck('product_id')->filter()->unique()->toArray();
-                $products = Products::whereIn('id', $ids)->get()->keyBy('id');
+                $products = Products::withTrashed()->whereIn('id', $ids)->get()->keyBy('id');
                 $product_ids = $products->pluck('id')->toArray();
 
                 if (!empty($product_ids)) {
@@ -160,9 +163,7 @@ class ProductVariantController extends Controller
                     if (!$product) continue;
                     
                     $row['product_id'] = $product->id;
-                    unset($row['variant_name']);
-                    unset($row['code']);
-                    unset($row['id']);
+                    $row = array_intersect_key($row, $fillable);
 
                     $insert_product_variant[] = $row;
                 }

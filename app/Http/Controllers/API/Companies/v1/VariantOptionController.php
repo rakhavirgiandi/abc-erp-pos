@@ -133,6 +133,9 @@ class VariantOptionController extends Controller
         $page = 1;
         $perPage = 500;
 
+        $model = new VariantOptions();
+        $fillable = array_flip($model->getFillable());
+
         do {
             $url = config('services.admin_credentials.server_url') . "/api/v1/variant_options?page={$page}&per_page={$perPage}&is_simple=true";
             $result = NetworkHelper::curlWithToken($url);
@@ -145,18 +148,31 @@ class VariantOptionController extends Controller
 
             try {
                 $ids = collect($rows)->pluck('id')->filter()->toArray();
-                $exist_variant = VariantOptions::whereIn('id', $ids)->get()->keyBy('id');
+                $exist_variant = VariantOptions::withTrashed()->whereIn('id', $ids)->get()->keyBy('id');
 
                 $insert_variant = [];
                 foreach ($rows as $row) {
                     if (!isset($row['id'])) continue;
                     $variant = $exist_variant[$row['id']] ?? null;
+                    $id = $row['id'];
 
-                    
+                    $row = array_intersect_key($row, $fillable);
+
                     if ($variant) {
                         unset($row['id']);
                         $variant->update($row); // UPDATE
+
+                        if (!empty($row['deleted_at'])) {
+                            if (!$variant->trashed()) {
+                                $variant->delete();
+                            }
+                        } else {
+                            if ($variant->trashed()) {
+                                $variant->restore();
+                            }
+                        }
                     } else {
+                        $row['id'] = $id;
                         $insert_variant[] = $row; // INSERT
                     }
                 }

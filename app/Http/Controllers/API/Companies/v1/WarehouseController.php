@@ -133,6 +133,9 @@ class WarehouseController extends Controller
         $page = 1;
         $perPage = 500;
 
+        $model = new Warehouses();
+        $fillable = array_flip($model->getFillable());
+
         do {
             $url = config('services.admin_credentials.server_url') . "/api/v1/warehouses?page={$page}&per_page={$perPage}&is_simple=true";
             $result = NetworkHelper::curlWithToken($url);
@@ -145,24 +148,31 @@ class WarehouseController extends Controller
 
             try {
                 $ids = collect($rows)->pluck('id')->filter()->toArray();
-                $exist_warehouse = Warehouses::whereIn('id', $ids)->get()->keyBy('id');
+                $exist_warehouse = Warehouses::withTrashed()->whereIn('id', $ids)->get()->keyBy('id');
 
                 $insert_warehouse = [];
                 foreach ($rows as $row) {
-                    
                     if (!isset($row['id'])) continue;
                     $warehouse = $exist_warehouse[$row['id']] ?? null;
+                    $id = $row['id'];
                     
-                    unset(
-                        $row['country_name'], 
-                        $row['province_name'],
-                        $row['city_name'],
-                    );
+                    $row = array_intersect_key($row, $fillable);
                     
                     if ($warehouse) {
                         unset($row['id']);
                         $warehouse->update($row); // UPDATE
+
+                        if (!empty($row['deleted_at'])) {
+                            if (!$warehouse->trashed()) {
+                                $warehouse->delete();
+                            }
+                        } else {
+                            if ($warehouse->trashed()) {
+                                $warehouse->restore();
+                            }
+                        }
                     } else {
+                        $row['id'] = $id;
                         $insert_warehouse[] = $row; // INSERT
                     }
                 }

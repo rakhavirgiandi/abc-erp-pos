@@ -133,6 +133,9 @@ class ProductSkuController extends Controller
         $page = 1;
         $perPage = 500;
 
+        $model = new ProductSkus();
+        $fillable = array_flip($model->getFillable());
+
         do {
             $url = config('services.admin_credentials.server_url') . "/api/v1/product_skus?page={$page}&per_page={$perPage}&is_simple=true";
             $result = NetworkHelper::curlWithToken($url);
@@ -145,17 +148,31 @@ class ProductSkuController extends Controller
 
             try {
                 $ids = collect($rows)->pluck('id')->filter()->toArray();
-                $exist_sku = ProductSkus::whereIn('id', $ids)->get()->keyBy('id');
+                $exist_sku = ProductSkus::withTrashed()->whereIn('id', $ids)->get()->keyBy('id');
 
                 $insert_sku = [];
                 foreach ($rows as $row) {
                     if (!isset($row['id'])) continue;
                     $sku = $exist_sku[$row['id']] ?? null;
-                    
+                    $id = $row['id'];
+
+                    $row = array_intersect_key($row, $fillable);
+
                     if ($sku) {
                         unset($row['id']);
                         $sku->update($row); // UPDATE
+
+                        if (!empty($row['deleted_at'])) {
+                            if (!$sku->trashed()) {
+                                $sku->delete();
+                            }
+                        } else {
+                            if ($sku->trashed()) {
+                                $sku->restore();
+                            }
+                        }
                     } else {
+                        $row['id'] = $id;
                         $insert_sku[] = $row; // INSERT
                     }
                 }

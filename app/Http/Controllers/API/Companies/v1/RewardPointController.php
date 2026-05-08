@@ -133,6 +133,9 @@ class RewardPointController extends Controller
         $page = 1;
         $perPage = 500;
 
+        $model = new RewardPoints();
+        $fillable = array_flip($model->getFillable());
+
         do {
             $url = config('services.admin_credentials.server_url') . "/api/v1/reward_points?page={$page}&per_page={$perPage}&is_simple=true";
             $result = NetworkHelper::curlWithToken($url);
@@ -145,19 +148,31 @@ class RewardPointController extends Controller
 
             try {
                 $ids = collect($rows)->pluck('id')->filter()->toArray();
-                $exist_reward = RewardPoints::whereIn('id', $ids)->get()->keyBy('id');
+                $exist_reward = RewardPoints::withTrashed()->whereIn('id', $ids)->get()->keyBy('id');
 
                 $insert_reward = [];
                 foreach ($rows as $row) {
                     if (!isset($row['id'])) continue;
                     $reward = $exist_reward[$row['id']] ?? null;
+                    $id = $row['id'];
                     
-                    unset($row['product_name_name']);
+                    $row = array_intersect_key($row, $fillable);
                     
                     if ($reward) {
                         unset($row['id']);
                         $reward->update($row); // UPDATE
+
+                        if (!empty($row['deleted_at'])) {
+                            if (!$reward->trashed()) {
+                                $reward->delete();
+                            }
+                        } else {
+                            if ($reward->trashed()) {
+                                $reward->restore();
+                            }
+                        }
                     } else {
+                        $row['id'] = $id;
                         $insert_reward[] = $row; // INSERT
                     }
                 }
@@ -182,13 +197,9 @@ class RewardPointController extends Controller
 
         } while ($page <= ($result['nav']['totalPage'] ?? 1));
 
-        $params = $request->all();
-        $res = RewardPoints::getPaginatedResult($params, $request);
-
         return response()->json([
             'status' => 'success',
             'message' => 'Sync reward berhasil',
-            'data' => $res
         ]);
     }
 }
