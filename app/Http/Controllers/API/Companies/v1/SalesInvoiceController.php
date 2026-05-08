@@ -136,7 +136,7 @@ class SalesInvoiceController extends Controller
         ->chunk(100, function ($invoices) {
             $payload = $invoices->toArray();
 
-            $url = config('services.admin_credentials.server_url') . '/api/sync/sync_sales_invoices';
+            $url = config('services.admin_credentials.server_url') . '/api/v1/sync/sync_sales_invoices';
             $response = NetworkHelper::postWithToken($url, $payload);
 
             if (($response['status'] ?? '') !== 'success') {
