@@ -80,7 +80,7 @@
                     <div class="col-4">
                         <div class="mb-3">
                             <div class="form-check">
-                                <input class="form-check-input sync-check" value="permissions" type="checkbox" id="sync-permissions-check"><label class="form-check-label" for="sync-permissions-check">Hak Akses</label>
+                                <input class="form-check-input sync-check" value="users" type="checkbox" id="sync-users-check"><label class="form-check-label" for="sync-users-check">Pengguna</label>
                             </div>
                         </div>
                     </div>
