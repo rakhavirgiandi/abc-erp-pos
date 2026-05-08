@@ -6,7 +6,7 @@ use App\Helpers\NetworkHelper;
 use App\Http\Controllers\Controller;
 use App\Models\Companies\v1\User;
 use App\Models\Companies\v1\Users;
-use App\Models\User as CentralUser;
+use App\Models\Users as CentralUser;
 use App\Models\UserCompanies;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -166,6 +166,17 @@ class UserController extends Controller
                     $id = $row['id'];
 
                     $row = array_intersect_key($row, $fillable);
+
+                    foreach (['branch_ids', 'project_ids', 'warehouse_ids'] as $field) {
+                        if (!isset($row[$field]) || $row[$field] === null) {
+                            $row[$field] = '[]';
+                            continue;
+                        }
+
+                        if (is_array($row[$field])) {
+                            $row[$field] = json_encode($row[$field]);
+                        }
+                    }
 
                     if (isset($row['password']) && !str_starts_with($row['password'], '$2y$')) {
                         $row['password'] = bcrypt($row['password']);
