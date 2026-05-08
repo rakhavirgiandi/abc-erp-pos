@@ -5214,6 +5214,15 @@
                     });
         }
 
+        const usersSync = () => {
+            return  $.ajax({
+                        url: BASE_URL+'/api/v1/sync/users',
+                        method: 'GET',
+                        contentType: 'application/json',
+                        headers: { 'Authorization': TOKEN, 'company-id': COMPANY_ID, },
+                    });
+        }
+
         const permissionsSync = () => {
             return  $.ajax({
                         url: BASE_URL+'/api/v1/sync/permissions',
@@ -5252,7 +5261,7 @@
             'product',
             'reward_point_and_point_rule',
             'transaction',
-            'permissions',
+            'users',
         ];
 
         const processSync = async (params = {}) => {
@@ -5316,8 +5325,9 @@
                 currencies: [
                     currenciesSync
                 ],
-                permissions: [
+                users: [
                     permissionsSync,
+                    usersSync,
                     rolesSync,
                     roleHasPermissionsSync,
                 ]
