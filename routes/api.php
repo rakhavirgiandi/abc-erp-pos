@@ -763,7 +763,6 @@ Route::group(['prefix' => 'v1', 'middleware' => ['auth:api', 'api.companies']], 
         Route::get('/product_variants', [ProductVariantController::class, 'syncToLocal'])->name('sync.product_variants');
         Route::get('/reward_points', [RewardPointController::class, 'syncToLocal'])->name('sync.reward_points');
         Route::get('/roles', [RoleController::class, 'syncToLocal'])->name('sync.roles');
-        Route::get('/role_has_permissions', [RoleHasPermissionController::class, 'syncToLocal'])->name('sync.role_has_permissions');
         Route::get('/taxes', [TaxController::class, 'syncToLocal'])->name('sync.taxes');
         Route::get('/units', [UnitController::class, 'syncToLocal'])->name('sync.units');
         Route::get('/users', [UserController::class, 'syncToLocal'])->name('sync.users');

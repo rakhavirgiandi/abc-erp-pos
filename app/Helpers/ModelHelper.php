@@ -523,7 +523,7 @@ class ModelHelper
 		$users = V1Users::select('id', 'name', 'email', 'role_id')->get();
 		$roles = V1Roles::select('id', 'name')->get()->pluck('name', 'id')->toArray();
 
-		V1ModelHasRoles::where('model_type', 'App\Models\User')->delete();
+		V1ModelHasRoles::where('model_type', 'App\Models\Companies\v1\Users')->delete();
 
 		foreach ($users as $user) {
 			if (isset($roles[$user['role_id']])) {

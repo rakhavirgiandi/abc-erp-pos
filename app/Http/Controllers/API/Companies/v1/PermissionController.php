@@ -2,9 +2,11 @@
 
 namespace App\Http\Controllers\API\Companies\v1;
 
+use App\Helpers\ModelHelper;
 use App\Helpers\NetworkHelper;
 use App\Http\Controllers\Controller;
 use App\Models\Companies\v1\Permissions;
+use App\Models\Companies\v1\RoleHasPermissions;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 
@@ -132,6 +134,7 @@ class PermissionController extends Controller
 
         $page = 1;
         $perPage = 500;
+        $allRoleHasPermissions = [];
 
         do {
             $url = config('services.admin_credentials.server_url') . "/api/v1/permissions?page={$page}&per_page={$perPage}&is_simple=true";
@@ -146,8 +149,8 @@ class PermissionController extends Controller
             try {
                 Permissions::upsert(
                     collect($rows)->map(fn($row) => [
-                        'id' => $row['id'],
-                        'name' => $row['name'],
+                        'id'         => $row['id'],
+                        'name'       => $row['name'],
                         'guard_name' => $row['guard_name'] ?? 'web',
                         'updated_at' => now(),
                     ])->toArray(),
@@ -156,10 +159,19 @@ class PermissionController extends Controller
                 );
 
                 $serverIds = collect($rows)->pluck('id')->toArray();
-
                 Permissions::whereNotIn('id', $serverIds)->delete();
 
+                foreach ($rows as $row) {
+                    foreach ($row['roles'] ?? [] as $roleId) {
+                        if ($roleId == 1) continue;
+                        $allRoleHasPermissions[] = [
+                            'role_id'       => $roleId,
+                            'permission_id' => $row['id'],
+                        ];
+                    }
+                }
 
+                ModelHelper::reorderPermissionAdmin();
                 DB::connection('pgsql_companies')->statement("SELECT SETVAL('permissions_id_seq', COALESCE((SELECT MAX(id) + 1 FROM permissions), 1))");
                 DB::connection('pgsql_companies')->commit();
 
@@ -175,6 +187,27 @@ class PermissionController extends Controller
             $page++;
 
         } while ($page <= ($result['nav']['totalPage'] ?? 1));
+
+        DB::connection('pgsql_companies')->beginTransaction();
+        
+        try {
+            RoleHasPermissions::where('role_id', '!=', 1)->delete();
+
+            if (!empty($allRoleHasPermissions)) {
+                foreach (array_chunk($allRoleHasPermissions, 1000) as $chunk) {
+                    RoleHasPermissions::insert($chunk);
+                }
+            }
+
+            DB::connection('pgsql_companies')->commit();
+        } catch (\Exception $e) {
+            DB::connection('pgsql_companies')->rollBack();
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Gagal sync role has permissions',
+                'error' => $e->getMessage()
+            ], 500);
+        }
 
         return response()->json([
             'status' => 'success',
