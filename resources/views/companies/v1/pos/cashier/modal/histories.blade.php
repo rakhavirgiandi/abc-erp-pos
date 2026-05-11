@@ -10,7 +10,7 @@
                     <div class="nav nav-lines mb-0 w-100" id="histories-tab" role="tablist">
                         <a class="nav-item nav-link active flex-fill text-center fs-5" style="padding: 1.4rem 1rem" id="histories-pending-tab" data-bs-toggle="tab" href="#histories-pending-tab-content" aria-selected="true" role="tab" data-name="pending">Pending</a>
                         <a class="nav-item nav-link flex-fill text-center fs-5" style="padding: 1.4rem 1rem" id="histories-done-tab" data-bs-toggle="tab" href="#histories-done-tab-content" aria-selected="false" role="tab" tabindex="-1" data-name="done">Done</a>
-                        <a class="nav-item nav-link flex-fill text-center fs-5" style="padding: 1.4rem 1rem" id="histories-hold-tab" data-bs-toggle="tab" href="#histories-hold-tab-content" aria-selected="false" role="tab" tabindex="-1" data-name="hold">Hold</a>
+                        <a class="nav-item nav-link flex-fill text-center fs-5" style="padding: 1.4rem 1rem" id="histories-hold-tab" data-bs-toggle="tab" href="#histories-hold-tab-content" aria-selected="false" role="tab" tabindex="-1" data-name="hold" {{ !!config('user_companies.details')->can('pos.hold-transaction') ? '' : 'disabled' }}>Hold</a>
                     </div>
                     <div style="padding: .75rem 1rem">
                         <div class="position-relative w-100">
