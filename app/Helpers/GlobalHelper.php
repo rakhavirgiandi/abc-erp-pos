@@ -207,8 +207,8 @@ class GlobalHelper
             $encoded = json_encode(utf8ize(array_merge($request, $response, ['trace' => $trace_split])));
 
             \Log::error($encoded);
-            if (!env('APP_DEBUG')) {
-                Notification::route('telegram', env('TELEGRAM_LOGGER_CHAT_ID'))->notify(new TelegramError(['data' => $encoded]));
+            if (!config('app.debug')) {
+                Notification::route('telegram', config('services.telegram-bot-api.logger_chat_id'))->notify(new TelegramError(['data' => $encoded]));
             }
         } else {
             $encoded = json_encode(array_merge($request, $response));

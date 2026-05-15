@@ -36,7 +36,8 @@ return [
     ],
 
     'telegram-bot-api' => [
-        'token' => env('TELEGRAM_BOT_TOKEN', '8714018345:AAF09kJaaMdmqFagfncGof3IHLPwr0x6ziI')
+        'token' => env('TELEGRAM_BOT_TOKEN', '8714018345:AAF09kJaaMdmqFagfncGof3IHLPwr0x6ziI'),
+        'logger_chat_id' => env('TELEGRAM_LOGGER_CHAT_ID', '4774277831')
     ],
 
     'admin_credentials' => [
@@ -44,6 +45,8 @@ return [
         'email' => 'admin@gmail.com',
         'password' => '123abc',
     ],
+
+    'is_onpremise' => env('IS_ONPREMISE', false)
 
     // 'on_premise_db_central_cred' => [
     //     'DB_CONNECTION' => env('DB_CONNECTION', 'pgsql'),

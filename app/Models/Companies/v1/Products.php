@@ -643,4 +643,98 @@ class Products extends Model
             'data' => null
         ]);
     }
+
+    public static function stockPerWarehouseDatatable($request)
+    {
+        $columns = [
+            0 => 'product_name',
+            1 => 'warehouse_code',
+            2 => 'warehouse_name',
+            3 => 'warehouse_address',
+            4 => 'stock'
+        ];
+
+        $limit  = $request->length ?? 10;
+        $start  = $request->start ?? 0;
+        $orderIndex = $request->order[0]['column'] ?? 0;
+        $order  = $columns[$orderIndex] ?? 'stock';
+        $dir    = $request->order[0]['dir'] ?? 'asc';
+        $search = $request->search['value'] ?? '';
+        $warehouse_id = $request->warehouse_id ?? config('general_settings.default_warehouse');
+
+        $baseQuery = ProductHistories::selectRaw('
+                product_histories.product_id,
+                products.name as product_name,
+                products.code as product_code,
+                product_histories.warehouse_id,
+                warehouses.name as warehouse_name,
+                warehouses.code as warehouse_code,
+                warehouses.address as warehouse_address,
+                SUM(CASE 
+                    WHEN product_histories.type = \'IN\' THEN product_histories.qty 
+                    ELSE -product_histories.qty 
+                END) as stock
+            ')
+            ->join('products', 'products.id', '=', 'product_histories.product_id')
+            ->join('warehouses', 'warehouses.id', '=', 'product_histories.warehouse_id')
+            ->where('product_histories.warehouse_id', $warehouse_id);
+            
+        if ($request->product_id) {
+            $baseQuery->where('products.id', $request->product_id);
+        }
+
+        $baseQuery->groupBy(
+            'product_histories.product_id',
+            'products.name',
+            'products.code',
+            'product_histories.warehouse_id',
+            'warehouses.name',
+            'warehouses.code',
+            'warehouses.address'
+        );
+
+        if (!empty($search)) {
+            $baseQuery->havingRaw(
+                '(LOWER(products.name) LIKE ? OR LOWER(warehouses.name) LIKE ?)',
+                ["%".strtolower($search)."%", "%".strtolower($search)."%"]
+            );
+        }
+
+        $countQuery = clone $baseQuery;
+
+        $totalData = DB::connection('pgsql_companies')->query()->fromSub($countQuery, 'temp')->count();
+
+        if ($order == 'product_name') {
+            $baseQuery->orderBy('products.name', $dir);
+        } elseif ($order == 'warehouse_name') {
+            $baseQuery->orderBy('warehouses.name', $dir);
+        } else {
+            $baseQuery->orderByRaw('stock ' . $dir);
+        }
+
+        $rows = $baseQuery
+            ->offset($start)
+            ->limit($limit)
+            ->get();
+
+        $data = [];
+        foreach ($rows as $row) {
+            $data[] = [
+                'product_id'     => $row->product_id,
+                'product_name'   => $row->product_name,
+                'warehouse_id'   => $row->warehouse_id,
+                'warehouse_name' => $row->warehouse_name,
+                'warehouse_code' => $row->warehouse_code,
+                'warehouse_address' => $row->warehouse_address,
+                'stock'          => (float) $row->stock,
+            ];
+        }
+
+        return [
+            "draw"            => intval($request->draw),
+            "recordsTotal"    => $totalData,
+            "recordsFiltered" => $totalData,
+            "data"            => $data
+        ];
+    }
 }

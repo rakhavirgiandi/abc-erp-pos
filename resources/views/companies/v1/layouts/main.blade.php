@@ -108,7 +108,7 @@
     let USERNAME = '{{Session::get('_username')}}';
     let EMAIL = '{{Session::get('_email')}}';
     let PHONE = '{{Session::get('_phone')}}';
-    let IS_ACCESS_TO_POS = '{{Session::get('_is_access_to_pos')}}';
+    let IS_ACCESS_TO_POS = '{{config('user_companies.is_access_to_pos')}}';
     let DEFAULT_BRANCH_ID = '{{Session::get('general_settings.default_branch')}}';
     let DEFAULT_BRANCH_NAME = '{{Session::get('general_settings.branch_name')}}';
     let DEFAULT_WAREHOUSE_ID = '{{Session::get('general_settings.default_warehouse')}}';

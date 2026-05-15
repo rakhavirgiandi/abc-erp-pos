@@ -12,7 +12,8 @@ class NativeAppServiceProvider implements ProvidesPhpIni
      * Use this method to open windows, register global shortcuts, etc.
      */
     public function boot(): void
-    {
+    {   
+        config(['services.is_onpremise' => true]);
         Window::open();
     }
 

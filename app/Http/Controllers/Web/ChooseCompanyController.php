@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Web;
 use App\Helpers\NetworkHelper;
 use App\Http\Controllers\Controller;
 use App\Models\Companies;
+use App\Models\Companies\v1\Products;
 use App\Models\Subscriptions;
 use Illuminate\Http\Request;
 
@@ -46,19 +47,24 @@ class ChooseCompanyController extends Controller
             }
         } else {
             $internet_connection = NetworkHelper::isConnected();
-            if (!$internet_connection && env('IS_ONPREMISE', false)) {
+            if (!$internet_connection && config('services.is_onpremise')) {
                 return response()->json([
                     'status' => 'error',
                     'message' => 'Database Anda belum tersinkron dengan Database Server. Pastikan koneksi internet Anda Aktif untuk melakukan proses sinkron',
                     'data' => [
                         'internet_connection' => $internet_connection,
-                        'is_onpremise' => env('IS_ONPREMISE')
+                        'is_onpremise' => config('services.is_onpremise')
                     ]
                 ], 400);
             }
         }
 
         $request->session()->put('_company_id', $params['company_id']);
+
+        // dd(config('database.connections.pgsql_companies.database'));
+
+        $exists = Products::count();
+        $request->session()->put('_is_first', $exists > 0 ? 0 : 1);
 
         return response()->json([
             'status' => 'success'

@@ -16,7 +16,7 @@ return [
     |
     */
 
-    'default' => env('DB_CONNECTION', 'sqlite'),
+    'default' => env('DB_CONNECTION', 'pgsql'),
 
     /*
     |--------------------------------------------------------------------------
@@ -118,8 +118,8 @@ return [
             'host' => env('COMPANIES_DB_HOST', '127.0.0.1'),
             'port' => env('COMPANIES_DB_PORT', '5432'),
             'database' => env('COMPANIES_DB_DATABASE', 'forge'),
-            'username' => env('COMPANIES_DB_USERNAME', 'forge'),
-            'password' => env('COMPANIES_DB_PASSWORD', ''),
+            'username' => env('COMPANIES_DB_USERNAME', 'bukanadmin'),
+            'password' => env('COMPANIES_DB_PASSWORD', 'B15mi1Ll@h'),
             'charset' => 'utf8',
             'prefix' => '',
             'prefix_indexes' => true,

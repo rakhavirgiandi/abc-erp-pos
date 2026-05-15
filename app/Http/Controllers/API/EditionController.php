@@ -8,7 +8,7 @@ use Illuminate\Http\Request;
 
 class EditionController extends Controller
 {
-    public function get($id=null, Request $request)
+    public function get(Request $request, $id = null)
     {
         $params = $request->all();
 

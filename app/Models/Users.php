@@ -23,6 +23,8 @@ use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Str;
+use Laravel\Passport\ClientRepository;
+use Laravel\Passport\Client;
 
 /**
  * @property string name
@@ -511,9 +513,10 @@ class Users extends Model
     }
 
     public static function generateToken($params, $method, $request, $type = 'member')
-    {
-        if (env('IS_ONPREMISE', false)) {
+    {   
+        if (config('services.is_onpremise')) {
             if (NetworkHelper::isConnected()) {
+
                 $response = null;
 
                 try {
@@ -650,7 +653,29 @@ class Users extends Model
             //     ]); 
             // }
         }
+        
+        $exists = Client::where('personal_access_client', true)
+            ->where('revoked', false)
+            ->exists();
 
+        if (!$exists) {
+            $client = \Laravel\Passport\Client::forceCreate([
+                'id'                     => (string) \Illuminate\Support\Str::uuid(),
+                'user_id'                => null,
+                'name'                   => config('app.name') . ' Personal Access Client',
+                'secret'                 => \Illuminate\Support\Str::random(40),
+                'provider'               => 'users',
+                'redirect'               => '',
+                'personal_access_client' => true,
+                'password_client'        => false,
+                'revoked'                => false,
+            ]);
+
+            \Laravel\Passport\PersonalAccessClient::forceCreate([
+                'client_id' => $client->id,
+            ]);
+        }
+        
         $tokenResult = $user->createToken('login_member_'.$user_value);
 
         $token = $tokenResult->token;
