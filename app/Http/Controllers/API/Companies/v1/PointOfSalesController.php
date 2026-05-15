@@ -13,6 +13,7 @@ use App\Models\Companies\v1\PointHistories;
 use App\Models\Companies\v1\RewardPoints;
 use App\Models\Companies\v1\SalesInvoices;
 use App\Models\Companies\v1\User as CentralUser;
+use App\Models\Companies\v1\Users;
 use App\Models\Companies\v1\Warehouses;
 use Carbon\Carbon;
 use Exception;
@@ -31,8 +32,8 @@ class PointOfSalesController extends Controller
     {
         $params = $request->all();
 
-        $warehouse = Warehouses::where('id', '=', config('user.warehouse_id'))->first();
-        $branch = Branches::where('id', '=', config('user.branch_id'))->first();
+        $warehouse = Warehouses::where('id', '=', config('user_companies.warehouse_id'))->first();
+        $branch = Branches::where('id', '=', config('user_companies.branch_id'))->first();
         $currency = Currencies::where('id', '=', config('general_settings.default_currency'))->first();
 
         
@@ -72,7 +73,7 @@ class PointOfSalesController extends Controller
         $params['project_name'] = config('general_settings.project_name');
         $params['down_payment_amount'] = 0;
         $params['discount_percentage'] = 0;
-        $params['created_by'] = config('user.id');
+        $params['created_by'] = config('user_companies.id');
 
         if (isset($params['is_draft']) && $params['is_draft']) {
             unset($params['is_draft']);
@@ -106,9 +107,9 @@ class PointOfSalesController extends Controller
     public function getRefNumber (Request $request)
     {   
         $now = Carbon::now();
-        $branch_id = config('user.branch_id') ? config('user.branch_id') : config('general_settings.default_branch');
+        $branch_id = config('user_companies.branch_id') ? config('user_companies.branch_id') : config('general_settings.default_branch');
         $branch = Branches::where('id', '=', $branch_id)->first();
-        $user_id = config('user.id');
+        $user_id = config('user_companies.id');
         $prefix = 'POS';
 
         if (!$branch) {
@@ -409,6 +410,50 @@ class PointOfSalesController extends Controller
         } catch (\Throwable $th) {
             return response()->json(['status' => 'error', 'message' => 'Tolong cek ulang pengaturan printer anda'], 500);
         }
+    }
 
+    public function verifSupervisor (Request $request)
+    {   
+        $params = $request->all();
+
+        $messages = [
+            'user_id.required' => 'Harap pilih user terlebih dahulu',
+            'password.required' => 'Harap isi password',
+            'branch_id.required' => 'Harap isi cabang'
+        ];
+
+        $request->validate([
+            'user_id' => 'required',
+            'password' => 'required',
+            'branch_id' => 'required',
+        ], $messages);
+
+        $user = Users::where('id', '=', $params['user_id'])->where('is_supervisor', '=', 1)->first();
+
+        if (!$user) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Pengguna tidak ditemukan'
+            ], 400);
+        }
+
+        if ($user['branch_id'] && $user['branch_id'] != $params['branch_id']) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Cabang pengguna tidak sesuai'
+            ], 400);
+        }
+
+        if (Hash::check($params['password'], $user->password)) {
+            return response()->json([
+                'status' => 'success',
+                'message' => 'Authenticate success'
+            ]);
+        } else {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Invalid password.'
+            ], 401);
+        }
     }
 }

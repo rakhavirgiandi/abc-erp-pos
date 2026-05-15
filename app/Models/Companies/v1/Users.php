@@ -82,6 +82,7 @@ class Users extends Authenticatable
 		'created_at',
 		'updated_at',
 		'deleted_at',
+        'is_supervisor'
     ];
 
     /**
@@ -99,7 +100,7 @@ class Users extends Authenticatable
      * @var array
      */
     protected $casts = [
-        'name' => 'string', 'email' => 'string', 'email_verified_at' => 'datetime', 'password' => 'string', 'fcm_token' => 'string', 'username' => 'string', 'is_suspend' => 'int', 'role_id' => 'int', 'department_id' => 'int', 'branch_id' => 'int', 'employee_id' => 'int', 'branch_ids' => 'string', 'project_ids' => 'string', 'warehouse_ids' => 'string', 'contact_id' => 'int', 'warehouse_id' => 'int', 'remember_token' => 'string', 'created_at' => 'datetime', 'updated_at' => 'datetime', 'deleted_at' => 'datetime'
+        'name' => 'string', 'email' => 'string', 'email_verified_at' => 'datetime', 'password' => 'string', 'fcm_token' => 'string', 'username' => 'string', 'is_suspend' => 'int', 'role_id' => 'int', 'department_id' => 'int', 'branch_id' => 'int', 'employee_id' => 'int', 'branch_ids' => 'string', 'project_ids' => 'string', 'warehouse_ids' => 'string', 'contact_id' => 'int', 'warehouse_id' => 'int', 'remember_token' => 'string', 'created_at' => 'datetime', 'updated_at' => 'datetime', 'deleted_at' => 'datetime', 'is_supervisor' => 'int'
     ];
 
     /**
@@ -150,6 +151,7 @@ class Users extends Authenticatable
 				'contact_id' => ['column' => $model->table.'.contact_id', 'alias' => 'contact_id', 'type' => 'int'],
 				'warehouse_id' => ['column' => $model->table.'.warehouse_id', 'alias' => 'warehouse_id', 'type' => 'int'],
 				'remember_token' => ['column' => $model->table.'.remember_token', 'alias' => 'remember_token', 'type' => 'string'],
+				'is_supervisor' => ['column' => $model->table.'.is_supervisor', 'alias' => 'is_supervisor', 'type' => 'int'],
 				'created_at' => ['column' => $model->table.'.created_at', 'alias' => 'created_at', 'type' => 'date'],
 				'updated_at' => ['column' => $model->table.'.updated_at', 'alias' => 'updated_at', 'type' => 'date'],
 				'deleted_at' => ['column' => $model->table.'.deleted_at', 'alias' => 'deleted_at', 'type' => 'date'],

@@ -737,6 +737,7 @@ Route::group(['prefix' => 'v1', 'middleware' => ['auth:api', 'api.companies']], 
         Route::post('login', 'login')->name('v1.pos.login');
         Route::get('printer_connected', 'printerConnected')->name('v1.pos.printerConnected');
         Route::post('print-receipts/{number}', 'printReceipt')->name('pos.print_receipt');
+        Route::post('verif_supervisor', 'verifSupervisor')->name('pos.verif_supervisor');
     });
 
     Route::prefix('sync')->group(function (){

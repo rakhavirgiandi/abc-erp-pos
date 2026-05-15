@@ -297,9 +297,12 @@
         <div style="flex: 4">
             <div class="card rounded-3 mb-0" style="height: 100%">
                 <div class="card-body p-3" style="flex: none">
-                    <div class="search-product-group mb-3">
-                        <input type="text" class="form-control form-control-lg py-3" id="input-search-product" placeholder="Masukan No PLU / Barcode / Cari [Space]">
-                        <i class="mdi mdi-magnify position-absolute top-50 end-0 translate-middle-y me-3 text-muted fs-3"></i>
+                    <div class="d-flex mb-3">
+                        <div class="search-product-group">
+                            <input type="text" class="form-control form-control-lg py-3" id="input-search-product" placeholder="Masukan No PLU / Barcode / Cari [Space]">
+                            <i class="mdi mdi-magnify position-absolute top-50 end-0 translate-middle-y me-3 text-muted fs-3"></i>
+                        </div>
+                        <button type="button" id="reset-input-search-product-toggle" class="btn btn-text-light d-none"><i class="mdi mdi-close text-muted fs-3"></i></button>
                     </div>
                     <div class="d-flex align-items-center">
                         <div class="gap-2 d-inline-flex align-items-center select-category-buttons" id="select-category-buttons">
@@ -339,7 +342,7 @@
                     <div class="d-flex gap-2">
                         <button type="button" class="btn btn-outline-light w-25 rounded-3 text-primary fw-bold shortcut-toggle" id="customer-modal-toggle" style="font-size: 12px;" data-shortcut="f7">Pelanggan<br><span class="fw-normal">[F7]</span></button>
                         <button type="button" class="btn btn-label-warning w-25 rounded-3 fw-bold shortcut-toggle" style="font-size: 12px">Promo<br><span class="fw-normal">[F5]</span></button>
-                        <button type="button" class="btn w-25 rounded-3 fw-bold shortcut-toggle {{ !!config('user_companies.details')->can('pos.redeem-transaction') ? 'btn-label-success' : 'btn-success' }}" style="font-size: 12px" id="redeem-modal-toggle" {{ !!config('user_companies.details')->can('pos.redeem-transaction') ? '' : 'disabled' }}>Redeem<br><span class="fw-normal" data-shortcut="f12">[F12]</span></button>
+                        <button type="button" class="btn w-25 rounded-3 fw-bold btn-label-success shortcut-toggle" style="font-size: 12px" id="redeem-modal-toggle">Redeem<br><span class="fw-normal" data-shortcut="f12">[F12]</span></button>
                         <button type="button" class="btn btn-label-secondary w-25 rounded-3 fw-bold shortcut-toggle" style="font-size: 12px" id="product-note-modal-toggle" data-shortcut="f11">Catatan<br><span class="fw-normal">[F11]</span></button>
                     </div>
                 </div>
@@ -365,27 +368,27 @@
                         </div>
                     
                         <div class="col">
-                            <button class="btn numpad-btn {{ !!config('user_companies.details')->can('pos.change-item-discount') ? 'btn-label-warning' : 'btn-warning' }} w-100 py-2 d-flex flex-column align-items-center justify-content-center border-end shortcut-toggle" data-shortcut="f3" id="discount-percentage-shortcut-toggle" {{ !!config('user_companies.details')->can('pos.change-item-discount') ? '' : 'disabled' }}>
+                            <button class="btn numpad-btn btn-label-warning w-100 py-2 d-flex flex-column align-items-center justify-content-center border-end shortcut-toggle" data-shortcut="f3" id="discount-percentage-shortcut-toggle">
                                 <span class="fw-bold">Disc %</span>
                                 <span class="opacity-75">[F3]</span>
                             </button>
                         </div>
                     
                         <div class="col">
-                            <button class="btn numpad-btn {{ !!config('user_companies.details')->can('pos.change-item-discount') ? 'btn-label-success' : 'btn-success' }} w-100 py-2 d-flex flex-column align-items-center justify-content-center border-end shortcut-toggle" id="discount-type-amount-shortcut-toggle" data-shortcut="f6" {{ !!config('user_companies.details')->can('pos.change-item-discount') ? '' : 'disabled' }}>
+                            <button class="btn numpad-btn btn-label-success w-100 py-2 d-flex flex-column align-items-center justify-content-center border-end shortcut-toggle" id="discount-type-amount-shortcut-toggle" data-shortcut="f6">
                                 <span class="fw-bold">Disc Rp</span>
                                 <span class="opacity-75">[F6]</span>
                             </button>
                         </div>
                     
                         <div class="col">
-                            <button class="btn numpad-btn {{ !!config('user_companies.details')->can('pos.change-price') ? 'btn-label-secondary' : 'btn-secondary' }} w-100 py-2 d-flex flex-column align-items-center justify-content-center shortcut-toggle" id="price-shortcut-toggle" data-shortcut="f4" {{ !!config('user_companies.details')->can('pos.change-price') ? '' : 'disabled' }}>
+                            <button class="btn numpad-btn btn-label-secondary w-100 py-2 d-flex flex-column align-items-center justify-content-center shortcut-toggle" id="price-shortcut-toggle" data-shortcut="f4">
                                 <span class="fw-bold">Harga</span>
                                 <span class="opacity-75">[F4]</span>
                             </button>
                         </div>
                         <div class="col">
-                            <button class="btn numpad-btn {{ !!config('user_companies.details')->can('pos.change-unit') ? 'btn-label-danger' : 'btn-danger' }} w-100 py-2 d-flex flex-column align-items-center justify-content-center" id="unit-shortcut-toggle" data-shortcut="f2" {{ !!config('user_companies.details')->can('pos.change-unit') ? '' : 'disabled' }}>
+                            <button class="btn numpad-btn btn-label-danger w-100 py-2 d-flex flex-column align-items-center justify-content-center" id="unit-shortcut-toggle" data-shortcut="f2">
                                 <span class="fw-bold">Satuan</span>
                                 <span class="opacity-75">[F2]</span>
                             </button>
@@ -459,6 +462,7 @@
     @include('companies.v1.pos.cashier.modal.taxes')
     @include('companies.v1.pos.cashier.modal.stock')
     @include('companies.v1.pos.cashier.modal.sync')
+    @include('companies.v1.pos.cashier.modal.access_denied')
 @endsection
 
 @section('script')
@@ -477,11 +481,16 @@
 <script>
     $(function() {
 
-        const IS_CAN_CHANGE_ITEM_PRICE = '{{ config('user_companies.details')->can('pos.change-price') }}';
-        const IS_CAN_CHANGE_ITEM_DISCOUNT = '{{ config('user_companies.details')->can('pos.change-item-discount') }}';
-        const IS_CAN_DELETE_ITEM = '{{ config('user_companies.details')->can('pos.delete-item-transaction') }}';
-        const IS_CAN_HOLD_TRANSACTION = '{{ config('user_companies.details')->can('pos.hold-transaction') }}';
-        const IS_CAN_REPRINT_TRANSACTION = '{{ config('user_companies.details')->can('pos.reprint') }}';
+        const IS_CAN_CHANGE_ITEM_PRICE = '{{ config('user_companies.is_supervisor') || config('user_companies.details')->can('pos.change-price') }}';
+        const IS_CAN_CHANGE_ITEM_DISCOUNT = '{{ config('user_companies.is_supervisor') || config('user_companies.details')->can('pos.change-item-discount') }}';
+        const IS_CAN_DELETE_ITEM = '{{ config('user_companies.is_supervisor') || config('user_companies.details')->can('pos.delete-item-transaction') }}';
+        const IS_CAN_UNIT_ITEM = '{{ config('user_companies.is_supervisor') || config('user_companies.details')->can('pos.change-unit') }}';
+        const IS_CAN_HOLD_TRANSACTION = '{{ config('user_companies.is_supervisor') || config('user_companies.details')->can('pos.hold-transaction') }}';
+        const IS_CAN_REPRINT_TRANSACTION = '{{ config('user_companies.is_supervisor') || config('user_companies.details')->can('pos.reprint') }}';
+        const IS_CAN_REDEEM_TRANSACTION = '{{ config('user_companies.is_supervisor') || config('user_companies.details')->can('pos.redeem-transaction') }}';
+        const IS_CAN_VOID_TRANSACTION = '{{ config('user_companies.is_supervisor') || config('user_companies.details')->can('pos.void-transaction') }}'        
+        const IS_CAN_STOCK_WAREHOUSE = '{{ config('user_companies.is_supervisor') || config('user_companies.details')->can('pos.stock-warehouse') }}'
+        const IS_CAN_EDIT_TRANSACTION = '{{ config('user_companies.is_supervisor') || config('user_companies.details')->can('pos.edit-transaction') }}'
 
         $("#input-product-qty").TouchSpin({
             buttondown_class: "btn btn-secondary",
@@ -588,6 +597,21 @@
         const MIN_BARCODE_LENGTH = 6;
 
         let productStockDt;
+
+        let authenticateSupervisorOnSuccess = null;
+
+        getUserSearch({
+            element: $('#input-supervisor-auth-user_id'),
+            filter: 'is_supervisor=1',
+            modal: $('#access-denied-modal'),
+        })
+
+        const shouldAuthenticateSupervisor = (onSuccess) => {
+            $('#access-denied-modal').modal('show');
+            if (onSuccess && typeof onSuccess === 'function') {
+                authenticateSupervisorOnSuccess = onSuccess
+            }
+        } 
 
         const resetPointExchange = (resetInput = true) => {
             totalPointApplied = 0;
@@ -844,7 +868,6 @@
             getSelectedCustomerInfo(setDefaultCustomer);
             $('#order-list-container').html('');
             $('#input-total_payment').numericInput('setValue', 0);
-            $('#input-search-product').val('').trigger('change');
             $('#input-product-qty').val(1);
             $('#input-variant-product_id').val('');
             resetPointExchange();
@@ -853,6 +876,7 @@
             $('table#customer-table tbody tr').removeAttr('data-selected');
             $('.apply-point-toggle').removeClass('selected');
             calculateTotalItemBadge();
+            $('#input-search-product').val('').trigger('input');
         }
 
         const resetHistoriesState = () => {
@@ -1271,7 +1295,7 @@
                 const totalPrice = subtotal - discountAmount;
     
                 if (isExistInOrderList) {
-                    $('#order-list-container .order-item[data-id="'+id+'"] #input-qty-'+id)?.val(qty);
+                    // $('#order-list-container .order-item[data-id="'+id+'"] #input-qty-'+id)?.val(qty);
                     $('#order-list-container .order-item[data-id="'+id+'"] .code-placeholder')?.html(code);
                     $('#order-list-container .order-item[data-id="'+id+'"] .unit_name-placeholder')?.html(`(${unitName})`);
                     $('#order-list-container .order-item[data-id="'+id+'"] #tax-item-toggle-'+id)?.html(`${data?.tax_code ? data?.tax_code : (data?.tax ? data?.tax+'%' : 'Tidak Ada Pajak')}`);
@@ -1361,9 +1385,7 @@
                                 </div>
                             </div>
                             <div>
-                                ${!!IS_CAN_DELETE_ITEM ?
-                                    `<button type="button" class="btn btn-danger h-100 rounded-0 p-0 delete-item-toggle" data-id="${id}" style="width: 30px"><span class="mdi mdi-trash-can"></span></button>`
-                                 : ''}
+                                <button type="button" class="btn btn-danger h-100 rounded-0 p-0 delete-item-toggle" data-id="${id}" style="width: 30px"><span class="mdi mdi-trash-can"></span></button>
                             <div>
                         </div>
                     `);
@@ -1541,7 +1563,13 @@
             const productId = $this.data('id');
 
             if (productId) {
-                removeProductFromOrderList(productId);
+                if (IS_CAN_DELETE_ITEM) {
+                    removeProductFromOrderList(productId);
+                } else {
+                    shouldAuthenticateSupervisor(() => {
+                        removeProductFromOrderList(productId);
+                    })
+                }
             }
         })
 
@@ -1742,6 +1770,21 @@
         let productInputLastTime = 0;
         let productInputIsScanner = false;
         let productInputTimer = null;
+
+        $(document).on('input change', '#input-search-product', function (e) {
+            const $this = $(this);
+            if ($this.val()) {
+                $('#reset-input-search-product-toggle').removeClass('d-none')
+            } else {
+                $('#reset-input-search-product-toggle').addClass('d-none')
+            }
+        });
+
+        $(document).on('click', '#reset-input-search-product-toggle', function (e) {
+            e.preventDefault();
+            $('#input-search-product').val('').trigger('input');
+            $('#input-search-product').focus()
+        });
 
         $(document).on('input', '#input-search-product', function (e) {
 
@@ -2202,6 +2245,7 @@
                 { modal: '#redeem-modal', submit: '#submit-redeem-toggle' },
                 { modal: '#payment-modal', submit: '#submit-payment-toggle' },
                 { modal: '#taxes-modal', submit: '#submit-taxes-toggle' },
+                { modal: '#access-denied-modal', submit: '#authenticate-supervisor-submit-toggle' },
             ];
 
             for (const { modal, submit } of modals) {
@@ -2466,28 +2510,20 @@
         $(document).on('input', '[id^=input-qty-]', function (e) {
             const $this = $(this);
             let val = $(this).val();
-            const numberVal = Number(val);
-
-            const data = e.originalEvent?.data;
+            
+            const numberVal = parseFloat(val);
             
             const dataId = $(this).data('id');
             setInputAutoWidth(this);
             
             if ($('html').attr('data-shortcut-mode') === 'qty' && dataId && !isNaN(numberVal)) {
+                
                 const item = productOrderListMap.get(dataId);
                 if (item) {
-                    if (numberVal > 0) {
-                        putProductToOrderList(dataId, {
-                            qty: numberVal,
-                            inputQty: true
-                        });
-                    } else {
-                        putProductToOrderList(dataId, {
-                            qty: 0,
-                            inputQty: true
-                        });
-
-                    }
+                    putProductToOrderList(dataId, {
+                        qty: numberVal,
+                        inputQty: true
+                    });
                 }
             }
 
@@ -2583,6 +2619,10 @@
                     removeProductFromOrderList(dataId)
                 }
             }
+
+            if (!IS_CAN_CHANGE_ITEM_PRICE) {
+                $this.prop('disabled', true)
+            }
         });
     
         $(document).on('click', '#btn-toggle-numpad', function () {
@@ -2633,16 +2673,30 @@
             if (selectedOrderProductId) {
                 const productOrderListSelected = productOrderListMap.get(selectedOrderProductId);
                 if (productOrderListSelected) {
-                    $('#input-discount-type-'+selectedOrderProductId).val('percentage').trigger('change');
-                    $('#input-discount-value-'+selectedOrderProductId).focus();
-
-                    if (productOrderListSelected?.discount_type == 'amount') {
-                        putProductToOrderList(selectedOrderProductId, {
-                            discount_value: 0,
-                            discount_type: 'percentage'
+                    if (IS_CAN_CHANGE_ITEM_DISCOUNT) {
+                        $('#input-discount-type-'+selectedOrderProductId).val('percentage').trigger('change');
+                        $('#input-discount-value-'+selectedOrderProductId).focus();
+    
+                        if (productOrderListSelected?.discount_type == 'amount') {
+                            putProductToOrderList(selectedOrderProductId, {
+                                discount_value: 0,
+                                discount_type: 'percentage'
+                            })
+                        }
+                    } else {
+                        shouldAuthenticateSupervisor(() => {
+                            $('#input-discount-type-'+selectedOrderProductId).val('percentage').trigger('change');
+                            $('#input-discount-value-'+selectedOrderProductId).prop('disabled', false);
+                            $('#input-discount-value-'+selectedOrderProductId).focus();
+                            
+                            if (productOrderListSelected?.discount_type == 'amount') {
+                                putProductToOrderList(selectedOrderProductId, {
+                                    discount_value: 0,
+                                    discount_type: 'percentage'
+                                })
+                            }
                         })
                     }
-
                 }
             }
         });
@@ -2662,12 +2716,26 @@
             if (selectedOrderProductId) {
                 const productOrderListSelected = productOrderListMap.get(selectedOrderProductId);
                 if (productOrderListSelected) {
-                    $('#input-discount-type-'+selectedOrderProductId).val('amount').trigger('change');
-                    $('#input-discount-value-'+selectedOrderProductId).focus();
-                    if (productOrderListSelected?.discount_type == 'percentage') {
-                        putProductToOrderList(selectedOrderProductId, {
-                            discount_value: 0,
-                            discount_type: 'amount'
+                    if (IS_CAN_CHANGE_ITEM_DISCOUNT) {
+                        $('#input-discount-type-'+selectedOrderProductId).val('amount').trigger('change');
+                        $('#input-discount-value-'+selectedOrderProductId).focus();
+                        if (productOrderListSelected?.discount_type == 'percentage') {
+                            putProductToOrderList(selectedOrderProductId, {
+                                discount_value: 0,
+                                discount_type: 'amount'
+                            })
+                        }
+                    } else {
+                        shouldAuthenticateSupervisor(() => {
+                            $('#input-discount-type-'+selectedOrderProductId).val('amount').trigger('change');
+                            $('#input-discount-value-'+selectedOrderProductId).prop('disabled', false);
+                            $('#input-discount-value-'+selectedOrderProductId).focus();
+                            if (productOrderListSelected?.discount_type == 'percentage') {
+                                putProductToOrderList(selectedOrderProductId, {
+                                    discount_value: 0,
+                                    discount_type: 'amount'
+                                })
+                            }
                         })
                     }
                 }
@@ -2689,14 +2757,29 @@
         })
         
         $(document).on('click', '#price-shortcut-toggle', (e) => {
-            $('#input-price-'+selectedOrderProductId).focus();
+            if (selectedOrderProductId) {
+                if (!!IS_CAN_CHANGE_ITEM_PRICE) {
+                    $('#input-price-'+selectedOrderProductId).focus();
+                } else {
+                    shouldAuthenticateSupervisor(() => {
+                        $('#input-price-'+selectedOrderProductId).prop('disabled', false);
+                        $('#input-price-'+selectedOrderProductId).focus();
+                    })
+                }
+            }
         });
 
         $(document).on('click', '#unit-shortcut-toggle', function () {
             resetShortcutMode();
             hideAllModal();
             if (selectedOrderProductId) {
-                $('#unit-modal').modal('show');
+                if (IS_CAN_UNIT_ITEM) {
+                    $('#unit-modal').modal('show');
+                } else {
+                    shouldAuthenticateSupervisor(() => {
+                        $('#unit-modal').modal('show');
+                    })
+                }
             }
         });
 
@@ -2753,76 +2836,87 @@
         $(document).on('click', '#redeem-modal-toggle', (e) => {
             hideAllModal()
             resetShortcutMode()
-            $('#redeem-customer-name-placeholder').html('')
-            $('#redeem-contact-group-name-placeholder').html('')
-            $('#redeem-total-point-placeholder').html(0);
             // deletedRewardPointIds = [];
-
-            if (selectedCustomer?.id) {
-                const pointBalance = Number(selectedCustomer?.point_balance) ?? 0;
-                
-                $('#redeem-customer-name-placeholder').html(selectedCustomer?.name)
-                $('#redeem-contact-group-name-placeholder').html(selectedCustomer?.contact_group_name)
-                $('#redeem-total-point-placeholder').html(pointBalance?.toLocaleString('en'));
-
-                if (rewardPointPage == 1) {
-                    loadRewardPoints({
-                        refresh: true
-                    })
-                }
-
-                
-                if (selectedCustomer.id !== selectedCustomerIdRewardPoint) {
-                    $('#input-point').numericInput('clear');
-                    $('#input-point').numericInput('destroy');
-                    $('#input-point').numericInput({
-                        allowNegative: false,
-                        maxValue: parseFloat(selectedCustomer.point_balance)
-                    });
-                    totalPointApplied = 0;
-                    totalDiscountPoint = 0;
-                    $('#input-point').numericInput('setValue', 0);
-                    $('#input-discount-point').val(0)
-                    $('#redeem-total-discount-placeholder').html('Rp 0');
-                } else {
+            const mainFunc = () => {
+                if (selectedCustomer?.id) {
+                    $('#redeem-customer-name-placeholder').html('')
+                    $('#redeem-contact-group-name-placeholder').html('')
+                    $('#redeem-total-point-placeholder').html(0);
+        
+                    const pointBalance = Number(selectedCustomer?.point_balance) ?? 0;
                     
-                    // $('#input-point').numericInput({
-                    //     allowNegative: false,
-                    //     maxValue: parseFloat(selectedCustomer.point_balance)
-                    // });
-                    $('#input-point').numericInput('setValue', totalPointApplied);
-                    // $('#redeem-total-discount-placeholder').html('Rp '+(totalPointApplied * pointCalculate));
-                }
-
-                // if (selectedCustomer.id !== selectedCustomerIdRewardPoint) {
-                    // loadRewardPointProducts({
-                    //     refresh: true
-                    // });
-                // } else {
-                    // const rewardPointsApplied = [...rewardPointsAppliedMap.values()];
-                    // if (rewardPointsApplied?.length > 0) {
-                    //     rewardPointsApplied.forEach((item, idx) => {
-                            
-                    //         if (item?.is_applied == true) {
+                    $('#redeem-customer-name-placeholder').html(selectedCustomer?.name)
+                    $('#redeem-contact-group-name-placeholder').html(selectedCustomer?.contact_group_name)
+                    $('#redeem-total-point-placeholder').html(pointBalance?.toLocaleString('en'));
+        
+                    if (rewardPointPage == 1) {
+                        loadRewardPoints({
+                            refresh: true
+                        })
+                    }
+        
+                    
+                    if (selectedCustomer.id !== selectedCustomerIdRewardPoint) {
+                        $('#input-point').numericInput('clear');
+                        $('#input-point').numericInput('destroy');
+                        $('#input-point').numericInput({
+                            allowNegative: false,
+                            maxValue: parseFloat(selectedCustomer.point_balance)
+                        });
+                        totalPointApplied = 0;
+                        totalDiscountPoint = 0;
+                        $('#input-point').numericInput('setValue', 0);
+                        $('#input-discount-point').val(0)
+                        $('#redeem-total-discount-placeholder').html('Rp 0');
+                    } else {
+                        
+                        // $('#input-point').numericInput({
+                        //     allowNegative: false,
+                        //     maxValue: parseFloat(selectedCustomer.point_balance)
+                        // });
+                        $('#input-point').numericInput('setValue', totalPointApplied);
+                        // $('#redeem-total-discount-placeholder').html('Rp '+(totalPointApplied * pointCalculate));
+                    }
+        
+                    // if (selectedCustomer.id !== selectedCustomerIdRewardPoint) {
+                        // loadRewardPointProducts({
+                        //     refresh: true
+                        // });
+                    // } else {
+                        // const rewardPointsApplied = [...rewardPointsAppliedMap.values()];
+                        // if (rewardPointsApplied?.length > 0) {
+                        //     rewardPointsApplied.forEach((item, idx) => {
                                 
-                    //             if (item?.benefit_type === 'discount') {
-                    //             }
-                    //             putRewardPoint(item?.id, item);
-                                
-                    //         } else {
-                    //             rewardPointsAppliedMap.delete(item?.id);
-                    //             if (item?.benefit_type === 'discount') {
-                    //                 clearRewardPointDiscount()
-                    //             }
-                    //         }
-                    //     });
+                        //         if (item?.is_applied == true) {
+                                    
+                        //             if (item?.benefit_type === 'discount') {
+                        //             }
+                        //             putRewardPoint(item?.id, item);
+                                    
+                        //         } else {
+                        //             rewardPointsAppliedMap.delete(item?.id);
+                        //             if (item?.benefit_type === 'discount') {
+                        //                 clearRewardPointDiscount()
+                        //             }
+                        //         }
+                        //     });
+                        // }
                     // }
-                // }
-
-                $('#redeem-modal').modal('show');
-                
-                selectedCustomerIdRewardPoint = selectedCustomer?.id;
+        
+                    $('#redeem-modal').modal('show');
+                    
+                    selectedCustomerIdRewardPoint = selectedCustomer?.id;
+                }
             }
+
+            if (IS_CAN_REDEEM_TRANSACTION) {
+                mainFunc()
+            } else {
+                shouldAuthenticateSupervisor(() => {
+                    mainFunc()
+                })
+            }
+
         });
 
         $('#reward-point-product-item-wrapper').on('scroll', function () {
@@ -3106,7 +3200,7 @@
                     ) &&
                     (
                         d.branch_id === null ||
-                        d.branch_id == '{{ config('user.branch_id') }}'
+                        d.branch_id == '{{ config('user_companies.branch_id') ? config('user_companies.branch_id') : config('general_settings.default_branch')  }}'
                     ) &&
                     (
                         !d.product_sku_id ||
@@ -3125,7 +3219,7 @@
                             s += 1;
                         }
 
-                        if (d.branch_id !== null && d.branch_id == '{{ config('user.branch_id') }}') {
+                        if (d.branch_id !== null && d.branch_id == '{{ config('user_companies.branch_id') ? config('user_companies.branch_id') : config('general_settings.default_branch') }}') {
                             s += 1;
                         }
                     
@@ -3170,7 +3264,8 @@
                             }
                         }
 
-                        let params = {}                    
+                        let params = {}
+                        
                         params.convertion_value = convertionValue;
                         params.price = productOrderList?.detail.sale_price * convertionValue;
                         params.is_product_unit_convert = isProductUnitConvert;
@@ -3454,7 +3549,7 @@
 
             const selectedOrderItem = productOrderListMap.get(selectedOrderProductId)       
 
-            if (selectedOrderItem?.detail?.id && selectedOrderItem?.detail?.unit_conversions?.length > 0) {
+            if (selectedOrderItem?.detail?.id) {
                 req.product_id = selectedOrderItem?.detail?.id;
             }
     
@@ -3571,27 +3666,38 @@
             }
         });
 
-
         $(document).on('click', '#void-toggle', function() {
-            withShortcutSwal({
-                title: "Dibutuhkan konfirmasi",
-                icon: 'warning',
-                html: `Apakah anda yakin ingin reset semua data?`,
-                showCancelButton: true,
-                confirmButtonColor: 'var(--bs-success)',
-                cancelButtonColor: 'var(--bs-danger)',
-                confirmButtonText: '{{ __('language.yes') }}',
-                cancelButtonText: '{{ __('language.cancel') }}',
-                reverseButtons: true
-            }).then((result) => {
-                if (result.isConfirmed) {
-                    clear({
-                        setDefaultCustomer: true
-                    })
-                } else {
-                    Swal.close();
-                }
-            });
+
+            const mainFunc = () => {
+                withShortcutSwal({
+                    title: "Dibutuhkan konfirmasi",
+                    icon: 'warning',
+                    html: `Apakah anda yakin ingin reset semua data?`,
+                    showCancelButton: true,
+                    confirmButtonColor: 'var(--bs-success)',
+                    cancelButtonColor: 'var(--bs-danger)',
+                    confirmButtonText: '{{ __('language.yes') }}',
+                    cancelButtonText: '{{ __('language.cancel') }}',
+                    reverseButtons: true
+                }).then((result) => {
+                    if (result.isConfirmed) {
+                        clear({
+                            setDefaultCustomer: true
+                        });
+                        // $('#input-search-product').val('').trigger('input')
+                    } else {
+                        Swal.close();
+                    }
+                });
+            }
+
+            if (IS_CAN_VOID_TRANSACTION) {
+                mainFunc()
+            } else {
+                shouldAuthenticateSupervisor(() => {
+                    mainFunc()
+                })
+            }
         });
 
         $(document).on('shown.bs.modal', '#authenticate-modal', function () {
@@ -3613,6 +3719,69 @@
                 dataType: 'JSON',
             })
         });
+
+        $(document).on('submit', '#access-denied-form', function(e) {
+            e.preventDefault();
+            var formData = new FormData($('#access-denied-form')[0]);
+
+            $.ajax({
+                type: 'post',
+                url: BASE_URL + "/api/v1/pos/verif_supervisor",
+                "headers": {
+                    'Authorization': TOKEN,
+                    'company-id': COMPANY_ID
+                },
+                data: formData,
+                cache: false,
+                contentType: false,
+                processData: false,
+                dataType: 'json',
+                beforeSend: function () {
+                    $('#authenticate-supervisor-submit-toggle').prop('disabled', true);
+                    $('#access-denied-modal .alert-container').html('');
+                },
+                success: function (res) {
+                    $('#access-denied-modal').modal('hide');
+                    if (authenticateSupervisorOnSuccess && typeof authenticateSupervisorOnSuccess === 'function') {
+                        authenticateSupervisorOnSuccess(res);
+                    }
+                },
+                error: (jqXHR, textStatus, errorThrown) => {
+
+                    let err = jqXHR.responseJSON?.message;
+                    
+                    if (jqXHR?.status == 422) {
+                        err = jqXHR.responseJSON?.errors;
+                    }
+
+                    let message = err;
+                    
+                    if (typeof err === 'object') {
+                        message = '<ul style="padding: 0px; margin: 0px; list-style-type: none;">';
+                        Object.keys(err).forEach(key => {
+                            const value = err[key]?.[0];
+                            message += '<li>'+value+'</li>'
+                        });
+                        message += '</ul>';
+                    }
+
+                    $('#access-denied-modal .alert-container').html(`
+                        <div class="alert alert-danger alert-dismissible">
+                            <div class="alert-content">
+                                ${message}
+                            </div>
+                        </div>
+                    `);
+                },
+                complete: function () {
+                    $('#authenticate-supervisor-submit-toggle').prop('disabled', false);
+                }
+            })
+        });
+
+        $(document).on('click', '#authenticate-supervisor-submit-toggle', function () {
+            $('#access-denied-form').trigger('submit')
+        })
 
         $(document).on('submit', '#authenticate-form', function(e) {
             e.preventDefault();
@@ -3986,55 +4155,64 @@
         })
 
         $(document).on('click', '#hold-toggle', function () {
-            if (productOrderListMap.size > 0 && selectedCustomer?.id) {
+            const mainFunc = () => {
+                if (productOrderListMap.size > 0 && selectedCustomer?.id) {
+    
+                    var formData = new FormData();
+    
+                    setSubmitFormValue(formData, { is_draft: true });
+    
+                    withShortcutSwal({
+                        title: "Dibutuhkan konfirmasi",
+                        icon: 'warning',
+                        html: `Apakah anda yakin ingin menyimpan pembayaran sebagai draft?`,
+                        showCancelButton: true,
+                        confirmButtonColor: 'var(--bs-success)',
+                        cancelButtonColor: 'var(--bs-danger)',
+                        confirmButtonText: '{{ __('language.yes') }}',
+                        cancelButtonText: '{{ __('language.cancel') }}',
+                        reverseButtons: true
+                    }).then((result) => {
+                        if (result.isConfirmed) {
+                            $.ajax({
+                                type: 'post',
+                                url: BASE_URL + "/api/v1/pos/payments",
+                                "headers": {
+                                    'Authorization': TOKEN,
+                                    'company-id': COMPANY_ID
+                                },
+                                data: formData,
+                                cache: false,
+                                contentType: false,
+                                processData: false,
+                                dataType: 'json',
+                                beforeSend: function () {
+                                    showLoading();
+                                },
+                                success: function (res) {
+                                    Swal.close();
+                                    clear({
+                                        setDefaultCustomer: true
+                                    });
+                                    generateRefNumber();
+                                    resetHistoriesState();
+                                    $('#input-search-product').focus()
+                                },
+                                error: generalAjaxErrorHandler
+                            })
+                        } else {
+                            Swal.close();
+                        }
+                    });
+                }
+            }
 
-                var formData = new FormData();
-
-                setSubmitFormValue(formData, { is_draft: true });
-
-                withShortcutSwal({
-                    title: "Dibutuhkan konfirmasi",
-                    icon: 'warning',
-                    html: `Apakah anda yakin ingin menyimpan pembayaran sebagai draft?`,
-                    showCancelButton: true,
-                    confirmButtonColor: 'var(--bs-success)',
-                    cancelButtonColor: 'var(--bs-danger)',
-                    confirmButtonText: '{{ __('language.yes') }}',
-                    cancelButtonText: '{{ __('language.cancel') }}',
-                    reverseButtons: true
-                }).then((result) => {
-                    if (result.isConfirmed) {
-                        $.ajax({
-                            type: 'post',
-                            url: BASE_URL + "/api/v1/pos/payments",
-                            "headers": {
-                                'Authorization': TOKEN,
-                                'company-id': COMPANY_ID
-                            },
-                            data: formData,
-                            cache: false,
-                            contentType: false,
-                            processData: false,
-                            dataType: 'json',
-                            beforeSend: function () {
-                                showLoading();
-                            },
-                            success: function (res) {
-                                Swal.close();
-                                clear({
-                                    setDefaultCustomer: true
-                                });
-                                generateRefNumber();
-                                resetHistoriesState();
-                                $('#input-search-product').focus()
-                            },
-                            error: generalAjaxErrorHandler
-                        })
-                    } else {
-                        Swal.close();
-                    }
-                });
-
+            if (IS_CAN_HOLD_TRANSACTION) {
+                mainFunc();
+            } else {
+                shouldAuthenticateSupervisor(() => {
+                    mainFunc();
+                })
             }
         })
 
@@ -4228,10 +4406,10 @@
                 $('#hold-toggle').attr('id', 'histories-toggle');
             }
 
-            if ($('#hold-toggle').length > 0 && !IS_CAN_HOLD_TRANSACTION) {
-                $('#hold-toggle').prop('disabled', true);
+            if (productOrderListMap.size > 0 && selectedCustomer?.id) {
+                $('#void-toggle').prop('disabled', false);
             } else {
-                $('#histories-toggle, #hold-toggle').prop('disabled', false);
+                $('#void-toggle').prop('disabled', true);
             }
 
             if (calculateTotal.totalPayment >= calculateTotal.grandTotal) {
@@ -4508,8 +4686,11 @@
             starting()
         }
 
-        $(document).on('hidden.bs.modal', '.modal', function () {
-            $('#input-search-product').focus();
+        $(document).on('hidden.bs.modal', '.modal', function (e) {
+            // console.log($(e));
+            if ($(e.target).attr('id') != 'access-denied-modal') {
+                $('#input-search-product').focus();
+            }
         })
 
         $('#unit-table').on('processing.dt', function (e, settings, processing) {
@@ -4581,7 +4762,7 @@
                 page: historiesPages[activeTab],
                 is_active: 1,
                 is_from_pos: 1,
-                created_by: '{{ config('user.id') }}',
+                created_by: '{{ config('user_companies.id') }}',
                 ...props?.params
             }
 
@@ -4665,9 +4846,8 @@
 
                             let dropdownButtonsHtml = '';
 
-                            if (!!IS_CAN_REPRINT_TRANSACTION) {
-                                dropdownButtonsHtml += '<li><a href="#" id="histories-print-toggle-'+i+'" data-ref_number="'+item?.ref_number+'" class="dropdown-item">Print</a></li>';
-                            }
+                            dropdownButtonsHtml += '<li><a href="#" id="histories-edit-transaction-toggle-'+i+'" data-ref_number="'+item?.ref_number+'" data-id="'+item.id+'" id="call-back-sales-invoice-'+item.id+'" class="dropdown-item">Ubah Transaksi</a></li>' 
+                            dropdownButtonsHtml += '<li><a href="#" id="histories-print-toggle-'+i+'" data-ref_number="'+item?.ref_number+'" class="dropdown-item">Print</a></li>';
 
                             if (activeTab == 'hold') {
                                 dropdownButtonsHtml += '<li><button class="dropdown-item" id="call-back-sales-invoice-'+item.id+'" data-id="'+item.id+'" type="button">Call Back</button></li>';
@@ -4719,6 +4899,17 @@
             });
         }
 
+        $(document).on('click', '[id^=histories-edit-transaction-toggle-]', function (e) {
+            e.preventDefault();
+            const $this = $(this);
+            const dataId = $this.attr('data-id');
+
+            callbackTransaction(dataId, {
+                popUpMessage: `Apakah anda yakin ingin mengubah isi transaksi?`,
+                permissionAllowed: IS_CAN_EDIT_TRANSACTION
+            });
+        });
+
         $(document).on('click', '[id^=histories-print-toggle-]', function (e) {
             e.preventDefault()
             const $this = $(this);
@@ -4743,8 +4934,15 @@
 
         $(document).on('click', '[id^=call-back-sales-invoice-]', function () {
             const $this = $(this);
-            const dataId = $this.data('id');
+            const dataId = $this.attr('data-id');
 
+            callbackTransaction(dataId, {
+                popUpMessage: `Apakah anda yakin ingin memanggil kembali transaksi?`,
+                permissionAllowed: IS_CAN_HOLD_TRANSACTION
+            });
+        });
+
+        const callbackTransaction = (dataId, props = {}) => {
             let req = {
                 with_product_detail: true,
                 with_customer_detail: true
@@ -4752,74 +4950,84 @@
 
             const reqParams = $.param(req);
 
-            withShortcutSwal({
-                title: "Dibutuhkan konfirmasi",
-                icon: 'warning',
-                html: `Apakah anda yakin ingin memanggil kembali pembayaran?`,
-            }).then((result) => {
-                if (result.isConfirmed) {
-                    $.ajax({
-                        url: BASE_URL + '/api/v1/sales_invoices/'+dataId+'?'+reqParams,
-                        type: "GET",
-                        dataType: "json",
-                        headers: {
-                            'Authorization': TOKEN,
-                            'company-id': COMPANY_ID
-                        },
-                        beforeSend: function() {
-                            showLoading();
-                        },
-                        success: function(res) {
-                            Swal.close();
-                             $('#input-id').val(res.id);
-                            selectedCustomer = res.customer_detail;
-                            getSelectedCustomerInfo();
-                            generateRefNumber(res.ref_number);
+            const mainFunc = () => {
+                $.ajax({
+                    url: BASE_URL + '/api/v1/sales_invoices/'+dataId+'?'+reqParams,
+                    type: "GET",
+                    dataType: "json",
+                    headers: {
+                        'Authorization': TOKEN,
+                        'company-id': COMPANY_ID
+                    },
+                    beforeSend: function() {
+                        showLoading();
+                    },
+                    success: function(res) {
+                        Swal.close();
+                         $('#input-id').val(res.id);
+                        selectedCustomer = res.customer_detail;
+                        getSelectedCustomerInfo();
+                        generateRefNumber(res.ref_number);
 
-                            for (const [key, item] of productOrderListMap) {
-                                removeProductFromOrderList(key)
-                            }
+                        for (const [key, item] of productOrderListMap) {
+                            removeProductFromOrderList(key)
+                        }
 
-
-                            if (res?.sales_invoice_details) {
-                                res.sales_invoice_details.forEach((item, idx) => {
-                                    if (item?.product_detail) {
-                                        if (item?.product_sku_id) {
-                                            const matchedProductSku = item?.product_detail?.product_skus?.find((productSku) => productSku.id == item?.product_sku_id);
-                                            if (!matchedProductSku) return
-                                        }
-
-                                        putProductToOrderList(generateOrderId(), {
-                                            sales_invoice_detail_id: item?.id,
-                                            qty: parseFloat(item?.qty),
-                                            price: parseFloat(item?.unit_price),
-                                            unit_id: item?.unit_id,
-                                            unit_name: item?.unit_name,
-                                            detail: item?.product_detail,
-                                            note: item?.note,
-                                            is_product_unit_convert: item?.is_product_unit_convert,
-                                            tax: parseFloat(item?.tax_percentage),
-                                            tax_id: parseFloat(item?.tax_id),
-                                            discount_type: item?.discount_type,
-                                            discount_value: parseFloat(item?.discount_value),
-                                            is_other_item: true,
-                                            unit_convertion: item.unit_detail,
-                                            product_sku: item.product_sku_detail
-                                        });
-
+                        if (res?.sales_invoice_details) {
+                            res.sales_invoice_details.forEach((item, idx) => {
+                                if (item?.product_detail) {
+                                    if (item?.product_sku_id) {
+                                        const matchedProductSku = item?.product_detail?.product_skus?.find((productSku) => productSku.id == item?.product_sku_id);
+                                        if (!matchedProductSku) return
                                     }
-                                });
-                            }
 
-                            $('#histories-modal').modal('hide');
-                        },
-                    });
-                } else {
-                    Swal.close();
-                }
-            });
+                                    putProductToOrderList(generateOrderId(), {
+                                        sales_invoice_detail_id: item?.id,
+                                        qty: parseFloat(item?.qty),
+                                        price: parseFloat(item?.unit_price),
+                                        unit_id: item?.unit_id,
+                                        unit_name: item?.unit_name,
+                                        detail: item?.product_detail,
+                                        note: item?.note,
+                                        is_product_unit_convert: item?.is_product_unit_convert,
+                                        tax: parseFloat(item?.tax_percentage),
+                                        tax_id: parseFloat(item?.tax_id),
+                                        discount_type: item?.discount_type,
+                                        discount_value: parseFloat(item?.discount_value),
+                                        is_other_item: true,
+                                        unit_convertion: item.unit_detail,
+                                        product_sku: item.product_sku_detail
+                                    });
+
+                                }
+                            });
+                        }
+
+                        $('#histories-modal').modal('hide');
+                    },
+                });
+            }
             
-        });
+            if (props?.permissionAllowed) {
+                withShortcutSwal({
+                    title: "Dibutuhkan konfirmasi",
+                    icon: 'warning',
+                    html: props?.popUpMessage ? props?.popUpMessage : '',
+                }).then((result) => {
+                    if (result.isConfirmed) {
+                        mainFunc()
+                    } else {
+                        Swal.close();
+                    }
+                });
+            } else {
+                $('#histories-modal').modal('hide');
+                shouldAuthenticateSupervisor(() => {
+                    mainFunc()
+                })
+            }
+            
+        }
 
         $(document).on('click', '#sync-toggle', function () {
             $('#sync-modal').modal('show');
@@ -4903,7 +5111,13 @@
         })
     
         $(document).on('click', '#stock-toggle', function () {
-            $('#stock-modal').modal('show')
+            if (IS_CAN_STOCK_WAREHOUSE) {
+                $('#stock-modal').modal('show')
+            } else {
+                shouldAuthenticateSupervisor(() => {
+                    $('#stock-modal').modal('show')
+                })
+            }
         });
 
         $(document).on('hidden.bs.modal', '#sync-modal', function () {
@@ -5601,6 +5815,16 @@
 
             }, 500);
         });
+
+        $(document).on('hidden.bs.modal', '#access-denied-modal', function () {
+            $('#input-supervisor-auth-user_id').val('').trigger('change');
+            $('#input-supervisor-auth-password').val('');
+        })
+
+        $(document).on('click', '#reload-toggler', function () {
+            showLoading()
+            window.location.reload();
+        })
     });
 </script>
 @endsection

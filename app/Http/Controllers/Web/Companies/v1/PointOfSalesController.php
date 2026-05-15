@@ -3,7 +3,7 @@
 namespace App\Http\Controllers\Web\Companies\v1;
 
 use App\Http\Controllers\Controller;
-use App\Models\SalesInvoices;
+use App\Models\Companies\v1\SalesInvoices;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Http\Request;
 

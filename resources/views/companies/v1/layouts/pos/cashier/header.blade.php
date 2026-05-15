@@ -19,6 +19,9 @@
                 <button type="button" class="btn btn-navbar-action btn-lg btn-icon" id="fullscreen-toggler">
                     <i class="mdi mdi-arrow-expand"></i>
                 </button>
+                <button type="button" class="btn btn-navbar-action btn-lg btn-icon" id="reload-toggler">
+                    <i class="mdi mdi-reload"></i>
+                </button>
                 @if (!!config('user_companies.details')->can('pos.settings'))
                 <a href="{{ url('/pos/settings') }}" class="btn btn-navbar-action btn-lg btn-icon">
                     <i class="mdi mdi-cog"></i>

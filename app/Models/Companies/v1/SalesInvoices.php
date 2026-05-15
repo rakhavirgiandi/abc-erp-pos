@@ -593,7 +593,7 @@ class SalesInvoices extends Model
             $rules['sales_invoice_details.*.product_id'] = ['nullable', 'integer', 'required_without:sales_invoice_details.*.service_name'];
             $rules['sales_invoice_details.*.service_name'] = ['nullable', 'string', 'required_without:sales_invoice_details.*.product_id'];
             $rules['sales_invoice_details.*.coa'] = ['nullable', 'required_with:sales_invoice_details.*.service_name',];
-            $rules['sales_invoice_details.*.qty'] = ['required', 'min:0.0001'];
+            $rules['sales_invoice_details.*.qty'] = ['required', 'regex:/^(\d{1,3}(\,\d{3})|(\d+))(\.\d+)?$/'];
             $rules['sales_invoice_details.*.unit_price'] = ['required', 'min:0'];
         }
 

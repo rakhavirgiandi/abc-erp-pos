@@ -1098,9 +1098,10 @@
                 dropdownCssClass: "select2-sm",
                 minimumResultsForSearch: '',
                 ajax: {
-                    url: BASE_URL + "/api/users?per_page=10&order[id]=desc&" + filter,
+                    url: BASE_URL + "/api/v1/users?per_page=10&order[id]=desc&" + filter,
                     headers: {
                         'Authorization': TOKEN,
+                        'company-id': COMPANY_ID
                     },
                     dataType: "json",
                     type: "GET",
@@ -1116,6 +1117,7 @@
                             results: $.map(data.data, function(item) {
                                 return {
                                     name: item.name,
+                                    email: item.email,
                                     text: item.name,
                                     id: item.id
                                 }
