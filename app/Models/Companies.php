@@ -620,7 +620,6 @@ class Companies extends Model
 
     public static function databaseStarter($params, $request)
     {   
-
         if (!config('services.is_onpremise')) {
             return;
         }

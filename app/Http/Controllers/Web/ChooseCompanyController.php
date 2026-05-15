@@ -61,10 +61,10 @@ class ChooseCompanyController extends Controller
 
         $request->session()->put('_company_id', $params['company_id']);
 
-        // dd(config('database.connections.pgsql_companies.database'));
-
-        $exists = Products::count();
-        $request->session()->put('_is_first', $exists > 0 ? 0 : 1);
+        if (config('services.is_onpremise')) {
+            $exists = Products::count();
+            $request->session()->put('_is_first', $exists > 0 ? 0 : 1);
+        }
 
         return response()->json([
             'status' => 'success'
