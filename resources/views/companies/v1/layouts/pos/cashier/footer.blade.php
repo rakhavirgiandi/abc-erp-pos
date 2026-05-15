@@ -10,9 +10,9 @@
     </div>
     <div class="w-50 gap-1 d-flex align-items-center justify-content-end">
         <div class="btn-footer-group d-flex gap-2">
-            <button type="button" class="btn btn-secondary" id="stock-toggle">Stock </button>
+            <button type="button" class="btn btn-secondary" id="stock-toggle" {{ !!config('user_companies.details')->can('pos.stock-warehouse') ? '' : 'disabled' }}>Stock </button>
             <button type="button" class="btn btn-warning" data-shortcut="f8" id="histories-toggle"><span class="text-button">Histories</span><span class="shortcut-text-info">F8</span></button>
-            <button type="button" class="btn btn-danger" data-shortcut="f9" id="void-toggle">Void <span class="shortcut-text-info">F9</span></button>
+            <button type="button" class="btn btn-danger" data-shortcut="f9" id="void-toggle" {{ !!config('user_companies.details')->can('pos.void-transaction') ? '' : 'disabled' }}>Void <span class="shortcut-text-info">F9</span></button>
             <button type="button" class="btn btn-success" id="payment-step-toggle" data-shortcut="f10" disabled>Payment <span class="shortcut-text-info">F10</span></button>
         </div>
     </div>

@@ -339,7 +339,7 @@
                     <div class="d-flex gap-2">
                         <button type="button" class="btn btn-outline-light w-25 rounded-3 text-primary fw-bold shortcut-toggle" id="customer-modal-toggle" style="font-size: 12px;" data-shortcut="f7">Pelanggan<br><span class="fw-normal">[F7]</span></button>
                         <button type="button" class="btn btn-label-warning w-25 rounded-3 fw-bold shortcut-toggle" style="font-size: 12px">Promo<br><span class="fw-normal">[F5]</span></button>
-                        <button type="button" class="btn btn-label-success w-25 rounded-3 fw-bold shortcut-toggle" style="font-size: 12px" id="redeem-modal-toggle">Redeem<br><span class="fw-normal" data-shortcut="f12">[F12]</span></button>
+                        <button type="button" class="btn w-25 rounded-3 fw-bold shortcut-toggle {{ !!config('user_companies.details')->can('pos.redeem-transaction') ? 'btn-label-success' : 'btn-success' }}" style="font-size: 12px" id="redeem-modal-toggle" {{ !!config('user_companies.details')->can('pos.redeem-transaction') ? '' : 'disabled' }}>Redeem<br><span class="fw-normal" data-shortcut="f12">[F12]</span></button>
                         <button type="button" class="btn btn-label-secondary w-25 rounded-3 fw-bold shortcut-toggle" style="font-size: 12px" id="product-note-modal-toggle" data-shortcut="f11">Catatan<br><span class="fw-normal">[F11]</span></button>
                     </div>
                 </div>
@@ -365,27 +365,27 @@
                         </div>
                     
                         <div class="col">
-                            <button class="btn numpad-btn btn-label-warning w-100 py-2 d-flex flex-column align-items-center justify-content-center border-end shortcut-toggle" data-shortcut="f3" id="discount-percentage-shortcut-toggle">
+                            <button class="btn numpad-btn {{ !!config('user_companies.details')->can('pos.change-item-discount') ? 'btn-label-warning' : 'btn-warning' }} w-100 py-2 d-flex flex-column align-items-center justify-content-center border-end shortcut-toggle" data-shortcut="f3" id="discount-percentage-shortcut-toggle" {{ !!config('user_companies.details')->can('pos.change-item-discount') ? '' : 'disabled' }}>
                                 <span class="fw-bold">Disc %</span>
                                 <span class="opacity-75">[F3]</span>
                             </button>
                         </div>
                     
                         <div class="col">
-                            <button class="btn numpad-btn btn-label-success w-100 py-2 d-flex flex-column align-items-center justify-content-center border-end shortcut-toggle" id="discount-type-amount-shortcut-toggle" data-shortcut="f6">
+                            <button class="btn numpad-btn {{ !!config('user_companies.details')->can('pos.change-item-discount') ? 'btn-label-success' : 'btn-success' }} w-100 py-2 d-flex flex-column align-items-center justify-content-center border-end shortcut-toggle" id="discount-type-amount-shortcut-toggle" data-shortcut="f6" {{ !!config('user_companies.details')->can('pos.change-item-discount') ? '' : 'disabled' }}>
                                 <span class="fw-bold">Disc Rp</span>
                                 <span class="opacity-75">[F6]</span>
                             </button>
                         </div>
                     
                         <div class="col">
-                            <button class="btn numpad-btn btn-label-secondary w-100 py-2 d-flex flex-column align-items-center justify-content-center shortcut-toggle" id="price-shortcut-toggle" data-shortcut="f4">
+                            <button class="btn numpad-btn {{ !!config('user_companies.details')->can('pos.change-price') ? 'btn-label-secondary' : 'btn-secondary' }} w-100 py-2 d-flex flex-column align-items-center justify-content-center shortcut-toggle" id="price-shortcut-toggle" data-shortcut="f4" {{ !!config('user_companies.details')->can('pos.change-price') ? '' : 'disabled' }}>
                                 <span class="fw-bold">Harga</span>
                                 <span class="opacity-75">[F4]</span>
                             </button>
                         </div>
                         <div class="col">
-                            <button class="btn numpad-btn btn-label-danger w-100 py-2 d-flex flex-column align-items-center justify-content-center" id="unit-shortcut-toggle" data-shortcut="f2">
+                            <button class="btn numpad-btn {{ !!config('user_companies.details')->can('pos.change-unit') ? 'btn-label-danger' : 'btn-danger' }} w-100 py-2 d-flex flex-column align-items-center justify-content-center" id="unit-shortcut-toggle" data-shortcut="f2" {{ !!config('user_companies.details')->can('pos.change-unit') ? '' : 'disabled' }}>
                                 <span class="fw-bold">Satuan</span>
                                 <span class="opacity-75">[F2]</span>
                             </button>
@@ -476,6 +476,12 @@
 
 <script>
     $(function() {
+
+        const IS_CAN_CHANGE_ITEM_PRICE = '{{ config('user_companies.details')->can('pos.change-price') }}';
+        const IS_CAN_CHANGE_ITEM_DISCOUNT = '{{ config('user_companies.details')->can('pos.change-item-discount') }}';
+        const IS_CAN_DELETE_ITEM = '{{ config('user_companies.details')->can('pos.delete-item-transaction') }}';
+        const IS_CAN_HOLD_TRANSACTION = '{{ config('user_companies.details')->can('pos.hold-transaction') }}';
+        const IS_CAN_REPRINT_TRANSACTION = '{{ config('user_companies.details')->can('pos.reprint') }}';
 
         $("#input-product-qty").TouchSpin({
             buttondown_class: "btn btn-secondary",
@@ -1340,11 +1346,11 @@
                                                 ${data?.tax_code ? data?.tax_code : (data?.tax ? data?.tax+'%' : 'Tidak Ada Pajak')} 
                                             </a>
                                         </div>
-                                        <input class="input-price" data-id="${id}" id="input-price-${id}" id="input-price-${id}" value="${parseFloat(price)?.toLocaleString('en') ?? 0}" autocomplete="off" />
+                                        <input class="input-price" data-id="${id}" id="input-price-${id}" id="input-price-${id}" value="${parseFloat(price)?.toLocaleString('en') ?? 0}" autocomplete="off" ${!!IS_CAN_CHANGE_ITEM_PRICE ? '' : 'disabled'} />
                                     </div>
                                     <div class="d-flex justify-content-between">
                                         <div class="d-flex flex-column">
-                                            <span class="fw-bold small text-danger discount-placeholder" data-id="${id}" style="display: ${parseFloat(discountValue) > 0 ? 'block' : 'none'}">Disc <input id="input-discount-value-${id}" class="input-discount-value" data-id="${id}" autocomplete="off"/><span id="discount-type-symbol-${id}">${(discountType === 'percentage' ? '%' : '')}</span></span>
+                                            <span class="fw-bold small text-danger discount-placeholder" data-id="${id}" style="display: ${parseFloat(discountValue) > 0 ? 'block' : 'none'}">Disc <input id="input-discount-value-${id}" class="input-discount-value" data-id="${id}" autocomplete="off" ${!!IS_CAN_CHANGE_ITEM_DISCOUNT ? '' : 'disabled'} /><span id="discount-type-symbol-${id}">${(discountType === 'percentage' ? '%' : '')}</span></span>
                                             <select id="input-discount-type-${id}" data-id="${id}" autocomplete="off" style="position: absolute; opacity: 0; pointer-events: none;">
                                                 <option value="" ${(discountType == '' ? 'selected' : '')}></option>
                                                 <option value="percentage" ${(discountType === 'percentage' ? 'selected' : '')}>percentage</option>
@@ -1356,7 +1362,9 @@
                                 </div>
                             </div>
                             <div>
-                                <button type="button" class="btn btn-danger h-100 rounded-0 p-0 delete-item-toggle" data-id="${id}" style="width: 30px"><span class="mdi mdi-trash-can"></span></button>
+                                ${!!IS_CAN_DELETE_ITEM ?
+                                    `<button type="button" class="btn btn-danger h-100 rounded-0 p-0 delete-item-toggle" data-id="${id}" style="width: 30px"><span class="mdi mdi-trash-can"></span></button>`
+                                 : ''}
                             <div>
                         </div>
                     `);
@@ -2246,7 +2254,7 @@
                 return;
             }
 
-            if (selectedOrderProductId) {
+            if (selectedOrderProductId && !!IS_CAN_DELETE_ITEM) {
                 e.preventDefault();
                 removeProductFromOrderList(selectedOrderProductId);
             }
@@ -4225,6 +4233,12 @@
                 $('#hold-toggle').attr('id', 'histories-toggle');
             }
 
+            if ($('#hold-toggle').length > 0 && !IS_CAN_HOLD_TRANSACTION) {
+                $('#hold-toggle').prop('disabled', true);
+            } else {
+                $('#histories-toggle, #hold-toggle').prop('disabled', false);
+            }
+
             if (calculateTotal.totalPayment >= calculateTotal.grandTotal) {
                 $('#submit-payment-toggle').prop('disabled', false);
             } else {
@@ -4639,6 +4653,16 @@
                                 hold: 'badge-warning'
                             }
 
+                            let dropdownButtonsHtml = '';
+
+                            if (!!IS_CAN_REPRINT_TRANSACTION) {
+                                dropdownButtonsHtml += '<li><a href="#" id="histories-print-toggle-'+i+'" data-ref_number="'+item?.ref_number+'" class="dropdown-item">Print</a></li>';
+                            }
+
+                            if (activeTab == 'hold') {
+                                dropdownButtonsHtml += '<li><button class="dropdown-item" id="call-back-sales-invoice-'+item.id+'" data-id="'+item.id+'" type="button">Call Back</button></li>';
+                            }
+
                             html += '<div class="d-flex border-bottom">'
                             html +=     '<div class="d-flex flex-fill justify-content-between h-100" style="padding: 1rem 0 1rem 1.25rem">'
                             html +=         '<div>'
@@ -4652,15 +4676,14 @@
                             html +=         '</div>'
                             html +=     '</div>'
                             html +=     '<div class="d-flex align-items-center" style="padding: 0 .5rem;">'
-                            html +=         '<div class="dropdown">'
-                            html +=             '<button type="button" class="btn btn-text-light btn-icon align-self-center" data-bs-toggle="dropdown" aria-expanded="false"><span class="mdi mdi-dots-horizontal"></span></button>'
-                            html +=             '<ul class="dropdown-menu dropdown-menu-end">'
-                            html +=                 '<a href="#" id="histories-print-toggle-'+i+'" data-ref_number="'+item?.ref_number+'" class="dropdown-item">Print</a>'
-                            if (activeTab == 'hold') {
-                                html +=                 '<li><button class="dropdown-item" id="call-back-sales-invoice-'+item.id+'" data-id="'+item.id+'" type="button">Call Back</button></li>'
-                            }
-                            html +=             '</ul>'
-                            html +=         '</div>'
+                                if ($(dropdownButtonsHtml).length > 0) {
+                                    html +=         '<div class="dropdown">'
+                                    html +=             '<button type="button" class="btn btn-text-light btn-icon align-self-center" data-bs-toggle="dropdown" aria-expanded="false"><span class="mdi mdi-dots-horizontal"></span></button>'
+                                    html +=             '<ul class="dropdown-menu dropdown-menu-end">'
+                                    html += dropdownButtonsHtml;
+                                    html +=             '</ul>'
+                                    html +=         '</div>'
+                                }
                             html +=     '</div>'
                             html += '</div>'
 
@@ -5231,15 +5254,6 @@
                     });
         }
 
-        const roleHasPermissionsSync = () => {
-            return  $.ajax({
-                        url: BASE_URL+'/api/v1/sync/role_has_permissions',
-                        method: 'GET',
-                        contentType: 'application/json',
-                        headers: { 'Authorization': TOKEN, 'company-id': COMPANY_ID, },
-                    });
-        }
-
         const order = [
             'settings',
             'warehouse',
@@ -5316,10 +5330,9 @@
                     currenciesSync
                 ],
                 users: [
+                    rolesSync,
                     permissionsSync,
                     usersSync,
-                    rolesSync,
-                    roleHasPermissionsSync,
                 ]
             }
 
