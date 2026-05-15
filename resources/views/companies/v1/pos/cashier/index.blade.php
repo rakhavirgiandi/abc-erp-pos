@@ -876,7 +876,10 @@
             $('table#customer-table tbody tr').removeAttr('data-selected');
             $('.apply-point-toggle').removeClass('selected');
             calculateTotalItemBadge();
-            $('#input-search-product').val('').trigger('input');
+            authenticateSupervisorOnSuccess = null;
+            if ($('#input-search-product').val()?.length >  0) {
+                $('#input-search-product').val('').trigger('input');
+            }
         }
 
         const resetHistoriesState = () => {
@@ -4914,7 +4917,14 @@
             e.preventDefault()
             const $this = $(this);
             const dataRefNumber = $this.attr('data-ref_number');
-            printReceipt(dataRefNumber)
+            if (IS_CAN_REPRINT_TRANSACTION) {
+                printReceipt(dataRefNumber)
+            } else {
+                $('#histories-modal').modal('hide');
+                shouldAuthenticateSupervisor(() => {
+                    printReceipt(dataRefNumber)
+                })
+            }
         });
 
         const printReceipt = (refNumber) => {
