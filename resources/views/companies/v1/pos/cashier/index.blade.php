@@ -491,7 +491,8 @@
         const IS_CAN_VOID_TRANSACTION = '{{ config('user_companies.is_supervisor') || config('user_companies.details')->can('pos.void-transaction') }}'        
         const IS_CAN_STOCK_WAREHOUSE = '{{ config('user_companies.is_supervisor') || config('user_companies.details')->can('pos.stock-warehouse') }}'
         const IS_CAN_EDIT_TRANSACTION = '{{ config('user_companies.is_supervisor') || config('user_companies.details')->can('pos.edit-transaction') }}'
-
+        const IS_CAN_ACCESS_SETTINGS = '{{ config('user_companies.is_supervisor') || config('user_companies.details')->can('pos.settings') }}'
+        
         $("#input-product-qty").TouchSpin({
             buttondown_class: "btn btn-secondary",
             buttonup_class: "btn btn-secondary"

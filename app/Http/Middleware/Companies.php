@@ -175,6 +175,13 @@ class Companies
             if ($user) {
                 foreach ($user->toArray() as $userKey => $userVal) {
                     config(['user_companies.' . $userKey => $userVal]);
+                    if ($userKey == 'branch_id') {
+                        config(['user_companies.branch_name' => config('general_settings.branch_name')]);
+                        $branch = Branches::select('id', 'name')->where('id', $userVal)->first();
+                        if ($branch) {
+                            config(['user_companies.branch_name' => $branch->name ?? 'N/A']);
+                        }
+                    }
                 }
                 config(['user_companies.details' => $user]);
             } else {
