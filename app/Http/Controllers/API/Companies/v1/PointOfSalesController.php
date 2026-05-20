@@ -240,6 +240,7 @@ class PointOfSalesController extends Controller
         try {
 
             $paper = $paper_size;
+            $downsizing = 13;
 
             if ($paper == 58) {
                 $width = 32;
@@ -249,19 +250,20 @@ class PointOfSalesController extends Controller
                 $col_disc = 6;
                 $col_total = 10;
             } else if ($paper == 75) {
-                $width = 42;
+                $width = 40;
                 $col_qty = 4;
                 $col_unit = 6;
                 $col_price = 8;
                 $col_disc = 7;
-                $col_total = 17;
+                $col_total = 15;
+                $downsizing = 14;
             } else {
                 $width = 48;
-                $col_qty = 4;
-                $col_unit = 6;
+                $col_qty = 7;
+                $col_unit = 7;
                 $col_price = 10;
-                $col_disc = 8;
-                $col_total = 20;
+                $col_disc = 7;
+                $col_total = 17;
             }
 
             $line = str_repeat('-', $width);
@@ -292,10 +294,11 @@ class PointOfSalesController extends Controller
 
             // ================= META =================
             $printer->setJustification(Printer::JUSTIFY_LEFT);
-            $printer->text("No   : {$data['ref_number']}\n");
-            $printer->text("Kasir: {$data['created_by_name']}\n");
-            $printer->text("Tgl  : " . date('d/m/Y H:i:s', strtotime($data['created_at'])) . "\n");
-            $printer->text("Cust : {$data['customer_name']}\n");
+            $printer->text("No     : {$data['ref_number']}\n");
+            $printer->text("Kasir  : {$data['created_by_name']}\n");
+            $printer->text("Tgl    : " . date('d/m/Y H:i:s', strtotime($data['created_at'])) . "\n");
+            $printer->text("Cust   : {$data['customer_name']}\n");
+            $printer->text("Alamat : {$data['customer_address']}\n");
 
             $printer->text($line . "\n");
 
@@ -387,15 +390,15 @@ class PointOfSalesController extends Controller
             $printer->text($line . "\n");
 
             // ================= SUMMARY =================
-            $printer->text(sprintf("%-".($width-13)."s %12s\n", "Subtotal", format_amount($data['subtotal'])));
-            $printer->text(sprintf("%-".($width-13)."s %12s\n", "Diskon", "-" . format_amount($data['discount_amount'])));
+            $printer->text(sprintf("%-".($width-$downsizing)."s %12s\n", "Subtotal", format_amount($data['subtotal'])));
+            $printer->text(sprintf("%-".($width-$downsizing)."s %12s\n", "Diskon", "-" . format_amount($data['discount_amount'])));
 
             $printer->setEmphasis(true);
-            $printer->text(sprintf("%-".($width-13)."s %12s\n", "Total", format_amount($data['total'])));
+            $printer->text(sprintf("%-".($width-$downsizing)."s %12s\n", "Total", format_amount($data['total'])));
             $printer->setEmphasis(false);
 
-            $printer->text(sprintf("%-".($width-13)."s %12s\n", "Bayar", format_amount($data['total_payment'])));
-            $printer->text(sprintf("%-".($width-13)."s %12s\n", "Kembali", format_amount($data['total_change'])));
+            $printer->text(sprintf("%-".($width-$downsizing)."s %12s\n", "Bayar", format_amount($data['total_payment'])));
+            $printer->text(sprintf("%-".($width-$downsizing)."s %12s\n", "Kembali", format_amount($data['total_change'])));
 
             $printer->text($line . "\n");
 
