@@ -406,7 +406,7 @@ class PointOfSalesController extends Controller
             $printer->setJustification(Printer::JUSTIFY_CENTER);
             $printer->text(wordwrap(config('general_settings.pos_receipt_footer_text'), $width) . "\n");
 
-            $printer->feed(2);
+            $printer->feed(5);
             $printer->cut();
             $printer->close();
 
