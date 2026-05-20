@@ -819,7 +819,7 @@ class SalesInvoices extends Model
                 }
             }
 
-            DB::commit();
+            DB::connection('pgsql_companies')->commit();
             
             return response()->json([
                 'status' => 'success',
