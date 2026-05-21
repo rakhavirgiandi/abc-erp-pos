@@ -20,12 +20,12 @@ class PointOfSalesController extends Controller
     public function printReceipt(Request $request, $number)
     {
         $find_sales_invoice = SalesInvoices::where('ref_number', '=', $number)->first();
-        
+
         if (!$find_sales_invoice) {
             abort(404);
         }
 
-        $paper_size = '58';
+        $paper_size = 80;
         
         if ($request->paper_size) {
             $paper_size = $request->paper_size;

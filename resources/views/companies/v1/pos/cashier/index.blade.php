@@ -4919,18 +4919,22 @@
         });
 
         const printReceipt = (refNumber) => {
-            $.ajax({
-                type: 'post',
-                url: BASE_URL+'/api/v1/pos/print-receipts/'+refNumber,
-                "headers": {
-                    'Authorization': TOKEN,
-                    'company-id': COMPANY_ID
-                },
-                "data": {
-                    "paper_size": '{{ config('local_user_settings.pos_printer_paper_size') }}'
-                },
-                error: generalAjaxErrorHandler,
-            });
+            if ('{{ config('services.is_onpremise') }}') {
+                $.ajax({
+                    type: 'post',
+                    url: BASE_URL+'/api/v1/pos/print-receipts/'+refNumber,
+                    "headers": {
+                        'Authorization': TOKEN,
+                        'company-id': COMPANY_ID
+                    },
+                    "data": {
+                        "paper_size": '{{ config('local_user_settings.pos_printer_paper_size') }}'
+                    },
+                    error: generalAjaxErrorHandler,
+                });
+            } else {
+                window.open(BASE_URL+'/pos/print-receipts/'+  refNumber, '_blank');
+            }
         }
 
         $(document).on('click', '[id^=call-back-sales-invoice-]', function () {

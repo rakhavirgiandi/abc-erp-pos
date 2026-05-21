@@ -2,276 +2,218 @@
 <html lang="id">
 <head>
     <meta charset="UTF-8">
-    <title>Receipt</title>
-
+    <title>Struk - {{ $data['ref_number'] }}</title>
     <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
         body {
-            font-family: monospace;
-            font-size: 12px;
-            margin: 0;
-            padding: 20px;
+            font-family: 'Courier New', Courier, monospace;
+            font-size: 9px;
+            background: #fff;
             color: #000;
+            width: 100%;
         }
 
         .receipt {
-            max-width: 400px;
-            margin: auto;
-        }
-
-        .center {
-            text-align: center;
-        }
-
-        .bold {
-            font-weight: bold;
+            width: 100%;
+            padding: 4px;
         }
 
         .line {
+            display: block;
             border-top: 1px dashed #000;
-            margin: 10px 0;
-        }
-
-        .meta p {
+            width: 100%;
             margin: 2px 0;
         }
 
-        table {
-            width: 100%;
+        .text-center { text-align: center; display: block; width: 100%; }
+        .bold { font-weight: bold; }
+
+        /* Meta */
+        .meta-table {
+            width: auto;
             border-collapse: collapse;
         }
+        .meta-table td { vertical-align: top; white-space: nowrap; padding: 0; }
+        .meta-table td:first-child { padding-right: 4px; }
 
-        th, td {
-            padding: 2px 0;
-            vertical-align: top;
+        /* Items */
+        .items-table {
+            width: 100%;
+            border-collapse: collapse;
+            table-layout: fixed;
         }
-
-        th {
-            border-bottom: 1px dashed #000;
-            text-align: left;
+        .items-table td {
+            padding: 1px 2px;
+            overflow: hidden;
         }
+        .items-table .c-qty   { width: 10%; text-align: left; }
+        .items-table .c-unit  { width: 10%; text-align: left; }
+        .items-table .c-name  { text-align: left; }
+        .items-table .c-price { width: 32%; text-align: right; }
+        .items-table .c-disc  { width: 15%; text-align: right; }
+        .items-table .c-total { width: 33%; text-align: right; }
+        .items-table .child td { color: #555; }
+        .items-table .note td  { font-size: 9px; font-style: italic; padding-left: 10px; }
 
-        td.right,
-        th.right {
-            text-align: right;
+        /* Summary */
+        .summary-table {
+            width: 100%;
+            border-collapse: collapse;
+            table-layout: fixed;
         }
+        .summary-table td { padding: 1px 2px; white-space: nowrap; overflow: hidden; }
+        .summary-table .s-label { text-align: left; }
+        .summary-table .s-value { width: 80px; text-align: right; }
+        .summary-table .bold td { font-weight: bold; }
 
-        .product-name {
-            font-weight: bold;
-            padding-top: 8px;
-        }
-
-        .child-item {
-            padding-left: 12px;
-        }
-
-        .note {
-            font-size: 11px;
-            padding-left: 12px;
-            white-space: pre-line;
-        }
-
-        .summary {
-            margin-top: 10px;
-        }
-
-        .summary-row {
-            display: flex;
-            justify-content: space-between;
-            margin: 2px 0;
-        }
-
-        .footer {
-            text-align: center;
-            margin-top: 15px;
-            white-space: pre-line;
+        @media print {
+            @page { margin: 0; size: auto; }
+            body { width: 100%; }
         }
     </style>
 </head>
 <body>
-
-@php
-    function format_amount($n) {
-        return fmod($n, 1) == 0
-            ? number_format($n, 0, ',', '.')
-            : number_format($n, 2, ',', '.');
-    }
-
-    $sales_invoice_details = [];
-
-    foreach ($data['sales_invoice_details'] as $item) {
-        if (isset($sales_invoice_details[$item['product_id']])) {
-            $sales_invoice_details[$item['product_id']]['child'][] = $item;
-        } else {
-            $item['child'] = [];
-            $sales_invoice_details[$item['product_id']] = $item;
-        }
-    }
-@endphp
-
 <div class="receipt">
 
-    {{-- HEADER --}}
-    <div class="center">
-        <div class="bold">
-            {{ config('general_settings.company_name') }}
-        </div>
+    @php
+        if (!function_exists('rcpt_fmt')) {
+            function rcpt_fmt($n) {
+                return fmod($n, 1) == 0
+                    ? number_format($n, 0, ',', '.')
+                    : number_format($n, 2, ',', '.');
+            }
+        }
 
-        <div>
-            {{ config('general_settings.company_address') }}
-        </div>
+        $groupedItems = [];
+        foreach ($data['sales_invoice_details'] as $item) {
+            if (isset($groupedItems[$item['product_id']])) {
+                $groupedItems[$item['product_id']]['child'][] = $item;
+            } else {
+                $item['child'] = [];
+                $groupedItems[$item['product_id']] = $item;
+            }
+        }
+    @endphp
 
-        <div>
-            {{ config('general_settings.company_phone') }}
-        </div>
-    </div>
+    {{-- Header --}}
+    <span class="text-center bold">{{ config('general_settings.company_name') }}</span>
+    <span class="text-center">{{ config('general_settings.company_address') }}</span>
+    <span class="text-center">{{ config('general_settings.company_phone') }}</span>
 
-    <div class="line"></div>
+    <span class="line" style="margin: .5rem 0;"></span>
 
-    {{-- META --}}
-    <div class="meta">
-        <p>No : {{ $data['ref_number'] }}</p>
-        <p>Kasir : {{ $data['created_by_name'] }}</p>
-        <p>Tgl : {{ date('d/m/Y H:i:s', strtotime($data['created_at'])) }}</p>
-        <p>Cust : {{ $data['customer_name'] }}</p>
-        <p>Alamat : {{ $data['customer_address'] }}</p>
-    </div>
+    {{-- Meta --}}
+    <table class="meta-table">
+        <tr><td>No</td><td>: {{ $data['ref_number'] }}</td></tr>
+        <tr><td>Kasir</td><td>: {{ $data['created_by_name'] }}</td></tr>
+        <tr><td>Tgl</td><td>: {{ date('d/m/Y H:i:s', strtotime($data['created_at'])) }}</td></tr>
+        <tr><td>Cust</td><td>: {{ $data['customer_name'] }}</td></tr>
+        <tr><td>Alamat</td><td>: {{ $data['customer_address'] }}</td></tr>
+    </table>
 
-    <div class="line"></div>
+    <span class="line" style="margin: .5rem 0 .25rem  0;"></span>
 
-    {{-- TABLE HEADER --}}
-    <table>
+    {{-- Items --}}
+    <table class="items-table">
         <thead>
             <tr>
-                <th>Qty</th>
-                <th>Unit</th>
-                <th class="right">Harga</th>
-                <th class="right">Disc</th>
-                <th class="right">Total</th>
+                <td class="c-qty bold">Qty</td>
+                <td class="c-unit bold">Unit</td>
+                <td class="c-price bold">Harga</td>
+                <td class="c-disc bold">Disc</td>
+                <td class="c-total bold">Total</td>
             </tr>
         </thead>
-
         <tbody>
-            @foreach ($sales_invoice_details as $item)
+            <tr><td colspan="5"><span class="line"></span></td></tr>
 
+            @foreach ($groupedItems as $item)
                 @php
-                    $price = floatval($item['unit_price']);
-                    $qty = floatval($item['qty']);
-
-                    $disc = $item['discount_amount'] > 0
-                        ? ($item['discount_type'] == 'percentage'
-                            ? $price * ($item['discount_amount'] / 100)
-                            : $item['discount_amount'])
-                        : 0;
-
+                    $price    = floatval($item['unit_price']);
+                    $qty      = floatval($item['qty']);
+                    $disc     = $item['discount_amount'] > 0
+                                    ? ($item['discount_type'] == 'percentage'
+                                        ? $price * ($item['discount_amount'] / 100)
+                                        : floatval($item['discount_amount']))
+                                    : 0;
                     $subtotal = ($price * $qty) - $disc;
                 @endphp
-
-                {{-- Product Name --}}
+                <tr><td class="c-name bold" colspan="5">{{ $item['product_name'] }}</td></tr>
                 <tr>
-                    <td colspan="5" class="product-name">
-                        {{ $item['product_name'] }}
-                    </td>
-                </tr>
-
-                {{-- Main Row --}}
-                <tr>
-                    <td>{{ $qty }}</td>
-                    <td>{{ $item['unit_name'] }}</td>
-                    <td class="right">{{ format_amount($price) }}</td>
-                    <td class="right">-{{ format_amount($disc) }}</td>
-                    <td class="right">{{ format_amount($subtotal) }}</td>
+                    <td class="c-qty">{{ rcpt_fmt($qty) }}</td>
+                    <td class="c-unit">{{ $item['unit_name'] }}</td>
+                    <td class="c-price">{{ rcpt_fmt($price) }}</td>
+                    <td class="c-disc">{{ $disc > 0 ? '-'.rcpt_fmt($disc) : '-0' }}</td>
+                    <td class="c-total">{{ rcpt_fmt($subtotal) }}</td>
                 </tr>
 
                 @if (!empty($item['note']))
-                    <tr>
-                        <td colspan="5" class="note">
-                            {{ $item['note'] }}
-                        </td>
-                    </tr>
+                <tr class="note"><td colspan="6">{{ $item['note'] }}</td></tr>
                 @endif
 
-                {{-- CHILD ITEMS --}}
                 @foreach ($item['child'] as $child)
-
                     @php
-                        $childPrice = floatval($child['unit_price']);
-                        $childQty = floatval($child['qty']);
-
-                        $childDisc = $child['discount_amount'] > 0
-                            ? ($child['discount_type'] == 'percentage'
-                                ? $childPrice * ($child['discount_amount'] / 100)
-                                : $child['discount_amount'])
-                            : 0;
-
-                        $childSubtotal = ($childPrice * $childQty) - $childDisc;
+                        $cPrice    = floatval($child['unit_price']);
+                        $cQty      = floatval($child['qty']);
+                        $cDisc     = $child['discount_amount'] > 0
+                                        ? ($child['discount_type'] == 'percentage'
+                                            ? $cPrice * ($child['discount_amount'] / 100)
+                                            : floatval($child['discount_amount']))
+                                        : 0;
+                        $cSubtotal = ($cPrice * $cQty) - $cDisc;
                     @endphp
-
-                    <tr>
-                        <td class="child-item">{{ $childQty }}</td>
-                        <td>{{ $child['unit_name'] }}</td>
-                        <td class="right">
-                            {{ format_amount($childPrice) }}
-                        </td>
-                        <td class="right">
-                            -{{ format_amount($childDisc) }}
-                        </td>
-                        <td class="right">
-                            {{ format_amount($childSubtotal) }}
-                        </td>
+                    <tr class="child">
+                        <td class="c-qty">{{ rcpt_fmt($cQty) }}</td>
+                        <td class="c-unit">{{ $child['unit_name'] }}</td>
+                        <td class="c-price">{{ rcpt_fmt($cPrice) }}</td>
+                        <td class="c-disc">{{ $cDisc > 0 ? '-'.rcpt_fmt($cDisc) : '-0' }}</td>
+                        <td class="c-total">{{ rcpt_fmt($cSubtotal) }}</td>
                     </tr>
-
                     @if (!empty($child['note']))
-                        <tr>
-                            <td colspan="5" class="note">
-                                {{ $child['note'] }}
-                            </td>
-                        </tr>
+                    <tr class="note"><td colspan="6">{{ $child['note'] }}</td></tr>
                     @endif
-
                 @endforeach
-
             @endforeach
         </tbody>
     </table>
 
-    <div class="line"></div>
+    <span class="line"></span>
 
-    {{-- SUMMARY --}}
-    <div class="summary">
-        <div class="summary-row">
-            <span>Subtotal</span>
-            <span>{{ format_amount($data['subtotal']) }}</span>
-        </div>
+    {{-- Summary --}}
+    <table class="summary-table">
+        <tr>
+            <td class="s-label">Subtotal</td>
+            <td class="s-value">{{ rcpt_fmt($data['subtotal']) }}</td>
+        </tr>
+        <tr>
+            <td class="s-label">Diskon</td>
+            <td class="s-value">-{{ rcpt_fmt($data['discount_amount']) }}</td>
+        </tr>
+        <tr class="bold">
+            <td class="s-label">Total</td>
+            <td class="s-value">{{ rcpt_fmt($data['total']) }}</td>
+        </tr>
+        <tr>
+            <td class="s-label">Bayar</td>
+            <td class="s-value">{{ rcpt_fmt($data['total_payment']) }}</td>
+        </tr>
+        <tr>
+            <td class="s-label">Kembali</td>
+            <td class="s-value">{{ rcpt_fmt($data['total_change']) }}</td>
+        </tr>
+    </table>
 
-        <div class="summary-row">
-            <span>Diskon</span>
-            <span>-{{ format_amount($data['discount_amount']) }}</span>
-        </div>
+    <span class="line"></span>
 
-        <div class="summary-row bold">
-            <span>Total</span>
-            <span>{{ format_amount($data['total']) }}</span>
-        </div>
-
-        <div class="summary-row">
-            <span>Bayar</span>
-            <span>{{ format_amount($data['total_payment']) }}</span>
-        </div>
-
-        <div class="summary-row">
-            <span>Kembali</span>
-            <span>{{ format_amount($data['total_change']) }}</span>
-        </div>
-    </div>
-
-    <div class="line"></div>
-
-    {{-- FOOTER --}}
-    <div class="footer">
-        {{ config('general_settings.pos_receipt_footer_text') }}
-    </div>
+    {{-- Footer --}}
+    <span class="text-center" style="margin-top: .5rem">{{ config('general_settings.pos_receipt_footer_text') }}</span>
 
 </div>
-
+<script>
+  window.onload = function() {
+      window.print();
+  }
+</script>
 </body>
 </html>
