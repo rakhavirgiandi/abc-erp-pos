@@ -29,7 +29,7 @@ class SetupConfig {
             config(['user' => $user->toArray()]);
         }
 
-        if (!env('IS_ONPREMISE', false)) {
+        if (!config('services.is_onpremise')) {
             $general_settings = GeneralSettings::get();
     
             foreach ($general_settings as $general_setting) {

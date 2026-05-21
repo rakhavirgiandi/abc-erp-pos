@@ -140,6 +140,7 @@ class SalesInvoiceController extends Controller
             $response = NetworkHelper::postWithToken($url, $payload);
 
             if (($response['status'] ?? '') !== 'success') {
+                dd($response);
                 throw new \Exception('Gagal sync ke server');
             }
 

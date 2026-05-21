@@ -596,6 +596,7 @@
 
         const SCAN_SPEED_THRESHOLD = 30;
         const MIN_BARCODE_LENGTH = 6;
+        let IS_FIRST = parseFloat('{{config('user_companies.is_first')}}');
 
         let productStockDt;
 
@@ -3708,6 +3709,10 @@
             $('#input-password').focus()
         })
 
+        $(document).on('shown.bs.hidden', '#authenticate-modal', function () {
+            $('#input-password').value('');
+        })
+
         $(document).on('click', '#lockscreen-toggle', function() {
             $('#authenticate-modal').modal('show');
             $.ajax({
@@ -4639,7 +4644,7 @@
                         if (result.isConfirmed) {
                             printReceipt(res?.data?.ref_number);
                         }
-                        if ('{{ config('app.is_onpremise') }}') {
+                        if ('{{ config('services.is_onpremise') }}') {
                             salesInvoiceSync()
                         }
                         clear();
@@ -4674,21 +4679,6 @@
             });
         });
 
-        const starting = () => {
-            generateRefNumber();
-            loadProducts({
-                refresh: true
-            });
-            $('#input-search-product').focus();
-            loadProductCategories();
-            setCustomerDefaultValue()
-        }
-
-        if (!IS_ACCESS_TO_POS) {
-            $('#authenticate-modal').modal('show');
-        } else {
-            starting()
-        }
 
         $(document).on('hidden.bs.modal', '.modal', function (e) {
             // console.log($(e));

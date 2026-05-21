@@ -18,7 +18,7 @@
         "laravel/tinker": "^2.10.1",
         "laravolt/indonesia": "^0.41.0",
         "mike42/escpos-php": "2.1",
-        "nativephp/desktop": "^2.1",
+        "nativephp/desktop": "*",
         "phpmailer/phpmailer": "^7.0",
         "spatie/laravel-permission": "^7.3"
     },

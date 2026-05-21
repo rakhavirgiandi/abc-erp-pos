@@ -21,7 +21,7 @@ class TelegramError extends Notification
     public function toTelegram($notifiable)
     {
         return TelegramMessage::create()
-            ->to(env('TELEGRAM_LOGGER_CHAT_ID'))
+            ->to(config('services.telegram-bot-api.logger_chat_id'))
             ->content('`'.$this->params['data'].'`');
     }
 }
