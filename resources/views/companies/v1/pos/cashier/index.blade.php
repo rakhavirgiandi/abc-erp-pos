@@ -5817,6 +5817,80 @@
             }, 500);
         });
 
+        const starting = () => {
+            if (IS_FIRST) {
+                Swal.fire({
+                    title: 'Mohon Tunggu',
+                    html: `<div style="margin-bottom: .25rem;">Sedang menyinkronkan data</div> <br> <div class="progress">
+                                <div class="progress-bar bg-secondary" id="sync-progress-bar" style="width: 0%"></div>
+                            </div>`,
+                    showConfirmButton: false
+                });
+
+                processSync({
+                    options: [
+                        'product',
+                        'transaction',
+                        'stock_product',
+                        'customer',
+                        'branch',
+                        'warehouse',
+                        'reward_point_and_point_rule',
+                        'accounting_master',
+                        'settings',
+                        'payment_method',
+                        'currencies',
+                        'permissions'
+                    ],
+                    processUpdated: (res) => {
+                        $('#sync-progress-bar').css('width', res+'%')
+                    },
+                    done: (errs) => {
+                        let errMessage = '';
+
+                        if (errs?.length > 0) {
+                            errs?.forEach((item, idx) => {
+                                errMessage += '<div style="margin-bottom: .25rem">'+item+'<div>';
+                            })
+                        }
+
+                        IS_FIRST = 0
+
+                        setTimeout(() => {
+                            Swal.fire({
+                                icon: (errs?.length > 0) ? 'warning' : 'success',
+                                title: 'Proses Selesai',
+                                html: (errs?.length > 0) ? errMessage : 'Proses sinkron berhasil'
+                            }).then((result) => {
+                                generateRefNumber();
+                                loadProducts({
+                                    refresh: true
+                                });
+                                $('#input-search-product').focus();
+                                loadProductCategories();
+                                setCustomerDefaultValue();
+                            });
+                        }, 1000)
+                    }
+                })
+            } else {
+                generateRefNumber();
+                loadProducts({
+                    refresh: true
+                });
+                $('#input-search-product').focus();
+                loadProductCategories();
+                setCustomerDefaultValue();
+            }
+
+        }
+
+        if (!IS_ACCESS_TO_POS) {
+            $('#authenticate-modal').modal('show');
+        } else {
+            starting()
+        }
+
         $(document).on('hidden.bs.modal', '#access-denied-modal', function () {
             $('#input-supervisor-auth-user_id').val('').trigger('change');
             $('#input-supervisor-auth-password').val('');
