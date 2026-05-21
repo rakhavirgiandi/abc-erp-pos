@@ -197,7 +197,8 @@ class Companies
 
             $skip_route_names = [
                 'pos.authorize',
-                'pos.logout'
+                'pos.logout',
+                'pos.print-receipts',
             ];
 
             $route_name = $request->route()->getName();

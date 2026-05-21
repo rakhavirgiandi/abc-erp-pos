@@ -1,364 +1,277 @@
-<?php
-  function format_amount($n) {
-    return fmod($n, 1) == 0
-        ? number_format($n, 0, '.', ',')
-        : number_format($n, 2, '.', ',');
-  }
-?>
 <!DOCTYPE html>
-<html lang="en">
+<html lang="id">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{{ $data['number'] }}</title>
-    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap" rel="stylesheet">    
-    @if ($paper_size == 80)
-        <style>
-          @page {
-  size: 80mm auto;
-  margin: 0;
-}
+    <title>Receipt</title>
 
-body {
-  margin: 0;
-  background: #fff;
-  font-family: 'Roboto', sans-serif;
-}
-
-.receipt {
-  width: 67mm;
-  /* margin: 0 auto; */
-  font-size: 11px;
-  color: #000;
-}
-
-.center { text-align: center; }
-
-.small { font-size: 10px; }
-
-.store-name {
-  font-weight: bold;
-  font-size: 14px;
-}
-
-.divider {
-  border-top: 1px dashed #000;
-  margin: 6px 0;
-}
-
-.meta div {
-  display: flex;
-  justify-content: space-between;
-  font-size: 10px;
-}
-
-table {
-  width: 100%;
-  border-collapse: collapse;
-}
-
-.items th {
-  text-align: left;
-  border-bottom: 1px dashed #000;
-  padding-bottom: 3px;
-  font-size: 10px;
-}
-
-.items td {
-  font-size: 10px;
-  padding: 2px 0;
-}
-
-.items .name-row td {
-  font-weight: 500;
-  padding-top: 5px;
-}
-
-.items .description-row td {
-  font-size: 9px;
-  padding-bottom: 3px;
-}
-
-.items tr:last-child td {
-  border-bottom: 1px dashed #000;
-  padding-bottom: 6px;
-}
-
-.right { text-align: right; }
-.center-text { text-align: center; }
-
-.summary td {
-  padding: 3px 0;
-  font-size: 11px;
-}
-
-.summary .price {
-  text-align: right;
-}
-
-.grand td {
-  font-weight: bold;
-  font-size: 13px;
-}
-        </style>
-    @else
     <style>
-        @page {
-          size: 58mm auto;
-          margin: 0;
-        }
-
         body {
-          margin: 0;
-          background: #fff;
-          font-family: 'Roboto', sans-serif;
+            font-family: monospace;
+            font-size: 12px;
+            margin: 0;
+            padding: 20px;
+            color: #000;
         }
 
         .receipt {
-          width: 46.5mm;
-          font-size: 9px;
-          color: #000;
+            max-width: 400px;
+            margin: auto;
         }
 
-        .center { text-align: center; }
-
-        .small { 
-          font-size: 8px; 
+        .center {
+            text-align: center;
         }
 
-        .store-name {
-          font-weight: bold;
-          font-size: 11px;
-          margin-bottom: 1px;
+        .bold {
+            font-weight: bold;
         }
 
-        .divider {
-          border-top: 1px dashed #000;
-          margin: 4px 0;
+        .line {
+            border-top: 1px dashed #000;
+            margin: 10px 0;
         }
 
-        .meta div {
-          display: flex;
-          justify-content: space-between;
-          font-size: 8px;
+        .meta p {
+            margin: 2px 0;
         }
 
         table {
-          width: 100%;
-          border-collapse: collapse;
+            width: 100%;
+            border-collapse: collapse;
         }
 
-        .items {
-          margin-bottom: 4px;
+        th, td {
+            padding: 2px 0;
+            vertical-align: top;
         }
 
-        .items th {
-          text-align: left;
-          border-bottom: 1px dashed #000;
-          padding-bottom: 2px;
-          font-size: 9px;
+        th {
+            border-bottom: 1px dashed #000;
+            text-align: left;
         }
 
-        .items td {
-          vertical-align: top;
-          font-size: 9px;
+        td.right,
+        th.right {
+            text-align: right;
         }
 
-        .items tr:last-child td {
-          border-bottom: 1px dashed #000;
-          padding-bottom: 4px;
+        .product-name {
+            font-weight: bold;
+            padding-top: 8px;
         }
 
-        .items .name-row td {
-          padding-top: 2px;
+        .child-item {
+            padding-left: 12px;
         }
 
-        .items tr:first-child td {
-          padding-top: 4px;
+        .note {
+            font-size: 11px;
+            padding-left: 12px;
+            white-space: pre-line;
         }
 
-        .items .description-row td {
-          padding-bottom: 2px;
+        .summary {
+            margin-top: 10px;
         }
 
-        .items .item-detail-row td {
-          padding: 1px 0;
+        .summary-row {
+            display: flex;
+            justify-content: space-between;
+            margin: 2px 0;
         }
 
-        .summary td {
-          padding: 1px 0;
-          font-size: 9px;
+        .footer {
+            text-align: center;
+            margin-top: 15px;
+            white-space: pre-line;
         }
-
-        .summary .price {
-          text-align: right;
-        }
-
-        .grand td {
-          padding: 3px 0;
-          font-weight: bold;
-          font-size: 10px;
-        }
-
-        .description-row td {
-          font-size: 7px;
-        }
-        
     </style>
-    @endif
 </head>
 <body>
-  <div class="receipt">
-    <div class="center">
-      <div class="store-name">{{ config('settings.company_name') }}</div>
-      <div style="margin-bottom: 2px">{{ config('settings.company_address') }}</div>
-      <div>{{ config('settings.company_phone') }}</div>
-    </div>
 
-    <div class="divider"></div>
+@php
+    function format_amount($n) {
+        return fmod($n, 1) == 0
+            ? number_format($n, 0, ',', '.')
+            : number_format($n, 2, ',', '.');
+    }
 
-    <div class="meta" style="margin-bottom: 1rem">
-      <div>No: {{ $data['ref_number'] }}</div>
-      <div>Kasir: {{ $data['created_by_name'] }}</div>
-      <div>Tgl: {{ \Carbon\Carbon::parse($data['created_at'])->format('d/m/Y H:i:s') }}</div>
-      <div>Pelanggan: {{ $data['customer_name'] }}</div>
-    </div>
+    $sales_invoice_details = [];
 
-    @php
-
-      $sales_invoice_details = [];
-      $child_idx = 0;
-
-      foreach ($data['sales_invoice_details'] as $row => $item) {
-        if (isset($sales_invoice_details[$item['product_id']]) && $sales_invoice_details[$item['product_id']]) {
-          $sales_invoice_details[$item['product_id']]['child'][$child_idx] = $item;
-          $child_idx++;
+    foreach ($data['sales_invoice_details'] as $item) {
+        if (isset($sales_invoice_details[$item['product_id']])) {
+            $sales_invoice_details[$item['product_id']]['child'][] = $item;
         } else {
-          $sales_invoice_details[$item['product_id']] = $item;  
-          $sales_invoice_details[$item['product_id']]['child'] = [];  
+            $item['child'] = [];
+            $sales_invoice_details[$item['product_id']] = $item;
         }
-      }
+    }
+@endphp
 
-    @endphp
+<div class="receipt">
 
-    <table class="items">
-      <thead>
-        <tr>
-          <th class="qty" style="text-align: center">Qty</th>
-          <th class="unit" style="text-align: center">Unit</th>
-          <th class="price" style="text-align: center">Harga</th>
-          <th class="price" style="text-align: center">Diskon</th>
-          <th class="price" style="text-align: right">Total</th>
-        </tr>
-      </thead>
-      <tbody>
-        @foreach ($sales_invoice_details as $idx => $item)
-          @php
-            $price = floatval($item['unit_price']);
-            $discount_value = floatval($item['discount_amount']);
-            $qty = floatval($item['qty']);
-            $disc = 0;
+    {{-- HEADER --}}
+    <div class="center">
+        <div class="bold">
+            {{ config('general_settings.company_name') }}
+        </div>
 
-            if ($discount_value > 0) {
-              if ($item['discount_type'] == 'percentage') {
-                  $disc = $price * ($discount_value / 100);
-                } else {
-                  $disc = $discount_value;
-              }
-            }
+        <div>
+            {{ config('general_settings.company_address') }}
+        </div>
 
-            $subtotal_item = ($price * $qty) - $disc;
-          @endphp
-          <tr class="name-row">
-            <td colspan="6">{{ $item['product_name'] }}</td>
-          </tr>
-          <tr class="item-detail-row">
-            <td style="text-align: center">{{ $qty }}</td>
-            <td style="text-align: center">{{ $item['unit_name'] }}</td>
-            <td style="text-align: center">{{ format_amount($price) }}</td>
-            <td style="text-align: center">-{{ format_amount($disc) }}</td>
-            <td style="text-align: right">{{ format_amount($subtotal_item) }}</td>
-          </tr>
-          @if ($item['note'])
-          <tr class="description-row">
-            <td></td>
-            <td colspan="5">{{ $item['note'] }}</td>
-          </tr>
-          @endif
-          @if (count($item['child']) > 0)
-            @foreach ($item['child'] as $item_child)
-              @php
-                $price = floatval($item_child['unit_price']);
-                $discount_value = floatval($item_child['discount_amount']);
-                $qty = floatval($item_child['qty']);
-                $disc = 0;
-
-                if ($discount_value > 0) {
-                  if ($item['discount_type'] == 'percentage') {
-                      $disc = $price * ($discount_value / 100);
-                    } else {
-                      $disc = $discount_value;
-                  }
-                }
-              
-                $subtotal_item = ($price * $qty) - $disc;
-              @endphp
-              <tr class="item-detail-row">
-                <td style="text-align: center">{{ $qty }}</td>
-                <td style="text-align: center">{{ $item_child['unit_name'] }}</td>
-                <td style="text-align: center">{{ format_amount($price) }}</td>
-                <td style="text-align: center">-{{ format_amount($disc) }}</td>
-                <td style="text-align: right">{{ format_amount($subtotal_item) }}</td>
-              </tr>
-              @if ($item_child['note'])
-              <tr class="description-row">
-                <td></td>
-                <td colspan="5">{{ $item_child['note'] }}</td>
-              </tr>
-              @endif
-            @endforeach
-          @endif
-        @endforeach
-      </tbody>
-    </table>
-
-    @php
-      $subtotal = floatval($data['subtotal']);
-      $discount_amount = floatval($data['discount_amount']);
-      $total = floatval($data['total']);
-      $total_payment = floatval($data['total_payment']);
-      $total_change = floatval($data['total_change']);
-    @endphp
-
-    <table class="summary">
-      <tr>
-        <td>Subtotal</td>
-        <td class="price">{{ format_amount($subtotal) }}</td>
-      </tr>
-      <tr>
-        <td>Diskon</td>
-        <td class="price">-{{ format_amount($discount_amount) }}</td>
-      </tr>
-      <tr class="grand">
-        <td>Total</td>
-        <td class="price">{{ format_amount($total) }}</td>
-      </tr>
-      <tr>
-        <td>Bayar</td>
-        <td class="price">{{ format_amount($total_payment) }}</td>
-      </tr>
-      <tr>
-        <td>Kembali</td>
-        <td class="price">{{ format_amount($total_change) }}</td>
-      </tr>
-    </table>
-
-    <div class="divider"></div>
-
-    <div class="center small">
-      {{ config('settings.pos_receipt_footer_text') }}
+        <div>
+            {{ config('general_settings.company_phone') }}
+        </div>
     </div>
 
-  </div>
+    <div class="line"></div>
+
+    {{-- META --}}
+    <div class="meta">
+        <p>No : {{ $data['ref_number'] }}</p>
+        <p>Kasir : {{ $data['created_by_name'] }}</p>
+        <p>Tgl : {{ date('d/m/Y H:i:s', strtotime($data['created_at'])) }}</p>
+        <p>Cust : {{ $data['customer_name'] }}</p>
+        <p>Alamat : {{ $data['customer_address'] }}</p>
+    </div>
+
+    <div class="line"></div>
+
+    {{-- TABLE HEADER --}}
+    <table>
+        <thead>
+            <tr>
+                <th>Qty</th>
+                <th>Unit</th>
+                <th class="right">Harga</th>
+                <th class="right">Disc</th>
+                <th class="right">Total</th>
+            </tr>
+        </thead>
+
+        <tbody>
+            @foreach ($sales_invoice_details as $item)
+
+                @php
+                    $price = floatval($item['unit_price']);
+                    $qty = floatval($item['qty']);
+
+                    $disc = $item['discount_amount'] > 0
+                        ? ($item['discount_type'] == 'percentage'
+                            ? $price * ($item['discount_amount'] / 100)
+                            : $item['discount_amount'])
+                        : 0;
+
+                    $subtotal = ($price * $qty) - $disc;
+                @endphp
+
+                {{-- Product Name --}}
+                <tr>
+                    <td colspan="5" class="product-name">
+                        {{ $item['product_name'] }}
+                    </td>
+                </tr>
+
+                {{-- Main Row --}}
+                <tr>
+                    <td>{{ $qty }}</td>
+                    <td>{{ $item['unit_name'] }}</td>
+                    <td class="right">{{ format_amount($price) }}</td>
+                    <td class="right">-{{ format_amount($disc) }}</td>
+                    <td class="right">{{ format_amount($subtotal) }}</td>
+                </tr>
+
+                @if (!empty($item['note']))
+                    <tr>
+                        <td colspan="5" class="note">
+                            {{ $item['note'] }}
+                        </td>
+                    </tr>
+                @endif
+
+                {{-- CHILD ITEMS --}}
+                @foreach ($item['child'] as $child)
+
+                    @php
+                        $childPrice = floatval($child['unit_price']);
+                        $childQty = floatval($child['qty']);
+
+                        $childDisc = $child['discount_amount'] > 0
+                            ? ($child['discount_type'] == 'percentage'
+                                ? $childPrice * ($child['discount_amount'] / 100)
+                                : $child['discount_amount'])
+                            : 0;
+
+                        $childSubtotal = ($childPrice * $childQty) - $childDisc;
+                    @endphp
+
+                    <tr>
+                        <td class="child-item">{{ $childQty }}</td>
+                        <td>{{ $child['unit_name'] }}</td>
+                        <td class="right">
+                            {{ format_amount($childPrice) }}
+                        </td>
+                        <td class="right">
+                            -{{ format_amount($childDisc) }}
+                        </td>
+                        <td class="right">
+                            {{ format_amount($childSubtotal) }}
+                        </td>
+                    </tr>
+
+                    @if (!empty($child['note']))
+                        <tr>
+                            <td colspan="5" class="note">
+                                {{ $child['note'] }}
+                            </td>
+                        </tr>
+                    @endif
+
+                @endforeach
+
+            @endforeach
+        </tbody>
+    </table>
+
+    <div class="line"></div>
+
+    {{-- SUMMARY --}}
+    <div class="summary">
+        <div class="summary-row">
+            <span>Subtotal</span>
+            <span>{{ format_amount($data['subtotal']) }}</span>
+        </div>
+
+        <div class="summary-row">
+            <span>Diskon</span>
+            <span>-{{ format_amount($data['discount_amount']) }}</span>
+        </div>
+
+        <div class="summary-row bold">
+            <span>Total</span>
+            <span>{{ format_amount($data['total']) }}</span>
+        </div>
+
+        <div class="summary-row">
+            <span>Bayar</span>
+            <span>{{ format_amount($data['total_payment']) }}</span>
+        </div>
+
+        <div class="summary-row">
+            <span>Kembali</span>
+            <span>{{ format_amount($data['total_change']) }}</span>
+        </div>
+    </div>
+
+    <div class="line"></div>
+
+    {{-- FOOTER --}}
+    <div class="footer">
+        {{ config('general_settings.pos_receipt_footer_text') }}
+    </div>
+
+</div>
+
 </body>
 </html>
