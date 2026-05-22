@@ -11,14 +11,27 @@ class NetworkHelper
 {
     public static function isConnected($url = 'https://www.google.com')
     {
-        return Cache::remember('internet_connection', 2, function () use ($url) {
-            try {
-                $response = Http::timeout(3)->get($url);
-                return $response->successful();
-            } catch (\Exception $e) {
-                return false;
-            }
-        });
+        if (Cache::has('internet_connection')) {
+            return Cache::get('internet_connection');
+        }
+
+        try {
+            $response = Http::timeout(30)
+                ->connectTimeout(10)
+                ->retry(3, 2000)
+                ->get($url);
+
+            $is_online = $response->successful();
+
+            // kalau online, cache 30 detik
+            // kalau offline, cache 5 detik saja supaya cepat recover
+            Cache::put('internet_connection', $is_online, $is_online ? 30 : 5);
+
+            return $is_online;
+        } catch (\Exception $e) {
+            Cache::put('internet_connection', false, 5);
+            return false;
+        }
     }
 
     public static function getAccessToken()
@@ -88,13 +101,22 @@ class NetworkHelper
 
         // token expired
         if ($httpCode == 401) {
-            // ambil token baru
             $token = self::requestNewToken();
-            // retry connect
             $response = self::executeCurl($url, $token, $httpCode, $server_token);
         }
 
-        return json_decode($response, true);
+        $decoded = json_decode($response, true);
+
+        // trap non-2xx http code
+        if ($httpCode < 200 || $httpCode >= 300) {
+            \Log::warning('curlWithToken: HTTP error', [
+                'url' => $url,
+                'http_code' => $httpCode,
+                'response' => $decoded ?? $response,
+            ]);
+        }
+
+        return $decoded;
     }
 
     private static function executeCurl($url, $token, &$httpCode, $server = false)
