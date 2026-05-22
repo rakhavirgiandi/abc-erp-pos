@@ -137,6 +137,40 @@ class ProductVariantController extends Controller
         $model = new ProductVariants();
         $fillable = array_flip($model->getFillable());
 
+        $allProductIds = [];
+        $totalPage = 1;
+
+        do {
+            $url = config('services.admin_credentials.server_url') . "/api/v1/product_variants?page={$page}&per_page={$perPage}&is_simple=true";
+            $result = NetworkHelper::curlWithToken($url);
+
+            $rows = $result['data'] ?? [];
+            if (empty($rows)) break;
+
+            $ids = collect($rows)->pluck('product_id')->filter()->unique()->toArray();
+            $allProductIds = array_unique(array_merge($allProductIds, $ids));
+
+            $totalPage = $result['nav']['totalPage'] ?? 1;
+            $page++;
+
+        } while ($page <= $totalPage);
+
+        if (empty($allProductIds)) {
+            return response()->json([
+                'status' => 'success',
+                'message' => 'Tidak ada data untuk di-sync',
+            ]);
+        }
+
+        $products = Products::withTrashed()->whereIn('id', $allProductIds)->get()->keyBy('id');
+        $product_ids = $products->pluck('id')->toArray();
+
+        if (!empty($product_ids)) {
+            ProductVariants::withTrashed()->whereIn('product_id', $product_ids)->forceDelete();
+        }
+
+        $page = 1;
+
         do {
             $url = config('services.admin_credentials.server_url') . "/api/v1/product_variants?page={$page}&per_page={$perPage}&is_simple=true";
             $result = NetworkHelper::curlWithToken($url);
@@ -147,24 +181,16 @@ class ProductVariantController extends Controller
             DB::connection('pgsql_companies')->beginTransaction();
 
             try {
-                $ids = collect($rows)->pluck('product_id')->filter()->unique()->toArray();
-                $products = Products::withTrashed()->whereIn('id', $ids)->get()->keyBy('id');
-                $product_ids = $products->pluck('id')->toArray();
-
-                if (!empty($product_ids)) {
-                    ProductVariants::whereIn('product_id', $product_ids)->withTrashed()->forceDelete();
-                }
-
                 $insert_product_variant = [];
+
                 foreach ($rows as $row) {
                     if (!isset($row['product_id'])) continue;
-                    
+
                     $product = $products[$row['product_id']] ?? null;
                     if (!$product) continue;
-                    
+
                     $row['product_id'] = $product->id;
                     $row = array_intersect_key($row, $fillable);
-
                     $insert_product_variant[] = $row;
                 }
 
@@ -172,7 +198,6 @@ class ProductVariantController extends Controller
                     ProductVariants::insert($insert_product_variant);
                 }
 
-                DB::connection('pgsql_companies')->statement("SELECT SETVAL('product_variants_id_seq', COALESCE((SELECT MAX(id) + 1 FROM product_variants), 1))");
                 DB::connection('pgsql_companies')->commit();
 
             } catch (\Exception $e) {
@@ -187,6 +212,8 @@ class ProductVariantController extends Controller
             $page++;
 
         } while ($page <= ($result['nav']['totalPage'] ?? 1));
+
+        DB::connection('pgsql_companies')->statement("SELECT SETVAL('product_variants_id_seq', COALESCE((SELECT MAX(id) + 1 FROM product_variants), 1))");
 
         return response()->json([
             'status' => 'success',

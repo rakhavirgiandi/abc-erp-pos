@@ -137,8 +137,43 @@ class ProductMultiPriceController extends Controller
         $model = new ProductMultiPrices();
         $fillable = array_flip($model->getFillable());
 
+        // Step 1: Kumpulkan semua product_id dari semua page
+        $allProductIds = [];
+        $totalPage = 1;
+
         do {
-            $url = config('services.admin_credentials.server_url') . "/api/v1/product_multi_prices?page={$page}&per_page={$perPage}&is_simple=true&product_id=1349";
+            $url = config('services.admin_credentials.server_url') . "/api/v1/product_multi_prices?page={$page}&per_page={$perPage}&is_simple=true";
+            $result = NetworkHelper::curlWithToken($url);
+
+            $rows = $result['data'] ?? [];
+            if (empty($rows)) break;
+
+            $ids = collect($rows)->pluck('product_id')->filter()->unique()->toArray();
+            $allProductIds = array_unique(array_merge($allProductIds, $ids));
+
+            $totalPage = $result['nav']['totalPage'] ?? 1;
+            $page++;
+
+        } while ($page <= $totalPage);
+
+        if (empty($allProductIds)) {
+            return response()->json([
+                'status' => 'success',
+                'message' => 'Tidak ada data untuk di-sync',
+            ]);
+        }
+
+        $products = Products::withTrashed()->whereIn('id', $allProductIds)->get()->keyBy('id');
+        $product_ids = $products->pluck('id')->toArray();
+
+        if (!empty($product_ids)) {
+            ProductMultiPrices::withTrashed()->whereIn('product_id', $product_ids)->forceDelete();
+        }
+
+        $page = 1;
+
+        do {
+            $url = config('services.admin_credentials.server_url') . "/api/v1/product_multi_prices?page={$page}&per_page={$perPage}&is_simple=true";
             $result = NetworkHelper::curlWithToken($url);
 
             $rows = $result['data'] ?? [];
@@ -147,15 +182,8 @@ class ProductMultiPriceController extends Controller
             DB::connection('pgsql_companies')->beginTransaction();
 
             try {
-                $ids = collect($rows)->pluck('product_id')->filter()->unique()->toArray();
-                $products = Products::withTrashed()->whereIn('id', $ids)->get()->keyBy('id');
-                $product_ids = $products->pluck('id')->toArray();
-
-                if (!empty($product_ids)) {
-                    ProductMultiPrices::whereIn('product_id', $product_ids)->withTrashed()->forceDelete();
-                }
-
                 $insert_multi_price = [];
+
                 foreach ($rows as $row) {
                     if (!isset($row['product_id'])) continue;
 
@@ -163,9 +191,7 @@ class ProductMultiPriceController extends Controller
                     if (!$product) continue;
 
                     $row['product_id'] = $product->id;
-                    
                     $row = array_intersect_key($row, $fillable);
-
                     $insert_multi_price[] = $row;
                 }
 
@@ -174,7 +200,6 @@ class ProductMultiPriceController extends Controller
                 }
 
                 DB::connection('pgsql_companies')->commit();
-                DB::connection('pgsql_companies')->statement("SELECT SETVAL('product_multi_prices_id_seq', COALESCE((SELECT MAX(id) + 1 FROM product_multi_prices), 1))");
 
             } catch (\Exception $e) {
                 DB::connection('pgsql_companies')->rollBack();
@@ -188,6 +213,8 @@ class ProductMultiPriceController extends Controller
             $page++;
 
         } while ($page <= ($result['nav']['totalPage'] ?? 1));
+
+        DB::connection('pgsql_companies')->statement("SELECT SETVAL('product_multi_prices_id_seq', COALESCE((SELECT MAX(id) + 1 FROM product_multi_prices), 1))");
 
         return response()->json([
             'status' => 'success',
