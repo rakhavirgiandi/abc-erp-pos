@@ -169,8 +169,8 @@ class DefaultAccountController extends Controller
                     DefaultAccounts::insert($insert_default_account);
                 }
 
-                DB::connection('pgsql_companies')->statement("SELECT SETVAL('default_accounts_id_seq', COALESCE((SELECT MAX(id) + 1 FROM default_accounts), 1))");
                 DB::connection('pgsql_companies')->commit();
+                DB::connection('pgsql_companies')->statement("SELECT SETVAL('default_accounts_id_seq', COALESCE((SELECT MAX(id) + 1 FROM default_accounts), 1))");
 
             } catch (\Exception $e) {
                 DB::connection('pgsql_companies')->rollBack();

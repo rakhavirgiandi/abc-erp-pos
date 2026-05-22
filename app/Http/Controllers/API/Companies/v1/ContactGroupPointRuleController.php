@@ -181,8 +181,8 @@ class ContactGroupPointRuleController extends Controller
                     ContactGroupPointRules::insert($insert_point_rules);
                 }
 
-                DB::connection('pgsql_companies')->statement("SELECT SETVAL('contact_group_point_rules_id_seq', COALESCE((SELECT MAX(id) + 1 FROM contact_group_point_rules), 1))");
                 DB::connection('pgsql_companies')->commit();
+                DB::connection('pgsql_companies')->statement("SELECT SETVAL('contact_group_point_rules_id_seq', COALESCE((SELECT MAX(id) + 1 FROM contact_group_point_rules), 1))");
 
             } catch (\Exception $e) {
                 DB::connection('pgsql_companies')->rollBack();

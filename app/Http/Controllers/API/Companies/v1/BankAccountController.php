@@ -181,8 +181,8 @@ class BankAccountController extends Controller
                     BankAccounts::insert($insert_bank);
                 }
 
-                DB::connection('pgsql_companies')->statement("SELECT SETVAL('bank_accounts_id_seq', COALESCE((SELECT MAX(id) + 1 FROM bank_accounts), 1))");
                 DB::connection('pgsql_companies')->commit();
+                DB::connection('pgsql_companies')->statement("SELECT SETVAL('bank_accounts_id_seq', COALESCE((SELECT MAX(id) + 1 FROM bank_accounts), 1))");
 
             } catch (\Exception $e) {
                 DB::connection('pgsql_companies')->rollBack();

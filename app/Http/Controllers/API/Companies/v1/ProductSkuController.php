@@ -181,8 +181,8 @@ class ProductSkuController extends Controller
                     ProductSkus::insert($insert_sku);
                 }
 
-                DB::connection('pgsql_companies')->statement("SELECT SETVAL('product_skus_id_seq', COALESCE((SELECT MAX(id) + 1 FROM product_skus), 1))");
                 DB::connection('pgsql_companies')->commit();
+                DB::connection('pgsql_companies')->statement("SELECT SETVAL('product_skus_id_seq', COALESCE((SELECT MAX(id) + 1 FROM product_skus), 1))");
 
             } catch (\Exception $e) {
                 DB::connection('pgsql_companies')->rollBack();

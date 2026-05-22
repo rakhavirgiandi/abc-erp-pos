@@ -233,9 +233,9 @@ class ProductController extends Controller
                     Products::insert($insert_product);
                 }
 
+                DB::connection('pgsql_companies')->commit();
                 DB::connection('pgsql_companies')->statement("SELECT SETVAL('products_id_seq', COALESCE((SELECT MAX(id) + 1 FROM products), 1))");
 
-                DB::connection('pgsql_companies')->commit();
             } catch (\Exception $e) {
                 DB::connection('pgsql_companies')->rollBack();
                 return response()->json([

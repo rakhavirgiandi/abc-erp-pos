@@ -181,8 +181,8 @@ class WarehouseController extends Controller
                     Warehouses::insert($insert_warehouse);
                 }
 
-                DB::connection('pgsql_companies')->statement("SELECT SETVAL('warehouses_id_seq', COALESCE((SELECT MAX(id) + 1 FROM warehouses), 1))");
                 DB::connection('pgsql_companies')->commit();
+                DB::connection('pgsql_companies')->statement("SELECT SETVAL('warehouses_id_seq', COALESCE((SELECT MAX(id) + 1 FROM warehouses), 1))");
 
             } catch (\Exception $e) {
                 DB::connection('pgsql_companies')->rollBack();

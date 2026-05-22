@@ -181,8 +181,8 @@ class UnitController extends Controller
                     Units::insert($insert_unit);
                 }
 
-                DB::connection('pgsql_companies')->statement("SELECT SETVAL('units_id_seq', COALESCE((SELECT MAX(id) + 1 FROM units), 1))");
                 DB::connection('pgsql_companies')->commit();
+                DB::connection('pgsql_companies')->statement("SELECT SETVAL('units_id_seq', COALESCE((SELECT MAX(id) + 1 FROM units), 1))");
 
             } catch (\Exception $e) {
                 DB::connection('pgsql_companies')->rollBack();

@@ -172,8 +172,8 @@ class PermissionController extends Controller
                 }
 
                 ModelHelper::reorderPermissionAdmin();
-                DB::connection('pgsql_companies')->statement("SELECT SETVAL('permissions_id_seq', COALESCE((SELECT MAX(id) + 1 FROM permissions), 1))");
                 DB::connection('pgsql_companies')->commit();
+                DB::connection('pgsql_companies')->statement("SELECT SETVAL('permissions_id_seq', COALESCE((SELECT MAX(id) + 1 FROM permissions), 1))");
 
             } catch (\Exception $e) {
                 DB::connection('pgsql_companies')->rollBack();

@@ -138,7 +138,7 @@ class ProductMultiPriceController extends Controller
         $fillable = array_flip($model->getFillable());
 
         do {
-            $url = config('services.admin_credentials.server_url') . "/api/v1/product_multi_prices?page={$page}&per_page={$perPage}&is_simple=true";
+            $url = config('services.admin_credentials.server_url') . "/api/v1/product_multi_prices?page={$page}&per_page={$perPage}&is_simple=true&product_id=1349";
             $result = NetworkHelper::curlWithToken($url);
 
             $rows = $result['data'] ?? [];
@@ -152,7 +152,7 @@ class ProductMultiPriceController extends Controller
                 $product_ids = $products->pluck('id')->toArray();
 
                 if (!empty($product_ids)) {
-                    ProductMultiPrices::whereIn('product_id', $product_ids)->forceDelete();
+                    ProductMultiPrices::whereIn('product_id', $product_ids)->withTrashed()->forceDelete();
                 }
 
                 $insert_multi_price = [];
@@ -173,8 +173,8 @@ class ProductMultiPriceController extends Controller
                     ProductMultiPrices::insert($insert_multi_price);
                 }
 
-                DB::connection('pgsql_companies')->statement("SELECT SETVAL('product_multi_prices_id_seq', COALESCE((SELECT MAX(id) + 1 FROM product_multi_prices), 1))");
                 DB::connection('pgsql_companies')->commit();
+                DB::connection('pgsql_companies')->statement("SELECT SETVAL('product_multi_prices_id_seq', COALESCE((SELECT MAX(id) + 1 FROM product_multi_prices), 1))");
 
             } catch (\Exception $e) {
                 DB::connection('pgsql_companies')->rollBack();

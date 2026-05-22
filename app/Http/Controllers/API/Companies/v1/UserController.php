@@ -236,8 +236,8 @@ class UserController extends Controller
                     Users::insert($insert);
                 }
 
-                DB::connection('pgsql_companies')->statement("SELECT SETVAL('users_id_seq', COALESCE((SELECT MAX(id) + 1 FROM users), 1))");
                 DB::connection('pgsql_companies')->commit();
+                DB::connection('pgsql_companies')->statement("SELECT SETVAL('users_id_seq', COALESCE((SELECT MAX(id) + 1 FROM users), 1))");
 
             } catch (\Exception $e) {
                 DB::connection('pgsql_companies')->rollBack();

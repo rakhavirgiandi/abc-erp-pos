@@ -181,8 +181,8 @@ class ContactController extends Controller
                     Contacts::insert($insert_contact);
                 }
 
-                DB::connection('pgsql_companies')->statement("SELECT SETVAL('contacts_id_seq', COALESCE((SELECT MAX(id) + 1 FROM contacts), 1))");
                 DB::connection('pgsql_companies')->commit();
+                DB::connection('pgsql_companies')->statement("SELECT SETVAL('contacts_id_seq', COALESCE((SELECT MAX(id) + 1 FROM contacts), 1))");
 
             } catch (\Exception $e) {
                 DB::connection('pgsql_companies')->rollBack();

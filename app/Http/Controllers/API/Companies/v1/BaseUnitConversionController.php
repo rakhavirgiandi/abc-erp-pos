@@ -181,8 +181,8 @@ class BaseUnitConversionController extends Controller
                     BaseUnitConversions::insert($insert_base_unit);
                 }
 
-                DB::connection('pgsql_companies')->statement("SELECT SETVAL('base_unit_conversions_id_seq', COALESCE((SELECT MAX(id) + 1 FROM base_unit_conversions), 1))");
                 DB::connection('pgsql_companies')->commit();
+                DB::connection('pgsql_companies')->statement("SELECT SETVAL('base_unit_conversions_id_seq', COALESCE((SELECT MAX(id) + 1 FROM base_unit_conversions), 1))");
 
             } catch (\Exception $e) {
                 DB::connection('pgsql_companies')->rollBack();

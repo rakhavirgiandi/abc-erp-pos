@@ -152,7 +152,7 @@ class ProductUnitConversionController extends Controller
                 $product_ids = $products->pluck('id')->toArray();
 
                 if (!empty($product_ids)) {
-                    ProductUnitConversions::whereIn('product_id', $product_ids)->forceDelete();
+                    ProductUnitConversions::whereIn('product_id', $product_ids)->withTrashed()->forceDelete();
                 }
 
                 $insert_unit_conversion = [];

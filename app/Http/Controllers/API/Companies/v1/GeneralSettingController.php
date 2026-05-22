@@ -169,8 +169,8 @@ class GeneralSettingController extends Controller
                     GeneralSettings::insert($insert_general_setting);
                 }
 
-                DB::connection('pgsql_companies')->statement("SELECT SETVAL('general_settings_id_seq', COALESCE((SELECT MAX(id) + 1 FROM general_settings), 1))");
                 DB::connection('pgsql_companies')->commit();
+                DB::connection('pgsql_companies')->statement("SELECT SETVAL('general_settings_id_seq', COALESCE((SELECT MAX(id) + 1 FROM general_settings), 1))");
 
             } catch (\Exception $e) {
                 DB::connection('pgsql_companies')->rollBack();

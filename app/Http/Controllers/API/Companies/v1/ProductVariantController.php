@@ -152,7 +152,7 @@ class ProductVariantController extends Controller
                 $product_ids = $products->pluck('id')->toArray();
 
                 if (!empty($product_ids)) {
-                    ProductVariants::whereIn('product_id', $product_ids)->forceDelete();
+                    ProductVariants::whereIn('product_id', $product_ids)->withTrashed()->forceDelete();
                 }
 
                 $insert_product_variant = [];

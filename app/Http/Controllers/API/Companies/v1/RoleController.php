@@ -159,8 +159,8 @@ class RoleController extends Controller
 
                 ModelHelper::reorderPermissionAdmin();
 
-                DB::connection('pgsql_companies')->statement("SELECT SETVAL('roles_id_seq', COALESCE((SELECT MAX(id) + 1 FROM roles), 1))");
                 DB::connection('pgsql_companies')->commit();
+                DB::connection('pgsql_companies')->statement("SELECT SETVAL('roles_id_seq', COALESCE((SELECT MAX(id) + 1 FROM roles), 1))");
 
             } catch (\Exception $e) {
                 DB::connection('pgsql_companies')->rollBack();

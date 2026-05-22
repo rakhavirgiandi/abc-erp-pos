@@ -179,8 +179,8 @@ class AccountingMasterController extends Controller
                     AccountingMasters::insert($insert_coa);
                 }
 
-                DB::connection('pgsql_companies')->statement("SELECT SETVAL('accounting_masters_id_seq', COALESCE((SELECT MAX(id) + 1 FROM accounting_masters), 1))");
                 DB::connection('pgsql_companies')->commit();
+                DB::connection('pgsql_companies')->statement("SELECT SETVAL('accounting_masters_id_seq', COALESCE((SELECT MAX(id) + 1 FROM accounting_masters), 1))");
 
             } catch (\Exception $e) {
                 DB::connection('pgsql_companies')->rollBack();

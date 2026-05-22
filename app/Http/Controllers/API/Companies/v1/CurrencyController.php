@@ -181,8 +181,8 @@ class CurrencyController extends Controller
                     Currencies::insert($insert_currency);
                 }
 
-                DB::connection('pgsql_companies')->statement("SELECT SETVAL('currencies_id_seq', COALESCE((SELECT MAX(id) + 1 FROM currencies), 1))");
                 DB::connection('pgsql_companies')->commit();
+                DB::connection('pgsql_companies')->statement("SELECT SETVAL('currencies_id_seq', COALESCE((SELECT MAX(id) + 1 FROM currencies), 1))");
 
             } catch (\Exception $e) {
                 DB::connection('pgsql_companies')->rollBack();

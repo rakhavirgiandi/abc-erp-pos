@@ -181,8 +181,8 @@ class VariantController extends Controller
                     Variants::insert($insert_variant);
                 }
 
-                DB::connection('pgsql_companies')->statement("SELECT SETVAL('variants_id_seq', COALESCE((SELECT MAX(id) + 1 FROM variants), 1))");
                 DB::connection('pgsql_companies')->commit();
+                DB::connection('pgsql_companies')->statement("SELECT SETVAL('variants_id_seq', COALESCE((SELECT MAX(id) + 1 FROM variants), 1))");
 
             } catch (\Exception $e) {
                 DB::connection('pgsql_companies')->rollBack();

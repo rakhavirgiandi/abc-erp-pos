@@ -181,8 +181,8 @@ class RewardPointController extends Controller
                     RewardPoints::insert($insert_reward);
                 }
 
-                DB::connection('pgsql_companies')->statement("SELECT SETVAL('reward_points_id_seq', COALESCE((SELECT MAX(id) + 1 FROM reward_points), 1))");
                 DB::connection('pgsql_companies')->commit();
+                DB::connection('pgsql_companies')->statement("SELECT SETVAL('reward_points_id_seq', COALESCE((SELECT MAX(id) + 1 FROM reward_points), 1))");
 
             } catch (\Exception $e) {
                 DB::connection('pgsql_companies')->rollBack();

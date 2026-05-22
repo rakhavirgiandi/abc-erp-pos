@@ -181,8 +181,8 @@ class TaxController extends Controller
                     Taxes::insert($insert_tax);
                 }
 
-                DB::connection('pgsql_companies')->statement("SELECT SETVAL('taxes_id_seq', COALESCE((SELECT MAX(id) + 1 FROM taxes), 1))");
                 DB::connection('pgsql_companies')->commit();
+                DB::connection('pgsql_companies')->statement("SELECT SETVAL('taxes_id_seq', COALESCE((SELECT MAX(id) + 1 FROM taxes), 1))");
 
             } catch (\Exception $e) {
                 DB::connection('pgsql_companies')->rollBack();

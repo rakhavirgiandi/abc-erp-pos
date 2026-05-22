@@ -181,8 +181,8 @@ class BranchController extends Controller
                     Branches::insert($insert_branch);
                 }
 
-                DB::connection('pgsql_companies')->statement("SELECT SETVAL('branches_id_seq', COALESCE((SELECT MAX(id) + 1 FROM branches), 1))");
                 DB::connection('pgsql_companies')->commit();
+                DB::connection('pgsql_companies')->statement("SELECT SETVAL('branches_id_seq', COALESCE((SELECT MAX(id) + 1 FROM branches), 1))");
 
             } catch (\Exception $e) {
                 DB::connection('pgsql_companies')->rollBack();
