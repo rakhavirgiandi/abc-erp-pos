@@ -41,9 +41,9 @@ return [
     ],
 
     'admin_credentials' => [
-        'server_url' => 'http://abc-erp.test',
-        'email' => 'indomaret@gmail.com',
-        'password' => '123',
+        'server_url' => 'https://app.abcerp.id',
+        'email' => 'admin@gmail.com',
+        'password' => '123abc',
     ],
 
     'is_onpremise' => env('IS_ONPREMISE', false)

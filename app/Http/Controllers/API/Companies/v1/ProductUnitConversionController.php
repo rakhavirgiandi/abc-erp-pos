@@ -142,7 +142,7 @@ class ProductUnitConversionController extends Controller
         $totalPage = 1;
 
         do {
-            $url = config('services.admin_credentials.server_url') . "/api/v1/product_unit_conversions?page={$page}&per_page={$perPage}&is_simple=true";
+            $url = config('services.admin_credentials.server_url') . "/api/v1/product_unit_conversions?page={$page}&per_page={$perPage}&is_simple=true&order[id]=asc";
             $result = NetworkHelper::curlWithToken($url);
 
             $rows = $result['data'] ?? [];
@@ -173,7 +173,7 @@ class ProductUnitConversionController extends Controller
         $page = 1;
 
         do {
-            $url = config('services.admin_credentials.server_url') . "/api/v1/product_unit_conversions?page={$page}&per_page={$perPage}&is_simple=true";
+            $url = config('services.admin_credentials.server_url') . "/api/v1/product_unit_conversions?page={$page}&per_page={$perPage}&is_simple=true&order[id]=asc";
             $result = NetworkHelper::curlWithToken($url);
 
             $rows = $result['data'] ?? [];

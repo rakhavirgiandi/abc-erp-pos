@@ -137,7 +137,7 @@ class WarehouseController extends Controller
         $fillable = array_flip($model->getFillable());
 
         do {
-            $url = config('services.admin_credentials.server_url') . "/api/v1/warehouses?page={$page}&per_page={$perPage}&is_simple=true";
+            $url = config('services.admin_credentials.server_url') . "/api/v1/warehouses?page={$page}&per_page={$perPage}&is_simple=true&order[id]=asc";
             $result = NetworkHelper::curlWithToken($url);
 
             $rows = $result['data'] ?? [];
