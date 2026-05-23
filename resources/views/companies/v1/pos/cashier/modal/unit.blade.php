@@ -14,6 +14,7 @@
                     <table class="table table-master m-0" id="unit-table">
                         <thead>
                             <tr>
+                                <th>Code</th>
                                 <th>Nama</th>
                                 <th>Simbol</th>
                             </tr>

@@ -785,8 +785,6 @@ class SalesInvoices extends Model
                 
                 SalesInvoiceDetails::insert($sales_invoice_details);
 
-                dd($sales_invoice_details);
-
                 $customer = Contacts::where('id', $params['customer_id'])->withTrashed()->first();
 
                 if (empty($params['is_draft'])) {
