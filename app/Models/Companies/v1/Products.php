@@ -103,9 +103,7 @@ class Products extends Model
      *
      * @var array
      */
-    protected $casts = [
-        'code' => 'string', 'name' => 'string', 'product_category_id' => 'int', 'product_type_id' => 'int', 'unit_id' => 'int', 'sale_price' => 'int', 'purchase_price' => 'int', 'description' => 'string', 'sale_tax' => 'int', 'purchase_tax' => 'int', 'width' => 'int', 'height' => 'int', 'length' => 'int', 'weight' => 'int', 'is_active' => 'int', 'multi_price_type' => 'string', 'brand' => 'string', 'product_base_id' => 'int', 'is_serial_number' => 'int', 'purchase_tax_id' => 'int', 'sale_tax_id' => 'int', 'uid' => 'string', 'created_at' => 'datetime', 'updated_at' => 'datetime', 'deleted_at' => 'datetime'
-    ];
+    protected $casts = [];
 
     /**
      * The attributes that should be mutated to dates.

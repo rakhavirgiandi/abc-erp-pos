@@ -69,9 +69,7 @@ class ProductUnitConversions extends Model
      *
      * @var array
      */
-    protected $casts = [
-        'product_id' => 'int', 'from_unit_id' => 'int', 'to_unit_id' => 'int', 'from_value' => 'int', 'to_value' => 'int', 'created_at' => 'datetime', 'updated_at' => 'datetime', 'deleted_at' => 'datetime'
-    ];
+    protected $casts = [];
 
     /**
      * The attributes that should be mutated to dates.
