@@ -28,7 +28,7 @@ use Illuminate\Database\Eloquent\SoftDeletes;
  * @property int    length
  * @property int    weight
  * @property int    is_active
- * @property int    product_base_id
+ * @property int    product_catalog_id
  * @property int    is_serial_number
  * @property int    purchase_tax_id
  * @property int    sale_tax_id
@@ -79,7 +79,7 @@ class Products extends Model
 		'is_active',
 		'multi_price_type',
 		'brand',
-		'product_base_id',
+		'product_catalog_id',
 		'is_serial_number',
 		'purchase_tax_id',
 		'sale_tax_id',
@@ -194,7 +194,7 @@ class Products extends Model
 				'is_active' => ['column' => $model->table.'.is_active', 'alias' => 'is_active', 'type' => 'int'],
 				'multi_price_type' => ['column' => $model->table.'.multi_price_type', 'alias' => 'multi_price_type', 'type' => 'string'],
 				'brand' => ['column' => $model->table.'.brand', 'alias' => 'brand', 'type' => 'string'],
-				'product_base_id' => ['column' => $model->table.'.product_base_id', 'alias' => 'product_base_id', 'type' => 'int'],
+				'product_catalog_id' => ['column' => $model->table.'.product_catalog_id', 'alias' => 'product_catalog_id', 'type' => 'int'],
 				'is_serial_number' => ['column' => $model->table.'.is_serial_number', 'alias' => 'is_serial_number', 'type' => 'int'],
 				'created_at' => ['column' => $model->table.'.created_at', 'alias' => 'created_at', 'type' => 'date'],
 				'updated_at' => ['column' => $model->table.'.updated_at', 'alias' => 'updated_at', 'type' => 'date'],
@@ -371,18 +371,19 @@ class Products extends Model
                 //     }
                 // }
                 
-                if (in_array('product_skus.product_sku_variants', $eloquent_relations)) {
-                    $db->with(['product_skus.product_sku_variants' => function($q) {
-                        $q->leftJoin('variants', 'variants.id', '=', 'product_sku_variants.variant_id')
-                          ->leftJoin('variant_options', 'variant_options.id', '=', 'product_sku_variants.option_id')
+                if (in_array('product_variants', $eloquent_relations)) {
+                    $db->with(['product_variants' => function($q) {
+                        $q->leftJoin('variants', 'variants.id', '=', 'product_variants.variant_id')
+                          ->leftJoin('variant_options', 'variant_options.id', '=', 'product_variants.variant_option_id')
                           ->select(
-                              'product_sku_variants.*',
-                              'variants.name as variant_name',
-                              'variant_options.value as option_value'
+                            'product_variants.*',
+                            'variants.name as variant_name',
+                            'variant_options.value as option_value',
+                            'product_variants.sequence as sequence'
                           );
                     }]);
     
-                    $key = array_search('product_skus.product_sku_variants', $eloquent_relations);
+                    $key = array_search('product_variants', $eloquent_relations);
     
                     if ($key !== false) {
                         unset($eloquent_relations[$key]);

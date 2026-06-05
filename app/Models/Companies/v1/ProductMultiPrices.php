@@ -79,9 +79,7 @@ class ProductMultiPrices extends Model
      *
      * @var array
      */
-    protected $casts = [
-        'product_id' => 'int', 'contact_group_id' => 'int', 'from_qty' => 'int', 'to_qty' => 'int', 'discount_percentage' => 'int', 'discount_amount' => 'int', 'discount_type' => 'string', 'branch_id' => 'int', 'unit_id' => 'int', 'unit_price' => 'int', 'product_sku_id' => 'int', 'created_at' => 'datetime', 'updated_at' => 'datetime', 'deleted_at' => 'datetime'
-    ];
+    protected $casts = [];
 
     /**
      * The attributes that should be mutated to dates.

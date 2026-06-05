@@ -59,6 +59,7 @@ use App\Models\Users;
 use App\Models\CompanyCredentials;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
+use App\Http\Controllers\API\Companies\v1\ProductCatalogController;
 // ---- Route Use Generator ----
 
 Route::middleware('auth:api')->get('/me', function (Request $request) {
@@ -430,7 +431,7 @@ Route::group(['prefix' => 'v1', 'middleware' => ['auth:api', 'api.companies']], 
         Route::delete('contact_groups/{id}', 'delete')->name('v1.delete.contact_groups');
         Route::post('contact_groups_datatables', 'datatables')->name('v1.datatable.contact_groups');
         Route::patch('contact_groups/{id}/approve', 'approve')->name('v1.approve.contact_groups');
-        Route::get('contact_groups/{id}/generate_reward_points', 'generateRewardPoints')->name('v1.generate_reward_points.contact_groups');
+        Route::post('contact_groups/{id}/generate_reward_points', 'generateRewardPoints')->name('v1.generate_reward_points.contact_groups');
     });
     Route::controller(ContactController::class)->group(function() {
         Route::get('contacts/{id?}', 'get')->name('v1.get.contacts');
@@ -772,6 +773,7 @@ Route::group(['prefix' => 'v1', 'middleware' => ['auth:api', 'api.companies']], 
         Route::get('/warehouses', [WarehouseController::class, 'syncToLocal'])->name('sync.warehouses');
         Route::post('/sales_invoices', [SalesInvoiceController::class, 'syncToServer'])->name('sync.post_sales_invoices');
         Route::get('/stock_cards', [ProductClosingController::class, 'getStockCard'])->name('sync.stock_card');
+        Route::get('/product_catalogs', [ProductCatalogController::class, 'syncToLocal'])->name('sync.product_catalogs');
     });
 
         
@@ -784,11 +786,21 @@ Route::group(['prefix' => 'v1', 'middleware' => ['auth:api', 'api.companies']], 
         Route::post('local_user_settings_datatables', 'datatables')->name('datatable.user_settings');
         Route::patch('local_user_settings/{id}/approve', 'approve')->name('approve.user_settings');
     });
+    
+    Route::controller(ProductCatalogController::class)->group(function() {
+        Route::get('product_catalogs/{id?}', 'get')->name('get.product_catalogs');
+        Route::post('product_catalogs', 'post')->name('post.product_catalogs');
+        Route::patch('product_catalogs/{id}', 'patch')->name('patch.product_catalogs');
+        Route::put('product_catalogs/{id}', 'put')->name('put.product_catalogs');
+        Route::delete('product_catalogs/{id}', 'delete')->name('delete.product_catalogs');
+        Route::post('product_catalogs_datatables', 'datatables')->name('datatable.product_catalogs');
+        Route::patch('product_catalogs/{id}/approve', 'approve')->name('approve.product_catalogs');
+    });
 
     Route::get('/persib_bandung_juara', function (Request $request) {
         // $halo = 'asd';
         return response()->json($halo);
     });
 
-    // ---- Route Controller Generator ----
+// ---- Route Controller Generator ----
 });

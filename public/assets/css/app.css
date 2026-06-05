@@ -6117,7 +6117,7 @@ s .rich-list-append {
     border-color: var(--bs-body-color) !important;
 }
 .select2-container {
-    width: auto !important;
+    /* width: auto !important; */
     display: block;
 }
 .select2-container .selection .select2-selection--single {

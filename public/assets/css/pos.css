@@ -299,12 +299,13 @@
 
 .select-variant-toggle {
     color: var(--bs-body-color);
-    border-color: var(--bs-light);
+    border-color: var(--bs-border-color);
+    height: 50px;
 }
 
 .select-variant-toggle:hover {
     color: var(--bs-body-color);
-    border-color: var(--bs-light);
+    border-color: var(--bs-border-color);
 }
 
 .select-variant-toggle.active {

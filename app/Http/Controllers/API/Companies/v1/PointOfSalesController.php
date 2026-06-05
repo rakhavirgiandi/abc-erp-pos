@@ -167,16 +167,18 @@ class PointOfSalesController extends Controller
         $data = RewardPoints::where('total_point', '=', $point)->where('is_active', 1)->first();
         $point_exchange = $params['point'];
         $total_payment = floatval($params['total_payment']);
+        $discount_amount = 0;
 
         if (!$data) {
             $data = RewardPoints::where('total_point', '=', 1)->where('discount_type', '=', 'amount')->where('benefit_type', '=', 'discount')->where('discount_type', '=', 'amount')->whereRaw('? % total_point = 0', [$params['point']])->where('is_active', 1)->first();
-
-            $discount_amount = $data->discount_amount * $point_exchange;
+            if ($data) {
+                $discount_amount = $data->discount_amount * $point_exchange;
+            }
         } else {
             $discount_amount = $data->discount_amount;
         }
 
-        if ($data->discount_type == 'percentage') {
+        if ($data && $data->discount_type == 'percentage') {
             $discount_amount = $total_payment * ($data->discount_percentage / 100);
         }
 

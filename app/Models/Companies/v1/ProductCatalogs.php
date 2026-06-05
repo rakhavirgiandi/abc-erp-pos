@@ -2,7 +2,6 @@
 
 namespace App\Models\Companies\v1;
 
-use Carbon\Carbon;
 use DB;
 use Illuminate\Support\Str;
 use App\Helpers\ModelHelper;
@@ -13,12 +12,26 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 /**
  * @property string code
  * @property string name
+ * @property string description
+ * @property string multi_price_type
+ * @property string brand
+ * @property int    product_category_id
+ * @property int    product_type_id
+ * @property int    unit_id
+ * @property int    sale_price
+ * @property int    purchase_price
+ * @property int    sale_tax
+ * @property int    purchase_tax
+ * @property int    width
+ * @property int    height
+ * @property int    length
+ * @property int    weight
  * @property int    is_active
  * @property int    created_at
  * @property int    updated_at
  * @property int    deleted_at
  */
-class ContactGroups extends Model
+class ProductCatalogs extends Model
 {
     use SoftDeletes;
 
@@ -29,7 +42,7 @@ class ContactGroups extends Model
      *
      * @var string
      */
-    protected $table = 'contact_groups';
+    protected $table = 'product_catalogs';
 
     /**
      * The primary key for the model.
@@ -46,7 +59,21 @@ class ContactGroups extends Model
     protected $fillable = [
         'code',
 		'name',
+		'product_category_id',
+		'product_type_id',
+		'unit_id',
+		'sale_price',
+		'purchase_price',
+		'description',
+		'sale_tax',
+		'purchase_tax',
+		'width',
+		'height',
+		'length',
+		'weight',
 		'is_active',
+		'multi_price_type',
+		'brand',
 		'created_at',
 		'updated_at',
 		'deleted_at',
@@ -67,7 +94,7 @@ class ContactGroups extends Model
      * @var array
      */
     protected $casts = [
-        'code' => 'string', 'name' => 'string', 'is_active' => 'int', 'created_at' => 'datetime', 'updated_at' => 'datetime', 'deleted_at' => 'datetime'
+
     ];
 
     /**
@@ -93,6 +120,9 @@ class ContactGroups extends Model
     // Functions ...
 
     // Relations ...
+    public function products () {
+        return $this->hasMany(Products::class, 'product_catalog_id', 'id');
+    }
 
     public static function mapSchema($params = [], $user = [])
     {
@@ -103,7 +133,21 @@ class ContactGroups extends Model
                 'id' => ['column' => $model->table.'.id', 'alias' => 'id', 'type' => 'int'],
 				'code' => ['column' => $model->table.'.code', 'alias' => 'code', 'type' => 'string'],
 				'name' => ['column' => $model->table.'.name', 'alias' => 'name', 'type' => 'string'],
+				'product_category_id' => ['column' => $model->table.'.product_category_id', 'alias' => 'product_category_id', 'type' => 'int'],
+				'product_type_id' => ['column' => $model->table.'.product_type_id', 'alias' => 'product_type_id', 'type' => 'int'],
+				'unit_id' => ['column' => $model->table.'.unit_id', 'alias' => 'unit_id', 'type' => 'int'],
+				'sale_price' => ['column' => $model->table.'.sale_price', 'alias' => 'sale_price', 'type' => 'int'],
+				'purchase_price' => ['column' => $model->table.'.purchase_price', 'alias' => 'purchase_price', 'type' => 'int'],
+				'description' => ['column' => $model->table.'.description', 'alias' => 'description', 'type' => 'string'],
+				'sale_tax' => ['column' => $model->table.'.sale_tax', 'alias' => 'sale_tax', 'type' => 'int'],
+				'purchase_tax' => ['column' => $model->table.'.purchase_tax', 'alias' => 'purchase_tax', 'type' => 'int'],
+				'width' => ['column' => $model->table.'.width', 'alias' => 'width', 'type' => 'int'],
+				'height' => ['column' => $model->table.'.height', 'alias' => 'height', 'type' => 'int'],
+				'length' => ['column' => $model->table.'.length', 'alias' => 'length', 'type' => 'int'],
+				'weight' => ['column' => $model->table.'.weight', 'alias' => 'weight', 'type' => 'int'],
 				'is_active' => ['column' => $model->table.'.is_active', 'alias' => 'is_active', 'type' => 'int'],
+				'multi_price_type' => ['column' => $model->table.'.multi_price_type', 'alias' => 'multi_price_type', 'type' => 'string'],
+				'brand' => ['column' => $model->table.'.brand', 'alias' => 'brand', 'type' => 'string'],
 				'created_at' => ['column' => $model->table.'.created_at', 'alias' => 'created_at', 'type' => 'date'],
 				'updated_at' => ['column' => $model->table.'.updated_at', 'alias' => 'updated_at', 'type' => 'date'],
 				'deleted_at' => ['column' => $model->table.'.deleted_at', 'alias' => 'deleted_at', 'type' => 'date'],
@@ -190,6 +234,69 @@ class ContactGroups extends Model
         $db = ModelHelper::select($schema['field'], $request, __CLASS__);
         ModelHelper::join($schema['join'], $request, $db);
 
+        if (isset($params['with_product_details']) && $params['with_product_details']) {
+            $db->with(['products' => function ($q)  {
+                $q->where('products.is_active', '=', 1);
+                $q->leftJoin('units', 'products.unit_id', '=', 'units.id');
+                $q->leftJoin('product_categories', 'products.product_category_id', '=', 'product_categories.id');
+                $q->leftJoin('taxes as sale_tax', 'products.sale_tax_id', '=', 'sale_tax.id');
+                $q->select([
+                    'products.id as id',
+                    'products.name as name',
+                    'products.code as code',
+                    'products.product_category_id',
+                    'product_categories.name as category_name',
+                    'product_categories.code as category_code',
+                    'products.unit_id',
+                    'units.name as unit_name',
+                    'units.code as unit_code',
+                    'products.sale_price',
+                    'products.product_catalog_id',
+                    'products.is_active as is_active',
+                    'sale_tax_id',
+                    'sale_tax.name as sale_tax_name',
+                    'sale_tax.code as sale_tax_code'
+                ]);
+                $q->with(['product_variants' => function($product_variant_query) {
+                    $product_variant_query->leftJoin('variants', 'variants.id', '=', 'product_variants.variant_id')
+                      ->leftJoin('variant_options', 'variant_options.id', '=', 'product_variants.variant_option_id')
+                      ->select(
+                        'product_variants.*',
+                        'variants.name as variant_name',
+                        'variant_options.value as option_value',
+                        'product_variants.sequence as sequence'
+                      );
+                }]);
+
+                $q->with(['multi_prices' => function ($multi_price_query) {
+                    $multi_price_query->leftJoin('contact_groups', 'contact_groups.id', '=', 'product_multi_prices.contact_group_id')
+                    ->leftJoin('branches', 'branches.id', '=', 'product_multi_prices.branch_id')
+                    ->leftJoin('units', 'units.id', '=', 'product_multi_prices.unit_id')
+                    ->leftJoin('product_skus', 'product_skus.id', '=', 'product_multi_prices.product_sku_id')
+                    ->select(
+                      'product_multi_prices.*',
+                      'branches.name as branch_name',
+                      'branches.code as branch_code',
+                      'contact_groups.name as contact_group_name',
+                      'units.name as unit_name',
+                      'product_skus.alias as product_sku_name',
+                      'product_skus.sku_code as product_sku_code',
+                    );
+                }]);
+
+                $q->with(['unit_conversions' => function ($unit_convertions_query) {
+                    $unit_convertions_query->leftJoin('units as form_unit', 'form_unit.id', '=', 'product_unit_conversions.from_unit_id')
+                    ->leftJoin('units as to_unit', 'to_unit.id', '=', 'product_unit_conversions.to_unit_id')
+                    ->select(
+                      'product_unit_conversions.*',
+                      'form_unit.name as from_unit_name',
+                      'to_unit.name as to_unit_name',
+                    );
+                }]);
+                $q->with('media');
+            }]);
+        }
+
         if ($params) {
             ModelHelper::dynamicFilterAnd($params, $request, $db, __CLASS__);
         }
@@ -250,7 +357,7 @@ class ContactGroups extends Model
 
     public static function createOrUpdate($params, $method, $request)
     {
-        DB::connection('pgsql_companies')->beginTransaction();
+        DB::beginTransaction();
 
         $filename = null;
 
@@ -263,7 +370,7 @@ class ContactGroups extends Model
 
             $update = self::where('id', $params['id'])->update($params);
 
-            DB::connection('pgsql_companies')->commit();
+            DB::commit();
             
             return response()->json([
                 'status' => 'success',
@@ -274,7 +381,7 @@ class ContactGroups extends Model
 
         $save = self::create($params);
 
-        DB::connection('pgsql_companies')->commit();
+        DB::commit();
         return response()->json([
             'status' => 'success',
             'message' => 'Succesfully Added Data',
@@ -303,117 +410,5 @@ class ContactGroups extends Model
             'message' => 'Succesfully Approved Data',
             'data' => null
         ]);
-    }
-
-    public static function generateRewardPoints($id, $params)
-    {
-    
-        $contact_group_id = $id;
-        $cart_items = isset($params['chart_items']) ? $params['chart_items'] : [];
-        $total_purchase = isset($params['total_purchase']) ? $params['total_purchase'] : 0;
-    
-        $rules = ContactGroupPointRules::
-            where('contact_group_id', $contact_group_id)
-            ->where('is_active', true)
-            ->where(function ($q) {
-                $q->whereNull('expired_date')
-                  ->orWhereDate('expired_date', '>=', today());
-            })
-            ->get()
-            ->groupBy('type');
-    
-        if ($rules->isEmpty()) {
-            return 0;
-        }
-    
-        $product_ids = collect($cart_items)->pluck('product_id')->unique()->all();
-    
-        $products = Products
-            ::select('id', 'product_category_id')
-            ->whereIn('id', $product_ids)
-            ->get()
-            ->keyBy('id');
-    
-        $total_points            = 0;
-        $adjusted_total_purchase = $total_purchase;
-    
-        $points_by_qty = function ($rule, int $cart_qty): int {
-            $min_qty = (int) $rule->qty;
-    
-            if ($min_qty <= 0 || $cart_qty < $min_qty) {
-                return 0;
-            }
-    
-            if ($rule->is_applicable_multiple) {
-                return (int) floor($cart_qty / $min_qty) * (int) $rule->total_reward_point;
-            }
-    
-            return (int) $rule->total_reward_point;
-        };
-    
-        foreach ($rules->get('product_category', collect()) as $rule) {
-            foreach ($cart_items as $item) {
-                $product = $products->get($item['product_id']);
-    
-                if (! $product) {
-                    continue;
-                }
-    
-                if ((int) $rule->product_category_id !== (int) $product->product_category_id) {
-                    continue;
-                }
-    
-                $total_points += $points_by_qty($rule, (int) $item['qty']);
-    
-                if ($rule->is_excluded_in_total_payment) {
-                    $adjusted_total_purchase -= (float) $item['price'];
-                }
-            }
-        }
-    
-        foreach ($rules->get('product', collect()) as $rule) {
-            foreach ($cart_items as $item) {
-                if (! $products->has($item['product_id'])) {
-                    continue;
-                }
-    
-                if ((int) $rule->product_category_id !== (int) $item['product_id']) {
-                    continue;
-                }
-    
-                if ((int) $rule->unit_id !== (int) $item['unit_id']) {
-                    continue;
-                }
-    
-                $total_points += $points_by_qty($rule, (int) $item['qty']);
-    
-                if ($rule->is_excluded_in_total_payment) {
-                    $adjusted_total_purchase -= (float) $item['price'];
-                }
-            }
-        }
-    
-        $total_purchase_rules = $rules->get('total_purchase', collect());
-    
-        if ($total_purchase_rules->isNotEmpty()) {
-            $effective = max(0.0, $adjusted_total_purchase);
-    
-            $matched = $total_purchase_rules
-                ->filter(fn ($r) => (float) $r->minimum_purchase <= $effective)
-                ->sortByDesc('minimum_purchase')
-                ->first();
-    
-            if ($matched) {
-                if ($matched->is_applicable_multiple) {
-                    $multiplier   = (int) floor($effective / (float) $matched->minimum_purchase);
-    
-                    $total_points += $multiplier * (int) $matched->total_reward_point;
-                } else {
-                    $total_points += (int) $matched->total_reward_point;
-                }
-            }
-        }
-    
-        return max(0, $total_points);
     }
 }

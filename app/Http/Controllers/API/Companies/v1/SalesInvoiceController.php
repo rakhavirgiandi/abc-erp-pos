@@ -131,11 +131,13 @@ class SalesInvoiceController extends Controller
             'point_histories',
         ])
         ->whereNull('number')
+        ->select('*')
+        ->addSelect(DB::raw('0 as print_template_id'))
         ->orderBy('id')
         ->where('status', '!=', 'draft')
         ->chunk(100, function ($invoices) {
             $payload = $invoices->toArray();
-
+            
             $url = config('services.admin_credentials.server_url') . '/api/v1/sync/sync_sales_invoices';
             $response = NetworkHelper::postWithToken($url, $payload);
 

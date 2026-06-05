@@ -279,6 +279,42 @@
         background-color: rgba(var(--bs-secondary-rgb), 0.15); 
     }
 
+    #input-product-qty + .input-group-append button.bootstrap-touchspin-up {
+        border-radius: var(--bs-btn-border-radius);
+    }
+
+    .input-group-prepend:has(+ #input-product-qty) button.bootstrap-touchspin-down {
+        border-radius: var(--bs-btn-border-radius);
+    }
+
+    #input-product-qty {
+        border: 0;
+        font-size: 28px;
+    }
+
+    input[type="number"].no-spinners::-webkit-outer-spin-button,
+    input[type="number"].no-spinners::-webkit-inner-spin-button {
+        -webkit-appearance: none;
+        margin: 0;
+    }
+
+    input[type="number"].no-spinners {
+        -moz-appearance: textfield;
+    }
+
+    #input-product-unit + .select2-container .select2-selection--single {
+        height: 45px;
+    }
+
+    #input-product-unit + .select2-container .select2-selection--single .select2-selection__rendered {
+        line-height: 43px;
+    }
+    #input-product-unit + .select2-container .select2-selection--single .select2-selection__arrow {
+        height: 45px;
+        width: 45px;
+        top: -2px !important;
+    }
+
 </style>
   <link href="{{ asset('assets/libs/datatables.net-bs5/css/dataTables.bootstrap5.min.css')}}" rel="stylesheet" type="text/css">
 
@@ -311,7 +347,7 @@
                             </button> --}}
                         </div>
                         <div class="gap-1 d-flex align-items-center justify-content-end ms-auto" id="product-display-style">
-                            <button type="button" class="btn btn-icon" id="change-product-display-style-action-grid" data-mode="grid"><i class="mdi mdi-view-grid-outline"></i></button>
+                            <button type="button" class="btn btn-icon" id="change-product-display-style-action-grid" data-mode="grid"><i class="mdi mdi-view-grid-outline" disabled></i></button>
                             <button type="button" class="btn btn-icon active" id="change-product-display-style-action-table" data-mode="table"><i class="mdi mdi-format-list-bulleted"></i></button>
                         </div>
                     </div>
@@ -323,7 +359,9 @@
                             <tr>
                                 <th>KODE</th>
                                 <th>NAMA</th>
+                                @if (!config('general_settings.is_use_product_catalog')) 
                                 <th>UNIT</th>
+                                @endif
                                 <th>KATEGORI</th>
                                 <th class="text-end">HARGA</th>
                             </tr>
@@ -451,7 +489,7 @@
 @endsection
 
 @section('modal')
-    @include('companies.v1.pos.cashier.modal.product')
+    @include('companies.v1.pos.cashier.modal.catalog')
     @include('companies.v1.pos.cashier.modal.product_note')
     @include('companies.v1.pos.cashier.modal.customer')
     @include('companies.v1.pos.cashier.modal.unit')
@@ -481,22 +519,43 @@
 <script>
     $(function() {
 
-        const IS_CAN_CHANGE_ITEM_PRICE = '{{ config('user_companies.is_supervisor') || config('user_companies.details')->can('pos.change-price') }}';
-        const IS_CAN_CHANGE_ITEM_DISCOUNT = '{{ config('user_companies.is_supervisor') || config('user_companies.details')->can('pos.change-item-discount') }}';
-        const IS_CAN_DELETE_ITEM = '{{ config('user_companies.is_supervisor') || config('user_companies.details')->can('pos.delete-item-transaction') }}';
-        const IS_CAN_UNIT_ITEM = '{{ config('user_companies.is_supervisor') || config('user_companies.details')->can('pos.change-unit') }}';
-        const IS_CAN_HOLD_TRANSACTION = '{{ config('user_companies.is_supervisor') || config('user_companies.details')->can('pos.hold-transaction') }}';
-        const IS_CAN_REPRINT_TRANSACTION = '{{ config('user_companies.is_supervisor') || config('user_companies.details')->can('pos.reprint') }}';
-        const IS_CAN_REDEEM_TRANSACTION = '{{ config('user_companies.is_supervisor') || config('user_companies.details')->can('pos.redeem-transaction') }}';
-        const IS_CAN_VOID_TRANSACTION = '{{ config('user_companies.is_supervisor') || config('user_companies.details')->can('pos.void-transaction') }}'        
-        const IS_CAN_STOCK_WAREHOUSE = '{{ config('user_companies.is_supervisor') || config('user_companies.details')->can('pos.stock-warehouse') }}'
-        const IS_CAN_EDIT_TRANSACTION = '{{ config('user_companies.is_supervisor') || config('user_companies.details')->can('pos.edit-transaction') }}'
-        const IS_CAN_ACCESS_SETTINGS = '{{ config('user_companies.is_supervisor') || config('user_companies.details')->can('pos.settings') }}'
+        const IS_CAN_CHANGE_ITEM_PRICE = '{{ config('user_companies.is_supervisor') || config('user_companies.details')->can('pos.change-price') || config('user_companies.details')->hasRole('SuperAdmin') }}';
+        const IS_CAN_CHANGE_ITEM_DISCOUNT = '{{ config('user_companies.is_supervisor') || config('user_companies.details')->can('pos.change-item-discount') || config('user_companies.details')->hasRole('SuperAdmin') }}';
+        const IS_CAN_DELETE_ITEM = '{{ config('user_companies.is_supervisor') || config('user_companies.details')->can('pos.delete-item-transaction') || config('user_companies.details')->hasRole('SuperAdmin') }}';
+        const IS_CAN_UNIT_ITEM = '{{ config('user_companies.is_supervisor') || config('user_companies.details')->can('pos.change-unit') || config('user_companies.details')->hasRole('SuperAdmin') }}';
+        const IS_CAN_HOLD_TRANSACTION = '{{ config('user_companies.is_supervisor') || config('user_companies.details')->can('pos.hold-transaction') || config('user_companies.details')->hasRole('SuperAdmin') }}';
+        const IS_CAN_REPRINT_TRANSACTION = '{{ config('user_companies.is_supervisor') || config('user_companies.details')->can('pos.reprint') || config('user_companies.details')->hasRole('SuperAdmin') }}';
+        const IS_CAN_REDEEM_TRANSACTION = '{{ config('user_companies.is_supervisor') || config('user_companies.details')->can('pos.redeem-transaction') || config('user_companies.details')->hasRole('SuperAdmin') }}';
+        const IS_CAN_VOID_TRANSACTION = '{{ config('user_companies.is_supervisor') || config('user_companies.details')->can('pos.void-transaction') || config('user_companies.details')->hasRole('SuperAdmin') }}'        
+        const IS_CAN_STOCK_WAREHOUSE = '{{ config('user_companies.is_supervisor') || config('user_companies.details')->can('pos.stock-warehouse') || config('user_companies.details')->hasRole('SuperAdmin') }}'
+        const IS_CAN_EDIT_TRANSACTION = '{{ config('user_companies.is_supervisor') || config('user_companies.details')->can('pos.edit-transaction') || config('user_companies.details')->hasRole('SuperAdmin') }}'
+        const IS_CAN_ACCESS_SETTINGS = '{{ config('user_companies.is_supervisor') || config('user_companies.details')->can('pos.settings') || config('user_companies.details')->hasRole('SuperAdmin') }}'
         
+        const IS_DISPLAY_CATALOG_MODE = '{{ config('general_settings.is_use_product_catalog') }}';
+
         $("#input-product-qty").TouchSpin({
-            buttondown_class: "btn btn-secondary",
-            buttonup_class: "btn btn-secondary"
-        });
+            buttondown_class: "btn-sm btn-icon btn btn-secondary",
+            buttonup_class: "btn-sm btn-icon btn btn-secondary",
+            buttondown_txt: '<i class="ti ti-minus"></i>',
+            buttonup_txt: '<i class="ti ti-plus"></i>',
+            step: 1,
+            decimals: true,
+            forcestepdivisibility: 'none',
+            decimalmark: '.'
+        }).closest(".bootstrap-touchspin").addClass("align-items-center");
+
+        function formatQty() {
+            let value = parseFloat($("#input-product-qty").val());
+
+            if (isNaN(value)) {
+                return;
+            }
+        
+            $("#input-product-qty").val(value);
+        }
+
+        $("#input-product-qty").on("touchspin.on.stopspin", formatQty);
+        $("#input-product-qty").on("blur change", formatQty);
 
         let totalPointApplied = 0;
         let totalDiscountPoint = 0;
@@ -510,6 +569,7 @@
         let selectedOrderProductId = null;
         let productOrderListMap = new Map();
         let productListMap = new Map();
+        let productCatalogListMap = new Map();
         
         let customerPage = 1;
         let loadCustomerIsLoading = false;
@@ -601,6 +661,10 @@
         let productStockDt;
 
         let authenticateSupervisorOnSuccess = null;
+
+        $('#input-product-unit').select2({
+            dropdownParent: $('#catalog-modal'),
+        })
 
         getUserSearch({
             element: $('#input-supervisor-auth-user_id'),
@@ -870,7 +934,6 @@
             getSelectedCustomerInfo(setDefaultCustomer);
             $('#order-list-container').html('');
             $('#input-total_payment').numericInput('setValue', 0);
-            $('#input-product-qty').val(1);
             $('#input-variant-product_id').val('');
             resetPointExchange();
             setTotalInfo();
@@ -946,18 +1009,11 @@
             activeInput.focus();
         });
 
-        const setVariantPopUpProductInfo = (productId, productSkuId = null) => {
+        const setVariantPopUpProductInfo = (productId) => {
             const data = productListMap.get(productId);
             if (data) {
-                if (productSkuId) {
-                    const product_sku = data.product_skus.find((item, idx) => item.id === productSkuId);
-                    $('#product-detail-code-info').html(product_sku.sku_code);
-                    
-                } else {
-                    $('#product-detail-name-info').html(data.sku);
-                    $('#product-detail-code-info').html(data.code);
-                    $('#product-detail-price-info').html(parseFloat(data.sale_price)?.toLocaleString('en'));
-                }
+                $('#product-detail-code-info').html(data.code);
+                $('#product-detail-price-info').html(parseFloat(data.sale_price)?.toLocaleString('en'));
             }
         }
 
@@ -1011,99 +1067,71 @@
                 }
             }
 
-            if (props?.isShowPopUp) {
-                const data = props.data ? props.data : productListMap.get(selectedProductId);
-                if (data) {
-                    $('#input-variant-product_id').val(data.id);
+            // if (props?.isShowPopUp) {
+                // console.log($('#catalog-modal'));
+                
+                // const data = props.data ? props.data : productListMap.get(selectedProductId);
+                // if (data) {
+                    // $('#input-variant-product_id').val(data.id);
     
-                    const grouped = Object.values(
-                        data.product_skus
-                            .flatMap(item => item.product_sku_variants).reduce((acc, spec) => {
-                              const key = spec.variant_id;
-                              if (!acc[key]) {
-                                acc[key] = {
-                                  variant_id: spec.variant_id,
-                                  variant_name: spec.variant_name,
-                                  data: []
-                                };
-                              }
-    
-                              
-                              const exists = acc[key].data.some(
-                                v => v.option_id === spec.option_id
-                              );
-                          
-                              if (!exists) {
-                                acc[key].data.push({
-                                  option_id: spec.option_id,
-                                  option_value: spec.option_value
-                                });
-                              }
-                          
-                              return acc;
-                            }, {})
-                    );
-    
-                    let chooseVariantsHtml = '';
+                    // let chooseVariantsHtml = '';
                     
-                    if (grouped?.length > 0) {
-                        grouped?.forEach((item, index) => {
-                            chooseVariantsHtml += '<div class="mb-3">'
-                            chooseVariantsHtml +=     '<h6>'+item?.variant_name+'</h6>'
-                            chooseVariantsHtml +=      '<div class="row" style="--bs-gutter-x: 12px; --bs-gutter-y: 12px;">'
-                                if (item?.data?.length > 0) {
-                                    item?.data.forEach((variantOpt, variantOptIdx) => {
-                                        chooseVariantsHtml += '<div class="col-4">'
-                                        chooseVariantsHtml +=     '<button type="button" class="btn btn-lg w-100 select-variant-toggle" data-product_id="'+data.id+'" data-variant_id="'+item?.variant_id+'" data-variant_name="'+item?.variant_name+'" data-variant_option_id="'+variantOpt?.option_id+'" data-variant_option_value="'+variantOpt?.option_value+'">'+variantOpt?.option_value+'</button>'
-                                        chooseVariantsHtml += '</div>'
-                                    })
-                                }
-                            chooseVariantsHtml +=      '</div>'
-                            chooseVariantsHtml +=  '</div>';
-                        });
-                    }
+                    // if (grouped?.length > 0) {
+                    //     grouped?.forEach((item, index) => {
+                    //         chooseVariantsHtml += '<div class="mb-3">'
+                    //         chooseVariantsHtml +=     '<h6>'+item?.variant_name+'</h6>'
+                    //         chooseVariantsHtml +=      '<div class="row" style="--bs-gutter-x: 12px; --bs-gutter-y: 12px;">'
+                    //             if (item?.data?.length > 0) {
+                    //                 item?.data.forEach((variantOpt, variantOptIdx) => {
+                    //                     chooseVariantsHtml += '<div class="col-4">'
+                    //                     chooseVariantsHtml +=     '<button type="button" class="btn btn-lg w-100 select-variant-toggle" data-product_id="'+data.id+'" data-variant_id="'+item?.variant_id+'" data-variant_name="'+item?.variant_name+'" data-variant_option_id="'+variantOpt?.option_id+'" data-variant_option_value="'+variantOpt?.option_value+'">'+variantOpt?.option_value+'</button>'
+                    //                     chooseVariantsHtml += '</div>'
+                    //                 })
+                    //             }
+                    //         chooseVariantsHtml +=      '</div>'
+                    //         chooseVariantsHtml +=  '</div>';
+                    //     });
+                    // }
                     
-                    $('#product-select-variants-container').html(chooseVariantsHtml);
+                    // $('#product-select-variants-container').html(chooseVariantsHtml);
                     
-                    $('#product-detail-code-info').html(data.code);
-                    $('#product-detail-name-info').html(data.name);
-                    $('#product-detail-price-info').html(parseFloat(data.sale_price)?.toLocaleString('en'));
+                    // $('#product-detail-code-info').html(data.code);
+                    // $('#product-detail-name-info').html(data.name);
+                    // $('#product-detail-price-info').html(parseFloat(data.sale_price)?.toLocaleString('en'));
     
-                    let thumbnail = `<div class="avatar avatar-label-primary" style="width: 6rem; height: 6rem; font-size: 35px;">
-                            <span class="mdi mdi-file-image-outline"></span>
-                        </div>`
+                    // let thumbnail = `<div class="avatar avatar-label-primary" style="width: 6rem; height: 6rem; font-size: 35px;">
+                    //         <span class="mdi mdi-file-image-outline"></span>
+                    //     </div>`
     
-                    if (data?.media?.length > 0) {
-                        const firstImage = data?.media?.[0];
-                        if (firstImage) {
-                            const imageURL = BASE_URL + firstImage.filepath+'/'+firstImage?.filename;
-                            thumbnail = `<img src="${imageURL}" alt="" class="rounded-2" style="object-fit: cover; object-position: center; width: 6rem; height: 6rem;">`
-                        }
-                    }
+                    // if (data?.media?.length > 0) {
+                    //     const firstImage = data?.media?.[0];
+                    //     if (firstImage) {
+                    //         const imageURL = BASE_URL + firstImage.filepath+'/'+firstImage?.filename;
+                    //         thumbnail = `<img src="${imageURL}" alt="" class="rounded-2" style="object-fit: cover; object-position: center; width: 6rem; height: 6rem;">`
+                    //     }
+                    // }
     
-                    $('#variant-product-thumbnail').html(thumbnail)
-                    $('#variant-submit-toggle').prop('disabled', true);
+                    // $('#variant-product-thumbnail').html(thumbnail)
+                    // $('#variant-submit-toggle').prop('disabled', true);
 
                     
-                    if ($('#input-product-unit').hasClass('select2-hidden-accessible')) {
-                        $('#input-product-unit').select2('destroy').val("").select2({
-                            dropdownParent: $('#product-modal')
-                        });
-                    }      
+                    // if ($('#input-product-unit').hasClass('select2-hidden-accessible')) {
+                    //     $('#input-product-unit').select2('destroy').val("").select2({
+                    //         dropdownParent: $('#catalog-modal')
+                    //     });
+                    // }      
                     
-                    getUnitSearch({
-                        element: '#input-product-unit',
-                        modal: $('#product-modal'),
-                        filter: data?.unit_conversions?.length > 0 ? '&product_id='+data?.id : '',
-                        selected_val_object: { id: data?.unit_id, text: data?.unit_name, dataset: {
-                            conversions: data?.unit?.conversions
-                        }}
-                    });
-                    
-                    $('#product-modal').modal('show');
-                }
-            }
+                    // getUnitSearch({
+                    //     element: '#input-product-unit',
+                    //     modal: $('#catalog-modal'),
+                    //     filter: data?.unit_conversions?.length > 0 ? '&product_id='+data?.id : '',
+                    //     selected_val_object: { id: data?.unit_id, text: data?.unit_name, dataset: {
+                    //         conversions: data?.unit?.conversions
+                    //     }}
+                    // });
 
+                // }
+            // }
         }
 
         const selectOrderItem = (productId = null) => {
@@ -1132,7 +1160,6 @@
         const getDuplicateOrderItemId = (id, params = {}) => {
 
             const {
-                productSkuId = null,
                 unitId = null
             } = params || {}
 
@@ -1140,42 +1167,15 @@
               
             for (const [key, item] of productOrderListMap) {
                 const productId = item?.detail?.id;
-                const itemSkuId = item?.product_sku?.id;
-                const fingerprint = productId + (itemSkuId ? '::'+itemSkuId : '')
-                
-                if (unitId) {
-                    if (item?.unit_id == unitId) {
-                        seen[fingerprint] = key;
-                    }
-                } else {
-                    seen[fingerprint] = key;
-                }
+                const itemUnitId = item?.unit_id;
+                const fingerprint = productId+'|'+itemUnitId;
+
+                seen[fingerprint] = key;
             }
 
-            const fingerprint = `${id}${productSkuId ? ('::'+productSkuId) : ''}`;
+            const fingerprint = `${id}|${unitId}`;
             
             return seen[fingerprint] ? seen[fingerprint] : null;
-        }
-        
-        const getProductSkuByVariants = (productId, selectedVariants) => {
-            const productOrderList = productListMap.get(productId);
-            if (productOrderList) {
-                return productOrderList?.product_skus.find(sku => {
-                    const skuVariants = sku.product_sku_variants;
-                    if (skuVariants.length !== selectedVariants.length) {
-                        return false;
-                    }
-                
-                    return selectedVariants.every(sel =>
-                        skuVariants.some(skuVar =>
-                            skuVar.variant_id === sel.variant_id &&
-                            skuVar.option_id === sel.option_id
-                        )
-                    );
-                }) || null;
-            }
-            
-            return null
         }
 
         const putProductToOrderList = (productId, params = {}) => {
@@ -1198,7 +1198,6 @@
             
             if (params?.is_new_item) {
                 const duplicateOrderItemId = getDuplicateOrderItemId(id, {
-                    productSkuId: params.product_sku ? params.product_sku.id : null,
                     unitId: params.unit_id ? params.unit_id : null
                 });
                 
@@ -1226,8 +1225,8 @@
 
                     productOrderListMap.set(id, {
                         price: Number.isNaN(parseFloat(getProductList.sale_price)) ? 0 : parseFloat(getProductList.sale_price),
-                        unit_id: getProductList?.unit_id,
-                        unit_name: getProductList?.unit_name,
+                        unit_id: params?.unit_id ? params.unit_id : getProductList?.unit_id,
+                        unit_name: params?.unit_name && params?.unit_id ? params?.unit_name : getProductList?.unit_name,
                         tax: Number.isNaN(parseFloat(getProductList.sale_tax)) ? 0 : parseFloat(getProductList.sale_tax),
                         tax_id: getProductList?.sale_tax_id,
                         tax_code: getProductList?.sale_tax_code,
@@ -1458,110 +1457,6 @@
             setTotalInfo();
         }
 
-        const getProductSkuVariantForm = () => {
-            let selectedVariants = [];
-            $('.select-variant-toggle.active').each((idx, e) => {
-                const variantId = $(e).data('variant_id');
-                const variantOptionId = $(e).data('variant_option_id');
-
-                selectedVariants.push({ variant_id: variantId, option_id: variantOptionId });
-            });
-
-            const productVal = $('#input-variant-product_id').val() ? Number($('#input-variant-product_id').val()) : null;
-
-            return getProductSkuByVariants(productVal, selectedVariants);
-        }
-
-        const validateSubmitVariantForm = (productId) => {
-            if (getProductSkuVariantForm() && productListMap.get(productId)) {
-                $('#variant-submit-toggle').prop('disabled', false);
-            } else {
-                $('#variant-submit-toggle').prop('disabled', true);
-            }
-        }
-
-        $(document).on('click', '.select-variant-toggle', function () {
-            const $this = $(this);
-            const dataVariantId = $this.data('variant_id');
-            const dataProductId = $this.data('product_id');
-
-            if ($this.hasClass('active')) {
-                $this.removeClass('active');
-                validateSubmitVariantForm(dataProductId);
-                return
-            }
-            
-            $('.select-variant-toggle[data-variant_id="'+dataVariantId+'"]').removeClass('active');
-            
-            if (!$this.hasClass('active')) {
-                $this.addClass('active')
-            }
-
-            setVariantPopUpProductInfo(dataProductId, getProductSkuVariantForm() ? getProductSkuVariantForm()?.id : null);
-            validateSubmitVariantForm(dataProductId);
-        });
-
-        $(document).on('click', '#variant-submit-toggle', function () {
-            const productSku = getProductSkuVariantForm();
-            if (productSku) {
-                const selectedVariantEl = $('.select-variant-toggle.active');
-                let selectedVariants = [];
-                let note = [];
-                selectedVariantEl.each((i, e) => {
-                    const $e = $(e);
-                    const dataVariantId = $e.data('variant_id');
-                    const dataVariantName = $e.data('variant_name');
-                    const dataVariantOptionId = $e.data('variant_option_id');
-                    const dataVariantOptionValue = $e.data('variant_option_value');
-                    selectedVariants.push({
-                        variant_id: dataVariantId,
-                        variant_name: dataVariantName,
-                        variant_option_id: dataVariantOptionId,
-                        variant_option_value: dataVariantOptionValue,
-                    })
-    
-                    note.push(`${dataVariantName} ${dataVariantOptionValue}`)
-                });
-    
-                const id = $('#input-variant-product_id').val();
-                const qty = $('#input-product-qty').val();
-                const selectedUnit = $('#input-product-unit').select2('data')?.[0];
-
-                let unitParams = {};
-
-                if (selectedUnit) {
-                    unitParams.unit_id = selectedUnit.id;
-                    unitParams.unit_name = selectedUnit.name;
-                    unitParams.unit_convertion = {};
-                    unitParams.unit_convertion.id = selectedUnit.id;
-                    unitParams.unit_convertion.name = selectedUnit.name;
-                    unitParams.unit_convertion.conversions = selectedUnit.conversions;
-                }
-
-                putProductToOrderList(Number(id), {
-                    selected_variants: selectedVariants?.length > 0 ? selectedVariants : null,
-                    qty: qty,
-                    note: note.join(', '),
-                    addQty: true,
-                    product_sku: productSku,
-                    is_new_item: true,
-                    ...unitParams,
-                    callback: (data) => {
-                        setMultiplePrice(data._id);
-                    }
-                })
-    
-                $('#product-modal').modal('hide');
-    
-                focusToSelectedOrderItem()
-            }
-        });
-
-        $(document).on('hidden.bs.modal', '#product-modal', function () {
-            $('#input-variant-product_id').val('');
-            $('#input-product-qty').val(1)
-        })
-
         $(document).on('click', '.delete-item-toggle', function(e){
             e.preventDefault();
             const $this = $(this);
@@ -1637,16 +1532,26 @@
 
             const inputSearchProduct = props?.search ? props?.search : $('#input-search-product').val();
             const selectedCategoryId = $('#select-category-buttons .button-item.active').data('id');
-
+        
             let req = {
                 'order[id]': 'desc',
                 is_active: 1,
                 page: productPage,
                 'with[0]': 'unit.conversions',
                 'with[1]': 'media',
-                'with[2]': 'product_skus.product_sku_variants',
+                'with[2]': 'product_variants',
                 'with[3]': 'multi_prices',
                 ...props?.params
+            }
+
+            if (IS_DISPLAY_CATALOG_MODE) {
+                req = {
+                    'order[id]': 'desc',
+                    is_active: 1,
+                    page: productPage,
+                    with_product_details: true,
+                    ...props?.params
+                }
             }
 
             if (selectedCategoryId) {
@@ -1662,8 +1567,14 @@
 
             const reqParams = $.param(req);
 
+            let url = BASE_URL + '/api/v1/products?'+reqParams;
+
+            if (IS_DISPLAY_CATALOG_MODE) {
+                url = BASE_URL + '/api/v1/product_catalogs?'+reqParams;
+            }
+
             $.ajax({
-                url: BASE_URL + '/api/v1/products?'+reqParams,
+                url: url,
                 type: "GET",
                 dataType: "json",
                 headers: {
@@ -1689,22 +1600,38 @@
                                 firstId = item?.id
                             }
 
-                            let productVariants = [];
+                            let name = item?.name;
 
-                            if (item?.product_variants?.length > 0) {
-                                $(item?.product_variants).each((i, productVariant) => {
-                                    productVariants.push(productVariant?.variant_options?.value)
-                                })
+                            let tableRowStart = '';
+                            let unitTableData = '';
+                            let priceTableData = '<td class="text-end fw-bold text-body">0</td>';
+                            
+                            if (IS_DISPLAY_CATALOG_MODE) {
+                                tableRowStart = `<tr data-row="${productRowsCount}" data-id="${item?.id}">`;
+                                if (item.products.length > 0) {
+                                    const prices = item.products.map(product => product.sale_price ? product.sale_price : 0);
+    
+                                    const minPrice = Math.min(...prices);
+                                    const maxPrice = Math.max(...prices);
+    
+                                    const price = minPrice === maxPrice
+                                                ? `${minPrice.toLocaleString('en')}`
+                                                : `${minPrice.toLocaleString('en')} - ${maxPrice.toLocaleString('en')}`;
+
+                                    priceTableData = '<td class="text-end fw-bold text-body">'+price+'</td>';
+                                }
+                            } else {
+                                tableRowStart = `<tr data-row="${productRowsCount}" data-id="${item?.id}" data-code="${item?.code}" data-name="${item?.name}" data-unit_id="${item?.unit_id}" data-unit_name="${item?.unit_name}" data-product_category_id="${item?.product_category_id}" data-product_category_name="${item?.product_category_name}" data-sale_price="${item?.sale_price}" >`;
+                                unitTableData = `<td>${item?.unit_name}</td>`;
+                                priceTableData = `<td class="text-end fw-bold text-body">${isNaN(parseFloat(item?.sale_price)) ? 0 : parseFloat(item?.sale_price)?.toLocaleString('en')}</td>`
                             }
 
-                            let name = item?.name
-
-                            rows += `<tr data-row="${productRowsCount}" data-id="${item?.id}" data-code="${item?.code}" data-name="${item?.name}" data-unit_id="${item?.unit_id}" data-unit_name="${item?.unit_name}" data-product_category_id="${item?.product_category_id}" data-product_category_name="${item?.product_category_name}" data-sale_price="${item?.sale_price}" >
+                            rows += `${tableRowStart}
                                 <td>${item?.code}</td>
                                 <td><span class="fw-bold text-body">${name}</span></td>
-                                <td>${item?.unit_name}</td>
+                                ${unitTableData}
                                 <td>${item?.category_name ? `<span class="badge badge-label-secondary fw-bold text-gray">${item?.category_name}</span>` : 'Tidak Ada'}</td>
-                                <td class="text-end fw-bold text-body">${isNaN(parseFloat(item?.sale_price)) ? 0 : parseFloat(item?.sale_price)?.toLocaleString('en')}</td>
+                                ${priceTableData}
                                 </tr>`;
 
                             let thumbnail = `<div class="avatar avatar-label-primary" style="height: 60%; width: 100%; font-size: 35px;">
@@ -1726,7 +1653,18 @@
                                     </div>
                                 </div>`;
 
-                            productListMap.set(item?.id, item);
+                            if (IS_DISPLAY_CATALOG_MODE) {
+                                productCatalogListMap.set(item.id, item);
+
+                                item?.products.forEach((productDetail, productDetailIdx) => {
+                                    if (!productListMap.has(productDetail.id)) {
+                                        productListMap.set(productDetail.id, productDetail);
+                                    }
+                                });
+
+                            } else {
+                                productListMap.set(item?.id, item);
+                            }
                             productRowsCount++
                         });
                             
@@ -1770,6 +1708,218 @@
                 }
             });
         }
+
+        const showCatalogPopUp = () => {
+            const dataId = $('#product-cashier-table tr[data-selected=true]').attr('data-id');
+            if (!dataId) return;
+
+            const data = productCatalogListMap.get(Number(dataId));
+            if (!data && data?.products.length == 0) return;
+
+            const products = data.products;
+
+            if (products.length < 1) return;
+
+            $('#product-catalog-info-code').html(data.code);
+            $('#product-catalog-info-name').html(data.name);
+            
+            const prices = products.map(product => product.sale_price ? product.sale_price : 0);
+
+            const minPrice = Math.min(...prices);
+            const maxPrice = Math.max(...prices);
+
+            const price = minPrice === maxPrice
+                ? `${minPrice.toLocaleString('en')}`
+                : `${minPrice.toLocaleString('en')} - ${maxPrice.toLocaleString('en')}`;
+
+            $('#product-catalog-info-price').html(price);
+
+            const grouped = {};
+
+            products.forEach(product => {
+                product.product_variants.forEach(productVariant => {
+                
+                    if (!grouped[productVariant.variant_id]) {
+                        grouped[productVariant.variant_id] = {
+                            variant_id: productVariant.variant_id,
+                            variant_name: productVariant.variant_name,
+                            variant_options: []
+                        };
+                    }
+                
+                    const exists = grouped[productVariant.variant_id].variant_options.some(race =>
+                        race.variant_option_id === productVariant.variant_option_id
+                    );
+                
+                    if (!exists) {
+                        grouped[productVariant.variant_id].variant_options.push({
+                            variant_option_id: productVariant.variant_option_id,
+                            option_value: productVariant.option_value
+                        });
+                    }
+                });
+            });
+
+            const productVariants = Object.values(grouped);
+            let productVariantsHTML = '';
+
+            productVariants.forEach((item, idx) => {
+                if (item?.variant_options?.length > 0) {
+                    productVariantsHTML += '<div class="mb-3">';
+                    productVariantsHTML += '<h6>'+item.variant_name+'</h6>';
+                    productVariantsHTML += '<div class="row row-cols-1 row-cols-sm-2 row-cols-lg-3" style="--bs-gutter-x: 6px">';
+                    item?.variant_options.forEach((opt, optIdx) => {
+                        productVariantsHTML += '<div class="col">'
+                        productVariantsHTML += '    <button type="button" class="btn btn-lg w-100 select-variant-toggle" data-variant_id="'+item.variant_id+'" data-variant_option_id="'+opt.variant_option_id+'">'+opt.option_value+'</button>'
+                        productVariantsHTML += '</div>';
+                    });
+                    productVariantsHTML += '</div>';
+                    productVariantsHTML += '</div>';
+                }
+            });
+            $('#input-product-qty').val(parseFloat(1)).trigger('change');
+            $('#catalog-select-products-container').html(productVariantsHTML);
+            $('#catalog-modal').modal('show');
+        }
+
+        const getSelectedProductByVariant = () => {
+
+            const productCatalogId = $('#product-cashier-table tr[data-selected=true]').attr('data-id');
+            if (!productCatalogId) return null;
+
+            const data = productCatalogListMap.get(Number(productCatalogId));
+            if (!data && data?.products.length == 0) return null;
+
+            const selectedVariantToggle = $('.select-variant-toggle.active');
+
+            let params = [];
+            selectedVariantToggle.each((idx, e) => {
+                const variantId = $(e).attr('data-variant_id');
+                const variantOptionId = $(e).attr('data-variant_option_id');
+                params.push({
+                    variant_id: variantId ? Number(variantId) : null,
+                    variant_option_id: variantOptionId ? Number(variantOptionId) : null 
+                })
+            });
+
+            const result = data.products.filter(product => {
+            
+                if (product.product_variants.length !== params.length) {
+                    return false;
+                }
+            
+                return params.every(p => {
+                    return product.product_variants.some(variant => {
+                        return variant.variant_id === p.variant_id &&
+                               variant.variant_option_id === p.variant_option_id;
+                    });
+                });
+            
+            });
+            
+            return result?.length > 0 ? result[0] : null;
+        }
+
+        const validateSelectProductVariant = () => {
+            const selectedProduct = getSelectedProductByVariant();
+            const qty = Number($('#input-product-qty').val() ? $('#input-product-qty').val() : 0);
+            const unit = $('#input-product-unit').val();
+
+            if (selectedProduct && qty > 0 && unit) {
+                $('#variant-submit-toggle').prop('disabled', false);
+            } else {
+                $('#variant-submit-toggle').prop('disabled', true);
+            }
+        }
+
+        $(document).on('click', '.select-variant-toggle', function () {
+            const $this = $(this);
+            const variantId = $this.attr('data-variant_id');
+
+            const isUnselect = $this.hasClass('active');
+            
+            $('.select-variant-toggle[data-variant_id="'+variantId+'"]').removeClass('active');
+            if (!isUnselect) {
+                $this.addClass('active');
+            }
+            
+            const selectedProduct = getSelectedProductByVariant();
+
+            $('#input-product-unit').html('<option value="">Pilih Satuan</option>')
+            
+            if ($('#input-product-unit').hasClass('select2-hidden-accessible')) {
+                $('#input-product-unit').select2('destroy').val("").select2({
+                    dropdownParent: $('#catalog-modal')
+                });
+            } else {
+                $('#input-product-unit').val("").trigger('change')
+            }
+
+            if (selectedProduct) {
+
+                $('#product-catalog-info-code').html(selectedProduct.code);
+                $('#product-catalog-info-name').html(selectedProduct.name);
+                $('#product-catalog-info-price').html(Number(selectedProduct.sale_price)?.toLocaleString('en'));
+                
+                getUnitSearch({
+                    element: '#input-product-unit',
+                    modal: $('#catalog-modal'),
+                    filter: '&product_id='+selectedProduct?.id,
+                    selected_val_object: { id: selectedProduct?.unit_id, text: selectedProduct?.unit_name }
+                });
+            }
+
+            validateSelectProductVariant()
+        });
+
+        $(document).on('hidden.bs.modal', '#catalog-modal', function () {
+            $('#product-catalog-info-code').html("N/A");
+            $('#product-catalog-info-name').html("N/A");
+            $('#product-catalog-info-price').html(0);
+
+            $('#input-product-unit').html('<option value="">Pilih Satuan</option>')
+            
+            if ($('#input-product-unit').hasClass('select2-hidden-accessible')) {
+                $('#input-product-unit').select2('destroy').val("").select2({
+                    dropdownParent: $('#catalog-modal')
+                });
+            } else {
+                $('#input-product-unit').val("").trigger('change')
+            }
+
+            $('#input-product-qty').val(parseFloat(1)).trigger('change');
+            $('#catalog-select-products-container').html("");
+            validateSelectProductVariant()
+        });
+
+        $(document).on('input change', '#input-product-qty', function () {
+            validateSelectProductVariant()
+        });
+
+        $(document).on('change.select2', '#input-product-unit', function () {
+            validateSelectProductVariant()
+        });
+
+        $(document).on('click', '#variant-submit-toggle', function () {
+            const selectedProduct = getSelectedProductByVariant();
+            const qty = Number($('#input-product-qty').val() ? $('#input-product-qty').val() : 0);
+            const unit_id = Number($('#input-product-unit').val());
+            const unit_name = $('#input-product-unit option:selected').text();
+
+            putProductToOrderList(selectedProduct.id, {
+                qty: qty,
+                unit_id: unit_id,
+                unit_name: unit_name,
+                is_new_item: true,
+                unit_convertion: unit_id != selectedProduct.unit_id ? { id: unit_id, name: unit_name } : null,
+                callback: (data) => {
+                    setMultiplePrice(data._id);
+                    resetPointExchange(true)
+                }
+            });
+
+            $('#catalog-modal').modal('hide')
+        });
 
         let productInputBuffer = '';
         let productInputLastTime = 0;
@@ -1929,14 +2079,12 @@
             const dataId = $this.data('id') ?? null;
 
             if ($this.attr('data-selected') == 'true') {
-                const getProductList = productListMap.get(dataId);
-                if (getProductList) {
-                    if (getProductList?.product_skus?.length > 0) {
-                        selectProduct(dataId, {
-                            isShowPopUp: true
-                        });
-                    } else {
-                        enterShortcut()
+                if (IS_DISPLAY_CATALOG_MODE) {
+                    enterShortcut();
+                } else {
+                    const getProductList = productListMap.get(dataId);
+                    if (getProductList) {
+                        enterShortcut();
                     }
                 }
                 return
@@ -2246,7 +2394,7 @@
                 { modal: '#stock-modal', submit: null },
                 { modal: '#unit-modal', submit: '#submit-unit-toggle' },
                 { modal: '#product-note-modal', submit: '#submit-product-note-toggle' },
-                { modal: '#product-modal', submit: '#variant-submit-toggle' },
+                { modal: '#catalog-modal', submit: '#variant-submit-toggle' },
                 { modal: '#redeem-modal', submit: '#submit-redeem-toggle' },
                 { modal: '#payment-modal', submit: '#submit-payment-toggle' },
                 { modal: '#taxes-modal', submit: '#submit-taxes-toggle' },
@@ -2263,36 +2411,38 @@
                 }
             }
 
-            const getProductList = productListMap.get(selectedProductId);
-            if (getProductList) {
-                if (getProductList?.product_skus?.length > 0) {
-                    selectProduct(selectedProductId, {
-                        isShowPopUp: true
+            if (IS_DISPLAY_CATALOG_MODE) {
+                showCatalogPopUp();
+            } else {
+                const getProductList = productListMap.get(selectedProductId);
+    
+                if (getProductList) {
+                    
+                    const getProductOrderList = productOrderListMap.get(selectedProductId);
+    
+                    let note = getProductList.product_variants
+                        ?.map(item => item.option_value)
+                        .join(', ') || '';
+                    
+                    putProductToOrderList(selectedProductId, {
+                        // qty: getProductOrderList ? getProductOrderList?.qty + 1 : 1,
+                        is_new_item: true,
+                        unit_id: getProductList.unit_id,
+                        unit_name: getProductList.unit_name,
+                        note: note,
+                        callback: (data) => {
+                            setMultiplePrice(data._id);
+                            resetPointExchange(true)
+                        }
                     });
                     
-                    return
-                }
-                
-                const getProductOrderList = productOrderListMap.get(selectedProductId);
-                
-                putProductToOrderList(selectedProductId, {
-                    // qty: getProductOrderList ? getProductOrderList?.qty + 1 : 1,
-                    is_new_item: true,
-                    unit_id: getProductList.unit_id,
-                    unit_name: getProductList.unit_name,
-                    callback: (data) => {
-                        setMultiplePrice(data._id);
-                        resetPointExchange(true)
-                    }
-                });
-
-                // const sound = new Audio(BASE_URL+'/assets/audio/beep.mp3');
-                // sound.play();
     
-                focusToSelectedOrderItem()
+                    // const sound = new Audio(BASE_URL+'/assets/audio/beep.mp3');
+                    // sound.play();
+        
+                    focusToSelectedOrderItem()
+                }
             }
-
-
         }
 
         const deleteShortcut = (e) => {
@@ -2313,7 +2463,7 @@
                 return
             }
 
-            const modals = ['#customer-modal', '#unit-modal', '#product-note-modal', '#product-modal', '#redeem-modal', '#taxes-modal', '#histories-modal'];
+            const modals = ['#customer-modal', '#unit-modal', '#product-note-modal', '#catalog-modal', '#redeem-modal', '#taxes-modal', '#histories-modal'];
 
             for (const modal of modals) {
                 if ($(modal).hasClass('show')) {
@@ -2381,7 +2531,7 @@
 
             let req = {
                 'with[0]': 'media',
-                'with[1]': 'product_skus.product_sku_variants',
+                'with[1]': 'product_variants',
                 'with[2]': 'multi_prices',
                 code: productCode,
                 page: 1
@@ -2403,30 +2553,23 @@
                     let data = res.data?.[0];
                     
                     if (data) {
-                        if (data?.product_skus?.length > 0) {
-                            selectProduct(null, {
-                                data: data,
-                                isShowPopUp: true
-                            });
+                        const getDuplicateItemId = getDuplicateOrderItemId(data?.id);
+                        if (getDuplicateItemId) {
+                            putProductToOrderList(data.id, {
+                                is_new_item: true,
+                            })
                         } else {
-                            const getDuplicateItemId = getDuplicateOrderItemId(data?.id);
-                            if (getDuplicateItemId) {
-                                putProductToOrderList(data.id, {
-                                    is_new_item: true,
-                                })
-                            } else {
-                                putProductToOrderList(generateOrderId(), {
-                                    price: Number.isNaN(parseFloat(data.sale_price)) ? 0 : parseFloat(data.sale_price),
-                                    unit_id: data?.unit_id,
-                                    unit_name: data?.unit_name,
-                                    tax: Number.isNaN(parseFloat(data.sale_tax)) ? 0 : parseFloat(data.sale_tax),
-                                    tax_id: data?.sale_tax_id,
-                                    tax_code: data?.sale_tax_code,
-                                    qty: 1,
-                                    detail: data,
-                                    is_other_item: 1
-                                });
-                            }
+                            putProductToOrderList(generateOrderId(), {
+                                price: Number.isNaN(parseFloat(data.sale_price)) ? 0 : parseFloat(data.sale_price),
+                                unit_id: data?.unit_id,
+                                unit_name: data?.unit_name,
+                                tax: Number.isNaN(parseFloat(data.sale_tax)) ? 0 : parseFloat(data.sale_tax),
+                                tax_id: data?.sale_tax_id,
+                                tax_code: data?.sale_tax_code,
+                                qty: 1,
+                                detail: data,
+                                is_other_item: 1
+                            });
                         }
                     }
                 },
@@ -3196,6 +3339,9 @@
 
         const getMatchedMultiPrice = (id) => {
             const productOrderList = productOrderListMap.get(id);
+
+            // console.log(selectedCustomer?.contact_group_id, '{{ config('user_companies.branch_id') ? config('user_companies.branch_id') : config('general_settings.default_branch')  }}', productOrderList.qty, productOrderList.unit_id);
+            
             if (productOrderList) {
 
                 const candidates = productOrderList.detail?.multi_prices?.filter(d =>
@@ -3207,10 +3353,6 @@
                         d.branch_id === null ||
                         d.branch_id == '{{ config('user_companies.branch_id') ? config('user_companies.branch_id') : config('general_settings.default_branch')  }}'
                     ) &&
-                    (
-                        !d.product_sku_id ||
-                        productOrderList.product_sku?.id == d.product_sku_id
-                    ) &&
                     productOrderList.qty >= parseFloat(d.from_qty) &&
                     productOrderList.qty <= parseFloat(d.to_qty) &&
                     productOrderList.unit_id == d.unit_id
@@ -3219,16 +3361,12 @@
                 const matchedPrice = candidates.sort((a, b) => {
                     const score = (d) => {
                         let s = 0;
-                    
-                        if (parseInt(d.product_sku_id) > 0) {
-                            s += 1;
-                        }
 
-                        if (d.branch_id !== null && d.branch_id == '{{ config('user_companies.branch_id') ? config('user_companies.branch_id') : config('general_settings.default_branch') }}') {
+                        if (d.branch_id != null && d.branch_id == '{{ config('user_companies.branch_id') ? config('user_companies.branch_id') : config('general_settings.default_branch') }}') {
                             s += 1;
                         }
                     
-                        if (d.contact_group_id !== null && d.contact_group_id === selectedCustomer?.contact_group_id) {
+                        if (d.contact_group_id != null && d.contact_group_id == selectedCustomer?.contact_group_id) {
                             s += 1;
                         }
                     
@@ -3256,16 +3394,17 @@
                             price: parseFloat(matchedPrice.unit_price),
                         })
                     } else {
-                        let unitConvertion = productOrderList?.detail?.unit_conversions?.find((item) => item?.to_unit_id === productOrderList?.unit_convertion?.id && item?.from_unit_id === productOrderList?.detail?.unit_id);
+                        let unitConvertion = productOrderList?.detail?.unit_conversions?.find((item) => item?.to_unit_id == productOrderList?.unit_convertion?.id && item?.from_unit_id == productOrderList?.detail?.unit_id);
                         let convertionValue = 1;
+                        
                         let isProductUnitConvert = 0;
                         if (unitConvertion) {
-                            convertionValue = unitConvertion.from_value > 0 ? unitConvertion.from_value : 1;
+                            convertionValue = parseFloat(unitConvertion.from_value) > 0 ? parseFloat(unitConvertion.from_value) : 1;
                             isProductUnitConvert = 1;
                         } else {
-                            unitConvertion = productOrderList?.unit_convertion?.conversions?.find((item) => item?.to_unit_id === productOrderList?.detail?.unit_id);
+                            unitConvertion = productOrderList?.unit_convertion?.conversions?.find((item) => item?.to_unit_id == productOrderList?.detail?.unit_id);
                             if (unitConvertion) {
-                                convertionValue = unitConvertion.to_value > 0 ? unitConvertion.to_value : 1;
+                                convertionValue = parseFloat(unitConvertion.to_value) > 0 ? parseFloat(unitConvertion.to_value) : 1;
                             }
                         }
 
@@ -4481,12 +4620,13 @@
                 if (selectedCustomer?.contact_group_id) {
                     $.ajax({
                         url: BASE_URL + '/api/v1/contact_groups/'+selectedCustomer?.contact_group_id+'/generate_reward_points',
-                        type: "GET",
+                        type: "POST",
                         dataType: "json",
                         data: params,
                         headers: {
                             'Authorization': TOKEN,
-                            'company-id': COMPANY_ID
+                            'company-id': COMPANY_ID,
+                            'Accept': 'application/json'
                         },
                         beforeSend: function () {
                             $('#bonus-point-label').html(0)
@@ -4542,7 +4682,6 @@
                     price: item?.price,
                     qty: item?.qty,
                     unit_id: item?.unit_id ? item?.unit_id : item?.detail?.unit_id,
-                    product_sku_id: item?.product_sku ? item?.product_sku?.id : '',
                     unit_name: item?.unit_name ? item?.unit_name : item?.detail?.unit_name,
                     discount_value: item?.discount_value ? item?.discount_value : 0,
                     discount_type: item?.discount_type ? item?.discount_type : '',
@@ -4554,11 +4693,12 @@
                     tax_percentage: item?.tax ? item?.tax : 0,
                     base_unit_price: item?.base_unit_price ? item?.base_unit_price : (matchedMultiPrice ? parseFloat(matchedMultiPrice.unit_price) : parseFloat(item?.detail?.sale_price)),
                     sales_invoice_detail_id: item?.sales_invoice_detail_id ? item?.sales_invoice_detail_id : '',
+                    product_catalog_id: item?.detail?.product_catalog_id ? item?.detail.product_catalog_id : '',
                 })
             }
 
             chartItems?.forEach((item, idx) => {
-                
+
                 formData.set('sales_invoice_details['+idx+'][product_id]', item?.product_id);
                 formData.set('sales_invoice_details['+idx+'][product_code]', item?.product_code);
                 formData.set('sales_invoice_details['+idx+'][product_name]', item?.product_name);
@@ -4569,11 +4709,11 @@
                 formData.set('sales_invoice_details['+idx+'][tax_id]', item?.tax_id ? item?.tax_id : '');
                 formData.set('sales_invoice_details['+idx+'][tax_percentage]', item?.tax_percentage ? item?.tax_percentage : 0);
                 formData.set('sales_invoice_details['+idx+'][tax_amount]', item?.tax_amount ? item?.tax_amount : 0);
-                formData.set('sales_invoice_details['+idx+'][product_sku_id]', item?.product_sku_id ? item?.product_sku_id : '');
                 formData.set('sales_invoice_details['+idx+'][base_unit_id]', item?.base_unit_id ? item?.base_unit_id : '');
                 formData.set('sales_invoice_details['+idx+'][base_unit_price]', item?.base_unit_price ? item?.base_unit_price : 0);
                 formData.set('sales_invoice_details['+idx+'][base_qty]', item?.base_qty ? item?.base_qty : '');
                 formData.set('sales_invoice_details['+idx+'][is_product_unit_convert]', item?.is_product_unit_convert ? item?.is_product_unit_convert : 0);
+                formData.set('sales_invoice_details['+idx+'][product_catalog_id]', item?.product_catalog_id ? item?.product_catalog_id : 0);
                 
                 if (item?.discount_value) {
                     formData.set('sales_invoice_details['+idx+'][discount_amount]', item?.discount_value);
@@ -4647,7 +4787,9 @@
                         if ('{{ config('services.is_onpremise') }}') {
                             salesInvoiceSync()
                         }
-                        clear();
+                        clear({
+                            setDefaultCustomer: true
+                        });
                         setCustomerDefaultValue()
                         historiesModalHasBeenOpen = false
                         generateRefNumber();
@@ -4981,11 +5123,6 @@
                         if (res?.sales_invoice_details) {
                             res.sales_invoice_details.forEach((item, idx) => {
                                 if (item?.product_detail) {
-                                    if (item?.product_sku_id) {
-                                        const matchedProductSku = item?.product_detail?.product_skus?.find((productSku) => productSku.id == item?.product_sku_id);
-                                        if (!matchedProductSku) return
-                                    }
-
                                     putProductToOrderList(generateOrderId(), {
                                         sales_invoice_detail_id: item?.id,
                                         qty: parseFloat(item?.qty),
@@ -5000,8 +5137,7 @@
                                         discount_type: item?.discount_type,
                                         discount_value: parseFloat(item?.discount_value),
                                         is_other_item: true,
-                                        unit_convertion: item.unit_detail,
-                                        product_sku: item.product_sku_detail
+                                        unit_convertion: item.unit_detail
                                     });
 
                                 }
@@ -5174,30 +5310,6 @@
                         method: 'GET',
                         contentType: 'application/json',
                         headers: {
-                            'Authorization': TOKEN,
-                            'company-id': COMPANY_ID
-                        },
-                    });
-        }
-
-        const productSkusSync = () => {
-            return  $.ajax({
-                        url: BASE_URL+'/api/v1/sync/product_skus',
-                        method: 'GET',
-                        contentType: 'application/json',
-                        headers: {
-                            'Authorization': TOKEN,
-                            'company-id': COMPANY_ID
-                        },
-                    });
-        }
-
-        const productSkuVariantsSync = () => {
-            return  $.ajax({
-                        url: BASE_URL+'/api/v1/sync/product_sku_variants',
-                        method: 'GET',
-                        contentType: 'application/json',
-                        headers: { 
                             'Authorization': TOKEN,
                             'company-id': COMPANY_ID
                         },
@@ -5483,6 +5595,15 @@
                     });
         }
 
+        const productCatalogsSync = () => {
+            return  $.ajax({
+                        url: BASE_URL+'/api/v1/sync/product_catalogs',
+                        method: 'GET',
+                        contentType: 'application/json',
+                        headers: { 'Authorization': TOKEN, 'company-id': COMPANY_ID, },
+                    });
+        }
+
         const order = [
             'settings',
             'warehouse',
@@ -5496,6 +5617,8 @@
             'transaction',
             'users',
         ];
+
+        const refreshAfterSyncResources = ['settings', 'users'];
 
         const processSync = async (params = {}) => {
 
@@ -5520,9 +5643,8 @@
                     productsSync,
                     productMultiPricesSync,
                     productUnitConversionsSync,
-                    productSkusSync,
                     productVariantsSync,
-                    productSkuVariantsSync,
+                    productCatalogsSync,
                     mediaSync
                 ],
                 transaction: [
@@ -5559,9 +5681,9 @@
                     currenciesSync
                 ],
                 users: [
+                    usersSync,
                     rolesSync,
                     permissionsSync,
-                    usersSync,
                 ]
             }
 
@@ -5642,17 +5764,24 @@
                                 title: 'Proses Selesai',
                                 html: (errs?.length > 0) ? errMessage : 'Proses sinkron berhasil'
                             }).then((result) => {
-                                loadProducts({
-                                    refresh: 1
+                                const isRefreshPage = refreshAfterSyncResources.some(item => {
+                                    return data.includes(item);
                                 });
-
-                                unitModalHasBeenOpen = false;
-                                unitPage = 1;
-                                
-                                customerModalHasBeenOpen = false;
-                                customerPage = 1;
-
-                                resetHistoriesState();
+                                if (isRefreshPage) {
+                                    window.location.reload();
+                                } else {
+                                    loadProducts({
+                                        refresh: 1
+                                    });
+    
+                                    unitModalHasBeenOpen = false;
+                                    unitPage = 1;
+                                    
+                                    customerModalHasBeenOpen = false;
+                                    customerPage = 1;
+    
+                                    resetHistoriesState();
+                                }
                             });
                         }, 1000)
                     }

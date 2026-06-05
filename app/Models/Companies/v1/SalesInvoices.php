@@ -758,6 +758,8 @@ class SalesInvoices extends Model
             $params['status'] = 'draft';
         }
 
+        $generate_reward_point_items = []; 
+
         // UPDATE
         if (isset($params['id']) && $params['id']) {
             $old = self::getById($params['id'])->original;
@@ -780,6 +782,12 @@ class SalesInvoices extends Model
                         unset($sales_invoice_details[$key]);   
                     }
 
+                    $generate_reward_point_items[] = [
+                        "product_id" => GlobalHelper::convertSeparator($sales_invoice_detail['unit_price'] ?? 0, ','),
+                        "unit_id" => $sales_invoice_detail["unit_id"],
+                        "qty" => GlobalHelper::convertSeparator($sales_invoice_detail['qty'] ?? 0, ',')
+                    ];
+
                     unset($sales_invoice_detail['id']);
                 }
                 
@@ -790,13 +798,15 @@ class SalesInvoices extends Model
                 if (empty($params['is_draft'])) {
                     $bonus_points = ContactGroups::generateRewardPoints($customer->contact_group_id, [
                         'total_purchase' => $params['total'],
-                        'chart_items' => $sales_invoice_details,
+                        'chart_items' => $generate_reward_point_items,
                     ]);
+
+                    PointHistories::where('model', '=', 'SalesInvoices')->where('model_id', '=', $params['id'])->where('contact_id', '=', $customer->id)->delete();
         
                     if ($bonus_points > 0) {
                         PointHistories::create([
                             'model' => 'SalesInvoices',
-                            'model_id' => $update->id,
+                            'model_id' => $params['id'],
                             'contact_id' => $customer->id,
                             'point' => $bonus_points,
                             'note' => '',
@@ -808,7 +818,7 @@ class SalesInvoices extends Model
                     if ($total_point_applied > 0) {
                         PointHistories::create([
                             'model' => 'SalesInvoices',
-                            'model_id' => $update->id,
+                            'model_id' => $params['id'],
                             'contact_id' => $customer->id,
                             'point' => $total_point_applied,
                             'note' => '',
@@ -841,6 +851,12 @@ class SalesInvoices extends Model
                 $sales_invoice_detail['unit_price'] = GlobalHelper::convertSeparator($sales_invoice_detail['unit_price'] ?? 0, ',');
                 $sales_invoice_detail['discount_amount'] = GlobalHelper::convertSeparator($sales_invoice_detail['discount_amount'] ?? 0, ',');
                 $sales_invoice_detail['tax_amount'] = GlobalHelper::convertSeparator($sales_invoice_detail['tax_amount'] ?? 0, ',');
+
+                $generate_reward_point_items[] = [
+                    "product_id" => GlobalHelper::convertSeparator($sales_invoice_detail['unit_price'] ?? 0, ','),
+                    "unit_id" => $sales_invoice_detail["unit_id"],
+                    "qty" => GlobalHelper::convertSeparator($sales_invoice_detail['qty'] ?? 0, ',')
+                ];
             }
 
             SalesInvoiceDetails::insert($sales_invoice_details);
@@ -851,7 +867,7 @@ class SalesInvoices extends Model
                 if (empty($params['is_draft'])) {
                     $bonus_points = ContactGroups::generateRewardPoints($customer->contact_group_id, [
                         'total_purchase' => $params['total'],
-                        'chart_items' => $sales_invoice_details,
+                        'chart_items' => $generate_reward_point_items,
                     ]);
         
                     if ($bonus_points > 0) {
