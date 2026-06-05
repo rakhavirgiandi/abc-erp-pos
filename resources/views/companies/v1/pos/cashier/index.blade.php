@@ -531,7 +531,7 @@
         const IS_CAN_EDIT_TRANSACTION = '{{ config('user_companies.is_supervisor') || config('user_companies.details')->can('pos.edit-transaction') || config('user_companies.details')->hasRole('SuperAdmin') }}'
         const IS_CAN_ACCESS_SETTINGS = '{{ config('user_companies.is_supervisor') || config('user_companies.details')->can('pos.settings') || config('user_companies.details')->hasRole('SuperAdmin') }}'
         
-        const IS_DISPLAY_CATALOG_MODE = '{{ config('general_settings.is_use_product_catalog') }}';
+        const IS_DISPLAY_CATALOG_MODE = '{{ config('general_settings.is_use_product_catalog') }}' == 'true' ? true : false;
 
         $("#input-product-qty").TouchSpin({
             buttondown_class: "btn-sm btn-icon btn btn-secondary",
@@ -4790,7 +4790,6 @@
                         clear({
                             setDefaultCustomer: true
                         });
-                        setCustomerDefaultValue()
                         historiesModalHasBeenOpen = false
                         generateRefNumber();
                         resetHistoriesState();
