@@ -359,7 +359,7 @@
                             <tr>
                                 <th>KODE</th>
                                 <th>NAMA</th>
-                                @if (!config('general_settings.is_use_product_catalog')) 
+                                @if (config('general_settings.is_use_product_catalog') != 'true') 
                                 <th>UNIT</th>
                                 @endif
                                 <th>KATEGORI</th>

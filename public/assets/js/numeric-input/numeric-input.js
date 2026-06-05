@@ -119,7 +119,9 @@
             if (!settings.separator) return numStr;
             const groupSize = settings.separatorGroup || 3;
             const regex = new RegExp(`\\B(?=(\\d{${groupSize}})+(?!\\d))`, 'g');
-            return numStr.replace(regex, settings.separator);
+            const parts = numStr.split(".");
+            parts[0] = parts[0].replace(regex, settings.separator);
+            return parts.join(".");
         }
 
         return this.each(function () {
