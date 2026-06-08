@@ -1160,7 +1160,8 @@
         const getDuplicateOrderItemId = (id, params = {}) => {
 
             const {
-                unitId = null
+                unitId = null,
+                variantSign = null
             } = params || {}
 
             const seen = {};
@@ -1168,13 +1169,18 @@
             for (const [key, item] of productOrderListMap) {
                 const productId = item?.detail?.id;
                 const itemUnitId = item?.unit_id;
-                const fingerprint = productId+'|'+itemUnitId;
+                const variantSignItem = item?.variant_sign;
+                let fp = productId+'|'+itemUnitId;
 
-                seen[fingerprint] = key;
+                if (variantSignItem) {
+                    fp += '|'+variantSignItem;
+                }
+
+                seen[fp] = key;
             }
 
-            const fingerprint = `${id}|${unitId}`;
-            
+            const fingerprint = `${id}|${unitId}${variantSign ? '|'+variantSign : ''}`;
+
             return seen[fingerprint] ? seen[fingerprint] : null;
         }
 
@@ -1195,12 +1201,28 @@
                 callback = params.callback;
                 delete params.callback
             }
+
+            let selectedVariantSign = null;
+
+            if (params?.selectedVariants && Array.isArray(params.selectedVariants)) {
+                params?.selectedVariants.forEach((item, idx) => {
+                    if (idx < 1) {
+                        selectedVariantSign = '';
+                    } else {
+                        selectedVariantSign += '|';
+                    }
+
+                    selectedVariantSign += item.variant_id+':'+item.variant_option_id;
+                });
+            
+                params.variant_sign = selectedVariantSign
+            }
             
             if (params?.is_new_item) {
                 const duplicateOrderItemId = getDuplicateOrderItemId(id, {
-                    unitId: params.unit_id ? params.unit_id : null
+                    unitId: params.unit_id ? params.unit_id : null,
+                    variantSign: selectedVariantSign
                 });
-                
 
                 if (duplicateOrderItemId) {
                     let getProductOrderList = productOrderListMap.get(duplicateOrderItemId);
@@ -1536,11 +1558,8 @@
             let req = {
                 'order[id]': 'desc',
                 is_active: 1,
+                is_pos_display: 1,
                 page: productPage,
-                'with[0]': 'unit.conversions',
-                'with[1]': 'media',
-                'with[2]': 'product_variants',
-                'with[3]': 'multi_prices',
                 ...props?.params
             }
 
@@ -1713,31 +1732,10 @@
             const dataId = $('#product-cashier-table tr[data-selected=true]').attr('data-id');
             if (!dataId) return;
 
-            const data = productCatalogListMap.get(Number(dataId));
-            if (!data && data?.products.length == 0) return;
+            const variantGroupped = (productVariants) => {
+                let grouped = {};
 
-            const products = data.products;
-
-            if (products.length < 1) return;
-
-            $('#product-catalog-info-code').html(data.code);
-            $('#product-catalog-info-name').html(data.name);
-            
-            const prices = products.map(product => product.sale_price ? product.sale_price : 0);
-
-            const minPrice = Math.min(...prices);
-            const maxPrice = Math.max(...prices);
-
-            const price = minPrice === maxPrice
-                ? `${minPrice.toLocaleString('en')}`
-                : `${minPrice.toLocaleString('en')} - ${maxPrice.toLocaleString('en')}`;
-
-            $('#product-catalog-info-price').html(price);
-
-            const grouped = {};
-
-            products.forEach(product => {
-                product.product_variants.forEach(productVariant => {
+                productVariants.forEach(productVariant => {
                 
                     if (!grouped[productVariant.variant_id]) {
                         grouped[productVariant.variant_id] = {
@@ -1758,25 +1756,90 @@
                         });
                     }
                 });
-            });
 
-            const productVariants = Object.values(grouped);
-            let productVariantsHTML = '';
+                return Object.keys(grouped).length > 0 ? Object.values(grouped) : [];
+            }
 
-            productVariants.forEach((item, idx) => {
-                if (item?.variant_options?.length > 0) {
-                    productVariantsHTML += '<div class="mb-3">';
-                    productVariantsHTML += '<h6>'+item.variant_name+'</h6>';
-                    productVariantsHTML += '<div class="row row-cols-1 row-cols-sm-2 row-cols-lg-3" style="--bs-gutter-x: 6px">';
-                    item?.variant_options.forEach((opt, optIdx) => {
-                        productVariantsHTML += '<div class="col">'
-                        productVariantsHTML += '    <button type="button" class="btn btn-lg w-100 select-variant-toggle" data-variant_id="'+item.variant_id+'" data-variant_option_id="'+opt.variant_option_id+'">'+opt.option_value+'</button>'
-                        productVariantsHTML += '</div>';
+            productVariants = [];
+
+            if (IS_DISPLAY_CATALOG_MODE) {
+                const data = productCatalogListMap.get(Number(dataId));
+                if (!data && data?.products.length == 0) return;
+    
+                const products = data.products;
+    
+                if (products.length < 1) return;
+    
+                $('#product-catalog-info-code').html(data.code);
+                $('#product-catalog-info-name').html(data.name);
+                
+                const prices = products.map(product => product.sale_price ? product.sale_price : 0);
+    
+                const minPrice = Math.min(...prices);
+                const maxPrice = Math.max(...prices);
+    
+                const price = minPrice === maxPrice
+                    ? `${minPrice.toLocaleString('en')}`
+                    : `${minPrice.toLocaleString('en')} - ${maxPrice.toLocaleString('en')}`;
+    
+                $('#product-catalog-info-price').html(price);
+
+                let grouped = {};
+
+                products.forEach((product, idx) => {
+                    product.product_variants.forEach(productVariant => {
+                    
+                        if (!grouped[productVariant.variant_id]) {
+                            grouped[productVariant.variant_id] = {
+                                variant_id: productVariant.variant_id,
+                                variant_name: productVariant.variant_name,
+                                variant_options: []
+                            };
+                        }
+                    
+                        const exists = grouped[productVariant.variant_id].variant_options.some(race =>
+                            race.variant_option_id === productVariant.variant_option_id
+                        );
+                    
+                        if (!exists) {
+                            grouped[productVariant.variant_id].variant_options.push({
+                                variant_option_id: productVariant.variant_option_id,
+                                option_value: productVariant.option_value
+                            });
+                        }
                     });
-                    productVariantsHTML += '</div>';
-                    productVariantsHTML += '</div>';
-                }
-            });
+                });
+                
+                productVariants = Object.values(grouped);
+            } else {
+                const data = productListMap.get(Number(dataId));
+                if (!data) return;
+
+                $('#product-catalog-info-code').html(data.code);
+                $('#product-catalog-info-name').html(data.name);
+                $('#product-catalog-info-price').html(Number(data.sale_price).toLocaleString('en'));
+
+                productVariants = variantGroupped(data.product_variants);
+            }
+
+            let productVariantsHTML = '';
+            if (productVariants?.length > 0) {
+                productVariants.forEach((item, idx) => {
+                    if (item?.variant_options?.length > 0) {
+                        productVariantsHTML += '<div class="mb-3">';
+                        productVariantsHTML += '<h6>'+item.variant_name+'</h6>';
+                        productVariantsHTML += '<div class="row row-cols-1 row-cols-sm-2 row-cols-lg-3" style="--bs-gutter-x: 6px">';
+                        item?.variant_options.forEach((opt, optIdx) => {
+                            productVariantsHTML += '<div class="col">'
+                            productVariantsHTML += '    <button type="button" class="btn btn-lg w-100 select-variant-toggle" data-variant_id="'+item.variant_id+'" data-variant_option_id="'+opt.variant_option_id+'" data-option_value="'+opt.option_value+'">'+opt.option_value+'</button>'
+                            productVariantsHTML += '</div>';
+                        });
+                        productVariantsHTML += '</div>';
+                        productVariantsHTML += '</div>';
+                    }
+                });
+            }
+
             $('#input-product-qty').val(parseFloat(1)).trigger('change');
             $('#catalog-select-products-container').html(productVariantsHTML);
             $('#catalog-modal').modal('show');
@@ -1784,11 +1847,20 @@
 
         const getSelectedProductByVariant = () => {
 
-            const productCatalogId = $('#product-cashier-table tr[data-selected=true]').attr('data-id');
-            if (!productCatalogId) return null;
+            const dataId = $('#product-cashier-table tr[data-selected=true]').attr('data-id');
+            if (!dataId) return null;
 
-            const data = productCatalogListMap.get(Number(productCatalogId));
-            if (!data && data?.products.length == 0) return null;
+            let data = null
+
+            if (IS_DISPLAY_CATALOG_MODE) {
+                const getData = productCatalogListMap.get(Number(dataId));
+                if (!getData && getData?.products.length == 0) return null;
+                data = getData.products;
+            } else {
+                const getData = productListMap.get(Number(dataId));
+                if (!getData) return;
+                data = getData;
+            }
 
             const selectedVariantToggle = $('.select-variant-toggle.active');
 
@@ -1802,21 +1874,44 @@
                 })
             });
 
-            const result = data.products.filter(product => {
-            
-                if (product.product_variants.length !== params.length) {
-                    return false;
-                }
-            
-                return params.every(p => {
-                    return product.product_variants.some(variant => {
-                        return variant.variant_id === p.variant_id &&
-                               variant.variant_option_id === p.variant_option_id;
+            let result = false; 
+
+            if (IS_DISPLAY_CATALOG_MODE) {
+                result = data.filter(product => {
+                
+                    if (product.product_variants.length !== params.length) {
+                        return false;
+                    }
+                
+                    return params.every(p => {
+                        return product.product_variants.some(variant => {
+                            return variant.variant_id === p.variant_id &&
+                                   variant.variant_option_id === p.variant_option_id;
+                        });
                     });
+                
                 });
-            
-            });
-            
+            } else {
+
+                const uniqueVariantIds = [...new Set(data.product_variants.map(p => p.variant_id))];
+                const selectedVariantIds = params.map(s => s.variant_id);
+
+                const isValid = params.length === uniqueVariantIds.length
+                    && new Set(selectedVariantIds).size === selectedVariantIds.length
+                    && uniqueVariantIds.every(id => selectedVariantIds.includes(id))
+                    && params.every(selected =>
+                        data.product_variants.some(item =>
+                            item.variant_id === selected.variant_id &&
+                            item.variant_option_id === selected.variant_option_id
+                        )
+                    );
+                
+                if (isValid) {
+                    result = [data];
+                }
+                
+            }
+
             return result?.length > 0 ? result[0] : null;
         }
 
@@ -1867,6 +1962,29 @@
                     filter: '&product_id='+selectedProduct?.id,
                     selected_val_object: { id: selectedProduct?.unit_id, text: selectedProduct?.unit_name }
                 });
+            } else {
+                if (IS_DISPLAY_CATALOG_MODE) {
+                    
+                    const dataId = $('#product-cashier-table tr[data-selected=true]').attr('data-id');
+                    const data = productCatalogListMap.get(Number(dataId));
+
+                    if (data) {
+                        $('#product-catalog-info-code').html(data.code);
+                        $('#product-catalog-info-name').html(data.name);
+                        
+                        const prices = products.map(product => product.sale_price ? product.sale_price : 0);
+            
+                        const minPrice = Math.min(...prices);
+                        const maxPrice = Math.max(...prices);
+            
+                        const price = minPrice === maxPrice
+                            ? `${minPrice.toLocaleString('en')}`
+                            : `${minPrice.toLocaleString('en')} - ${maxPrice.toLocaleString('en')}`;
+            
+                        $('#product-catalog-info-price').html(price);
+                    }
+
+                }
             }
 
             validateSelectProductVariant()
@@ -1906,12 +2024,27 @@
             const unit_id = Number($('#input-product-unit').val());
             const unit_name = $('#input-product-unit option:selected').text();
 
+            const selectedVariantToggle = $('.select-variant-toggle.active');
+
+            let variantNotes = [];
+            let selectedVariants = [];
+            selectedVariantToggle.each((idx, e) => {
+                const optionValue = $(e).attr('data-option_value');
+                selectedVariants.push({
+                    variant_id: $(e).attr('data-variant_id'),
+                    variant_option_id: $(e).attr('data-variant_option_id')
+                })
+                variantNotes.push(optionValue);
+            });
+
             putProductToOrderList(selectedProduct.id, {
                 qty: qty,
                 unit_id: unit_id,
                 unit_name: unit_name,
                 is_new_item: true,
+                note: variantNotes?.length > 0 ? variantNotes.join(', ') : '',
                 unit_convertion: unit_id != selectedProduct.unit_id ? { id: unit_id, name: unit_name } : null,
+                selectedVariants: selectedVariants,
                 callback: (data) => {
                     setMultiplePrice(data._id);
                     resetPointExchange(true)
@@ -2415,27 +2548,28 @@
                 showCatalogPopUp();
             } else {
                 const getProductList = productListMap.get(selectedProductId);
-    
+                
                 if (getProductList) {
-                    
-                    const getProductOrderList = productOrderListMap.get(selectedProductId);
-    
-                    let note = getProductList.product_variants
-                        ?.map(item => item.option_value)
-                        .join(', ') || '';
-                    
-                    putProductToOrderList(selectedProductId, {
-                        // qty: getProductOrderList ? getProductOrderList?.qty + 1 : 1,
-                        is_new_item: true,
-                        unit_id: getProductList.unit_id,
-                        unit_name: getProductList.unit_name,
-                        note: note,
-                        callback: (data) => {
-                            setMultiplePrice(data._id);
-                            resetPointExchange(true)
-                        }
-                    });
-                    
+
+                    if (getProductList.is_variant_multi_select) {
+                        showCatalogPopUp();
+                    } else {
+                        let note = getProductList.product_variants
+                            ?.map(item => item.option_value)
+                            .join(', ') || '';
+                        
+                        putProductToOrderList(selectedProductId, {
+                            // qty: getProductOrderList ? getProductOrderList?.qty + 1 : 1,
+                            is_new_item: true,
+                            unit_id: getProductList.unit_id,
+                            unit_name: getProductList.unit_name,
+                            note: note,
+                            callback: (data) => {
+                                setMultiplePrice(data._id);
+                                resetPointExchange(true)
+                            }
+                        });
+                    }
     
                     // const sound = new Audio(BASE_URL+'/assets/audio/beep.mp3');
                     // sound.play();

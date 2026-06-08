@@ -237,6 +237,7 @@ class ProductCatalogs extends Model
         if (isset($params['with_product_details']) && $params['with_product_details']) {
             $db->with(['products' => function ($q)  {
                 $q->where('products.is_active', '=', 1);
+                $q->where('products.is_variant_multi_select', '=', 0);
                 $q->leftJoin('units', 'products.unit_id', '=', 'units.id');
                 $q->leftJoin('product_categories', 'products.product_category_id', '=', 'product_categories.id');
                 $q->leftJoin('taxes as sale_tax', 'products.sale_tax_id', '=', 'sale_tax.id');

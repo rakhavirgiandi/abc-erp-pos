@@ -783,8 +783,9 @@ class SalesInvoices extends Model
                     }
 
                     $generate_reward_point_items[] = [
-                        "product_id" => GlobalHelper::convertSeparator($sales_invoice_detail['unit_price'] ?? 0, ','),
+                        "price" => GlobalHelper::convertSeparator($sales_invoice_detail['unit_price'] ?? 0, ','),
                         "unit_id" => $sales_invoice_detail["unit_id"],
+                        "product_id" => $sales_invoice_detail["product_id"],
                         "qty" => GlobalHelper::convertSeparator($sales_invoice_detail['qty'] ?? 0, ',')
                     ];
 
@@ -853,8 +854,9 @@ class SalesInvoices extends Model
                 $sales_invoice_detail['tax_amount'] = GlobalHelper::convertSeparator($sales_invoice_detail['tax_amount'] ?? 0, ',');
 
                 $generate_reward_point_items[] = [
-                    "product_id" => GlobalHelper::convertSeparator($sales_invoice_detail['unit_price'] ?? 0, ','),
+                    "price" => GlobalHelper::convertSeparator($sales_invoice_detail['unit_price'] ?? 0, ','),
                     "unit_id" => $sales_invoice_detail["unit_id"],
+                    "product_id" => $sales_invoice_detail["product_id"],
                     "qty" => GlobalHelper::convertSeparator($sales_invoice_detail['qty'] ?? 0, ',')
                 ];
             }

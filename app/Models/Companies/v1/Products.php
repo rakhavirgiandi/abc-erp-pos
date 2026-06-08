@@ -87,6 +87,7 @@ class Products extends Model
 		'created_at',
 		'updated_at',
 		'deleted_at',
+        'is_variant_multi_select'
     ];
 
     /**
@@ -164,7 +165,7 @@ class Products extends Model
         $model = new self;
         $warehouse_id = ($params['warehouse_id'] ?? '');
 
-        return [
+        $data = [
             'field' => [
                 'id' => ['column' => $model->table.'.id', 'alias' => 'id', 'type' => 'int'],
 				'code' => ['column' => $model->table.'.code', 'alias' => 'code', 'type' => 'string'],
@@ -192,6 +193,7 @@ class Products extends Model
 				'length' => ['column' => $model->table.'.length', 'alias' => 'length', 'type' => 'int'],
 				'weight' => ['column' => $model->table.'.weight', 'alias' => 'weight', 'type' => 'int'],
 				'is_active' => ['column' => $model->table.'.is_active', 'alias' => 'is_active', 'type' => 'int'],
+				'is_variant_multi_select' => ['column' => $model->table.'.is_variant_multi_select', 'alias' => 'is_variant_multi_select', 'type' => 'int'],
 				'multi_price_type' => ['column' => $model->table.'.multi_price_type', 'alias' => 'multi_price_type', 'type' => 'string'],
 				'brand' => ['column' => $model->table.'.brand', 'alias' => 'brand', 'type' => 'string'],
 				'product_catalog_id' => ['column' => $model->table.'.product_catalog_id', 'alias' => 'product_catalog_id', 'type' => 'int'],
@@ -233,6 +235,26 @@ class Products extends Model
 
             ]
         ];
+
+        if (isset($params['is_pos_display']) && $params['is_pos_display']) {
+            unset($data['field']['purchase_tax']);
+            unset($data['field']['purchase_tax_id']);
+            unset($data['field']['product_type_id']);
+            unset($data['field']['purchase_price']);
+            unset($data['field']['description']);
+            unset($data['field']['purchase_tax_code']);
+            unset($data['field']['purchase_tax_name']);
+            unset($data['field']['width']);
+            unset($data['field']['height']);
+            unset($data['field']['length']);
+            unset($data['field']['weight']);
+            unset($data['field']['multi_price_type']);
+            unset($data['field']['brand']);
+            unset($data['field']['updated_at']);
+            unset($data['field']['deleted_at']);
+        }
+
+        return $data;
     }
 
     public static function datatables($start, $length, $order, $dir, $search, $filter = [])
@@ -349,86 +371,83 @@ class Products extends Model
         }
         
         $eloquent_relations = array_values(array_unique($eloquent_relations));
+
         
-        if (!$is_simple) {
-            if ($eloquent_relations) {
-                // if (in_array('multi_prices', $eloquent_relations)) {
-                //     $db->with(['multi_prices' => function ($q) {
-                //         $q->leftJoin('contact_groups', 'contact_groups.id', '=', 'product_multi_prices.contact_group_id')
-                //         ->leftJoin('branches', 'branches.id', '=', 'product_multi_prices.branch_id')
-                //         ->select(
-                //           'product_multi_prices.*',
-                //           'branches.name as branch_name',
-                //           'branches.code as branch_code',
-                //           'contact_groups.name as contact_group_name',
-                //         );
-                //     }]);
-    
-                //     $key = array_search('multi_prices', $eloquent_relations);
-    
-                //     if ($key !== false) {
-                //         unset($eloquent_relations[$key]);
-                //     }
-                // }
-                
-                if (in_array('product_variants', $eloquent_relations)) {
-                    $db->with(['product_variants' => function($q) {
-                        $q->leftJoin('variants', 'variants.id', '=', 'product_variants.variant_id')
-                          ->leftJoin('variant_options', 'variant_options.id', '=', 'product_variants.variant_option_id')
-                          ->select(
-                            'product_variants.*',
-                            'variants.name as variant_name',
-                            'variant_options.value as option_value',
-                            'product_variants.sequence as sequence'
-                          );
-                    }]);
-    
-                    $key = array_search('product_variants', $eloquent_relations);
-    
-                    if ($key !== false) {
-                        unset($eloquent_relations[$key]);
-                    }
-                }
-    
-                if (in_array('multi_prices', $eloquent_relations)) {
-                    $db->with(['multi_prices' => function ($q) {
-                        $q->leftJoin('contact_groups', 'contact_groups.id', '=', 'product_multi_prices.contact_group_id')
-                        ->leftJoin('branches', 'branches.id', '=', 'product_multi_prices.branch_id')
-                        ->leftJoin('units', 'units.id', '=', 'product_multi_prices.unit_id')
-                        ->leftJoin('product_skus', 'product_skus.id', '=', 'product_multi_prices.product_sku_id')
-                        ->select(
-                          'product_multi_prices.*',
-                          'branches.name as branch_name',
-                          'branches.code as branch_code',
-                          'contact_groups.name as contact_group_name',
-                          'units.name as unit_name',
-                          'product_skus.alias as product_sku_name',
-                          'product_skus.sku_code as product_sku_code',
-                        );
-                    }]);
-    
-                    $key = array_search('multi_prices', $eloquent_relations);
-    
-                    if ($key !== false) {
-                        unset($eloquent_relations[$key]);
-                    }
-                }
-    
-                $db->with($eloquent_relations);
-            }
-    
+        ModelHelper::join($schema['join'], $request, $db);
+        
+        if (isset($params['is_pos_display']) && $params['is_pos_display']) {
+            // $db->select(
+            //     'products.id as id',
+            //     'products.code as code',
+            //     'products.name as name',
+            //     'product_category_id',
+            //     'product_categories.name as category_name',
+            //     'category_code',
+            //     'unit_id',
+            //     'unit_name',
+            //     'unit_code',
+            //     'sale_price',
+            //     'purchase_price',
+            //     'sale_tax',
+            //     'sale_tax_id',
+            //     'sale_tax_name',
+            //     'sale_tax_code',
+            //     'is_variant_multi_select',
+            //     'is_active'
+            // );
+
+            $db->with(['product_variants' => function($q) {
+                $q->leftJoin('variants', 'variants.id', '=', 'product_variants.variant_id')
+                  ->leftJoin('variant_options', 'variant_options.id', '=', 'product_variants.variant_option_id')
+                  ->select(
+                    'product_variants.id as id',
+                    'product_variants.product_id as product_id',
+                    'product_variants.variant_id as variant_id',
+                    'product_variants.variant_option_id as variant_option_id',
+                    'variants.name as variant_name',
+                    'variant_options.value as option_value',
+                    'product_variants.sequence as sequence'
+                  );
+            }]);
+
+            $db->with(['multi_prices' => function ($q) {
+                $q->leftJoin('contact_groups', 'contact_groups.id', '=', 'product_multi_prices.contact_group_id')
+                ->leftJoin('branches', 'branches.id', '=', 'product_multi_prices.branch_id')
+                ->leftJoin('units', 'units.id', '=', 'product_multi_prices.unit_id')
+                ->leftJoin('product_skus', 'product_skus.id', '=', 'product_multi_prices.product_sku_id')
+                ->select(
+                  'product_multi_prices.id as id',
+                  'product_multi_prices.product_id as product_id',
+                  'product_multi_prices.contact_group_id as contact_group_id',
+                  'product_multi_prices.from_qty as from_qty',
+                  'product_multi_prices.to_qty as to_qty',
+                  'product_multi_prices.branch_id as branch_id',
+                  'product_multi_prices.unit_id as unit_id',
+                  'product_multi_prices.unit_price as unit_price',
+                  'branches.name as branch_name',
+                  'branches.code as branch_code',
+                  'contact_groups.name as contact_group_name',
+                  'units.name as unit_name',
+                  'product_skus.alias as product_sku_name',
+                  'product_skus.sku_code as product_sku_code',
+                );
+            }]);
+
             $db->with(['unit_conversions' => function ($q) {
                 $q->leftJoin('units as form_unit', 'form_unit.id', '=', 'product_unit_conversions.from_unit_id')
                 ->leftJoin('units as to_unit', 'to_unit.id', '=', 'product_unit_conversions.to_unit_id')
                 ->select(
-                  'product_unit_conversions.*',
+                  'product_unit_conversions.id as id',
+                  'product_unit_conversions.product_id as product_id',
+                  'product_unit_conversions.from_unit_id as from_unit_id',
+                  'product_unit_conversions.to_unit_id as to_unit_id',
+                  'product_unit_conversions.from_value as from_value',
+                  'product_unit_conversions.to_value as to_value',
                   'form_unit.name as from_unit_name',
                   'to_unit.name as to_unit_name',
                 );
             }]);
         }
-
-        ModelHelper::join($schema['join'], $request, $db);
 
         if ($params) {
             ModelHelper::dynamicFilterAnd($params, $request, $db, __CLASS__);
