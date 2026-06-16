@@ -204,29 +204,7 @@ class Contacts extends Model
                 ],
 				'created_at' => ['column' => $model->table.'.created_at', 'alias' => 'created_at', 'type' => 'date'],
 				'updated_at' => ['column' => $model->table.'.updated_at', 'alias' => 'updated_at', 'type' => 'date'],
-				'deleted_at' => ['column' => $model->table.'.deleted_at', 'alias' => 'deleted_at', 'type' => 'date'],
-                'point_balance' => [
-                    'column' => '(
-                        COALESCE((
-                            SELECT SUM(ph.point)
-                            FROM point_histories ph
-                            WHERE ph.contact_id = contacts.id
-                            AND ph.type = \'in\'
-                            AND ph.deleted_at IS NULL
-                        ),0)
-                        -
-                        COALESCE((
-                            SELECT SUM(ph.point)
-                            FROM point_histories ph
-                            WHERE ph.contact_id = contacts.id
-                            AND ph.type = \'out\'
-                            AND ph.deleted_at IS NULL
-                        ),0)
-                    )',
-                    'alias' => 'point_balance',
-                    'type' => 'int',
-                    'is_raw' => true
-                ],
+				'deleted_at' => ['column' => $model->table.'.deleted_at', 'alias' => 'deleted_at', 'type' => 'date']
                 ],
             'join' => [
                 ['table' => 'currencies', 'type' => 'left', 'on' => ['currencies.id', '=', $model->table . '.currency_id']],
@@ -319,6 +297,8 @@ class Contacts extends Model
         
         $or = [];
 
+        $is_pos_display = 0;
+
         unset($params['page']);
 
         if (isset($params['or']) && $params['or']) {
@@ -326,8 +306,21 @@ class Contacts extends Model
             unset($params['or']);
         }
 
-        $db = ModelHelper::select($schema['field'], $request, __CLASS__);
+        if (isset($params['is_pos_display']) && $params['is_pos_display']) {
+            $is_pos_display = $params['is_pos_display'];
+            unset($params['is_pos_display']);
+        }
+
+        $field = $schema['field'];
+
+        if ($is_pos_display) {
+            $select = ['id', 'name', 'code', 'point_balance', 'email', 'phone', 'contact_group_id', 'contact_group_name', 'point_balance'];
+            $field = array_intersect_key($field, array_flip($select));
+        }
+
+        $db = ModelHelper::select($field, $request, __CLASS__);
         ModelHelper::join($schema['join'], $request, $db);
+
 
         if ($params) {
             ModelHelper::dynamicFilterAnd($params, $request, $db, __CLASS__);
@@ -349,8 +342,22 @@ class Contacts extends Model
         $append = [];
 
         $schema = self::mapSchema();
+
+        $field = $schema['field'];
         
-        $db = ModelHelper::select($schema['field'], $request, __CLASS__)->where($models->table.'.id', $id);
+        $is_pos_display = 0;
+
+        if (isset($params['is_pos_display']) && $params['is_pos_display']) {
+            $is_pos_display = $params['is_pos_display'];
+            unset($params['is_pos_display']);
+        }
+
+        if ($is_pos_display) {
+            $select = ['id', 'name', 'code', 'point_balance', 'email', 'phone', 'contact_group_id', 'contact_group_name', 'point_balance', 'is_active'];
+            $field = array_intersect_key($field, array_flip($select));
+        }
+        
+        $db = ModelHelper::select($field, $request, __CLASS__)->where($models->table.'.id', $id);
         
         ModelHelper::join($schema['join'], $request, $db);
         

@@ -261,7 +261,21 @@ class ProductCategories extends Model
             unset($params['or']);
         }
 
-        $db = ModelHelper::select($schema['field'], $request, __CLASS__);
+        $field = $schema['field'];
+        
+        $is_pos_display = 0;
+
+        if (isset($params['is_pos_display']) && $params['is_pos_display']) {
+            $is_pos_display = $params['is_pos_display'];
+            unset($params['is_pos_display']);
+        }
+
+        if ($is_pos_display) {
+            $select = ['id', 'name', 'code', 'is_active'];
+            $field = array_intersect_key($field, array_flip($select));
+        }
+
+        $db = ModelHelper::select($field, $request, __CLASS__);
         ModelHelper::join($schema['join'], $request, $db);
 
         if ($params) {

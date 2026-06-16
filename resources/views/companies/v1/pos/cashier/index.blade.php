@@ -696,7 +696,7 @@
         const setCustomerDefaultValue = () => {
             $.ajax({
                 type: 'get',
-                url: BASE_URL + "/api/v1/contacts/"+'{{ config('general_settings.default_customer') }}',
+                url: BASE_URL + "/api/v1/contacts/"+'{{ config('general_settings.default_customer') }}'+'?is_pos_display=1',
                 "headers": {
                     'Authorization': TOKEN,
                     'company-id': COMPANY_ID,
@@ -2135,7 +2135,7 @@
             const reqParams = $.param(req);
 
             $.ajax({
-                url: BASE_URL + '/api/v1/product_categories?'+reqParams,
+                url: BASE_URL + '/api/v1/product_categories?'+reqParams+'?is_pos_display=true',
                 type: "GET",
                 dataType: "json",
                 headers: {
@@ -3664,6 +3664,7 @@
                 'order[id]': 'desc',
                 is_active: 1,
                 is_customer: 1,
+                is_pos_display: 1,
                 page: customerPage,
                 ...props.params
             };
