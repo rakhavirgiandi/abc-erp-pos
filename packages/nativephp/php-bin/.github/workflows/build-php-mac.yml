@@ -1,0 +1,142 @@
+name: Build PHP (macOS)
+
+permissions:
+  contents: write
+  pull-requests: write
+
+on:
+  schedule:
+    - cron: '0 0 * * 5'
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'PHP version to build'
+        type: choice
+        options:
+          - all
+          - "8.3"
+          - "8.4"
+          - "8.5"
+        default: all
+
+env:
+  GITHUB_TOKEN: ${{ secrets.PAT }}
+  SPC_VERSION: 2.8.5
+  SPC_BUILD_OS: mac
+
+jobs:
+  build:
+    name: ${{ matrix.version }} ${{ matrix.os }}
+    runs-on: ${{ matrix.os }}
+
+    strategy:
+      fail-fast: false
+      matrix:
+        version: ${{ fromJSON((github.event.inputs.version || 'all') == 'all' && '["8.3","8.4","8.5"]' || format('["{0}"]', github.event.inputs.version)) }}
+        os: [macos-15-intel, macos-latest]
+        include:
+          - os: macos-15-intel
+            arch: x64
+            spc_asset: spc-macos-x86_64.tar.gz
+          - os: macos-latest
+            arch: arm64
+            spc_asset: spc-macos-aarch64.tar.gz
+
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Download SPC
+        shell: bash
+        run: |
+          cd ..
+          curl -fsSL -o spc.tar.gz "https://github.com/crazywhalecc/static-php-cli/releases/download/${SPC_VERSION}/${{ matrix.spc_asset }}"
+          tar -xzf spc.tar.gz
+          chmod +x spc
+          mkdir -p static-php-cli/bin
+          mv spc static-php-cli/bin/
+
+      - name: Install build dependencies
+        run: brew install automake gzip
+
+      - name: Setup system PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: 8.3
+          tools: pecl, composer
+          extensions: curl, openssl, mbstring, sodium, tokenizer, filter
+          ini-values: memory_limit=-1
+
+      - name: SPC doctor
+        run: |
+          cd ../static-php-cli
+          ./bin/spc doctor
+
+      - name: Read PHP extensions from file
+        shell: bash
+        run: |
+          EXTENSIONS=$(php -r "echo trim(file_get_contents('php-extensions.txt'));")
+          EXT_HASH=$(php -r "echo md5(getenv('EXTENSIONS'));")
+          echo "PHP_EXTENSIONS=$EXTENSIONS" >> $GITHUB_ENV
+          echo "PHP_EXT_HASH=$EXT_HASH" >> $GITHUB_ENV
+
+      - name: Read PHP libraries from file
+        shell: bash
+        run: |
+          LIBRARIES=$(php -r "echo trim(file_get_contents('php-libraries.txt'));")
+          echo "PHP_LIBS=$LIBRARIES" >> $GITHUB_ENV
+
+      - id: cache-spc-downloads
+        uses: actions/cache@v5
+        with:
+          path: ../static-php-cli/downloads
+          key: spc-downloads-${{ env.PHP_EXT_HASH }}
+
+      - name: Download PHP extension sources
+        if: steps.cache-spc-downloads.outputs.cache-hit != 'true'
+        run: |
+          cd ../static-php-cli
+          ./bin/spc download --with-php=${{ matrix.version }} --for-extensions "${{ env.PHP_EXTENSIONS }}" --prefer-pre-built
+
+      - name: Build PHP
+        run: |
+          cd ../static-php-cli
+          ./bin/spc build --build-cli "${{ env.PHP_EXTENSIONS }}" --with-libs="${{ env.PHP_LIBS }}" --debug
+
+      - name: Get built PHP version
+        shell: bash
+        run: |
+          PHP_VERSION_FULL=$(../static-php-cli/buildroot/bin/php -r "echo PHP_VERSION;")
+          echo "PHP_VERSION_FULL=$PHP_VERSION_FULL" >> $GITHUB_ENV
+
+      - name: Create bin directories
+        run: |
+          mkdir -p bin/${{ env.SPC_BUILD_OS }}/${{ matrix.arch }}
+          mkdir -p license-files
+          mkdir -p build-meta
+
+      - name: Zip PHP binary, copy metadata
+        shell: bash
+        run: |
+          rm -f bin/${{ env.SPC_BUILD_OS }}/${{ matrix.arch }}/php-${{ matrix.version }}.zip
+          mkdir -p tmp-bin
+          cp ../static-php-cli/buildroot/bin/php tmp-bin/
+          cd tmp-bin
+          zip ../bin/${{ env.SPC_BUILD_OS }}/${{ matrix.arch }}/php-${{ matrix.version }}.zip php
+          cd ..
+          rm -rf tmp-bin
+          cp ../static-php-cli/buildroot/license/* license-files/
+          cp ../static-php-cli/buildroot/build-extensions.json build-meta/build-extensions-${{ env.SPC_BUILD_OS }}.json
+          cp ../static-php-cli/buildroot/build-libraries.json build-meta/build-libraries-${{ env.SPC_BUILD_OS }}.json
+
+      - name: Create Pull Request
+        uses: peter-evans/create-pull-request@v8
+        with:
+          branch: update-php-${{ matrix.version }}-${{ env.SPC_BUILD_OS }}-${{ matrix.arch }}
+          title: "Update PHP ${{ matrix.version }} build for ${{ env.SPC_BUILD_OS }} ${{ matrix.arch }}"
+          commit-message: "Update PHP ${{ matrix.version }} build for ${{ env.SPC_BUILD_OS }} ${{ matrix.arch }}"
+          body: |
+            PHP: ${{ env.PHP_VERSION_FULL }}
+            Exts: ${{ env.PHP_EXTENSIONS }}
+            OS: ${{ env.SPC_BUILD_OS }}
+            Arch: ${{ matrix.arch }}
+          base: main

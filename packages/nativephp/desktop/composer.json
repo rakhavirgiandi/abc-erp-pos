@@ -1,0 +1,119 @@
+{
+    "name": "nativephp/desktop",
+    "description": "NativePHP for Desktop",
+    "keywords": [
+        "nativephp",
+        "laravel",
+        "desktop",
+        "nativephp-laravel"
+    ],
+    "homepage": "https://github.com/nativephp/laravel",
+    "license": "MIT",
+    "funding": [
+        {
+            "type": "github",
+            "url": "https://github.com/sponsors/simonhamp"
+        },
+        {
+            "type": "opencollective",
+            "url": "https://opencollective.com/nativephp"
+        }
+    ],
+    "authors": [
+        {
+            "name": "Marcel Pociot",
+            "email": "marcel@beyondco.de",
+            "role": "Developer"
+        },
+        {
+            "name": "Simon Hamp",
+            "email": "simon.hamp@me.com",
+            "role": "Developer"
+        }
+    ],
+    "conflict": {
+        "nativephp/mobile": "*",
+        "nativephp/laravel": "*",
+        "nativephp/electron": "*"
+    },
+    "require": {
+        "php": "^8.3",
+        "illuminate/contracts": "^10.0|^11.0|^12.0|^13.0",
+        "laravel/prompts": "^0.1.1|^0.2|^0.3",
+        "nativephp/php-bin": "^1.0",
+        "spatie/laravel-package-tools": "^1.16.4",
+        "symfony/filesystem": "^6.4|^7.2|^8.0",
+        "ext-zip": "*"
+    },
+    "require-dev": {
+        "guzzlehttp/guzzle": "^7.0",
+        "laravel/pint": "^1.0",
+        "larastan/larastan": "^2.0|^3.1",
+        "nunomaduro/collision": "^7.11|^8.1.1",
+        "orchestra/testbench": "^8.0|^9.0|^10.0|^11.0",
+        "pestphp/pest": "^v2.30|^3.0|^4.4",
+        "pestphp/pest-plugin-arch": "^2.0|^3.0|^4.0",
+        "pestphp/pest-plugin-laravel": "^2.0|^3.1|^4.1",
+        "phpstan/extension-installer": "^1.1",
+        "phpstan/phpstan-deprecation-rules": "^1.0|^2.0",
+        "phpstan/phpstan-phpunit": "^1.0|^2.0",
+        "spatie/laravel-ray": "^1.26"
+    },
+    "autoload": {
+        "psr-4": {
+            "Native\\Desktop\\": "src"
+        }
+    },
+    "autoload-dev": {
+        "psr-4": {
+            "Native\\Desktop\\Tests\\": "tests/"
+        }
+    },
+    "scripts": {
+        "qa": [
+            "@composer format",
+            "@composer analyse",
+            "@composer test"
+        ],
+        "post-autoload-dump": "@php ./vendor/bin/testbench package:discover --ansi",
+        "analyse": "vendor/bin/phpstan analyse",
+        "test": "vendor/bin/pest",
+        "test-coverage": "vendor/bin/pest --coverage",
+        "format": "vendor/bin/pint"
+    },
+    "config": {
+        "sort-packages": true,
+        "allow-plugins": {
+            "pestphp/pest-plugin": true,
+            "phpstan/extension-installer": true
+        }
+    },
+    "extra": {
+        "laravel": {
+            "providers": [
+                "Native\\Desktop\\NativeServiceProvider"
+            ],
+            "aliases": {
+                "ChildProcess": "Native\\Desktop\\Facades\\ChildProcess",
+                "Clipboard": "Native\\Desktop\\Facades\\Clipboard",
+                "ContextMenu": "Native\\Desktop\\Facades\\ContextMenu",
+                "Dock": "Native\\Desktop\\Facades\\Dock",
+                "GlobalShortcut": "Native\\Desktop\\Facades\\GlobalShortcut",
+                "Menu": "Native\\Desktop\\Facades\\Menu",
+                "MenuBar": "Native\\Desktop\\Facades\\MenuBar",
+                "Notification": "Native\\Desktop\\Facades\\Notification",
+                "PowerMonitor": "Native\\Desktop\\Facades\\PowerMonitor",
+                "Process": "Native\\Desktop\\Facades\\Process",
+                "QueueWorker": "Native\\Desktop\\Facades\\QueueWorker",
+                "Screen": "Native\\Desktop\\Facades\\Screen",
+                "Settings": "Native\\Desktop\\Facades\\Settings",
+                "Shell": "Native\\Desktop\\Facades\\Shell",
+                "System": "Native\\Desktop\\Facades\\System",
+                "Window": "Native\\Desktop\\Facades\\Window",
+                "Updater": "Native\\Electron\\Facades\\Updater"
+            }
+        }
+    },
+    "minimum-stability": "dev",
+    "prefer-stable": true
+}

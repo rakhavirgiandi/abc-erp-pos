@@ -1,0 +1,36 @@
+<?php
+
+namespace Native\Desktop\Drivers\Electron\Updater;
+
+use Native\Desktop\Drivers\Electron\Updater\Contracts\Updater;
+
+class GitHubProvider implements Updater
+{
+    public function __construct(protected array $config) {}
+
+    public function environmentVariables(): array
+    {
+        return [
+            'GH_TOKEN' => $this->config['token'],
+        ];
+    }
+
+    public function builderOptions(): array
+    {
+        $options = [
+            'provider' => 'github',
+            'repo' => $this->config['repo'],
+            'owner' => $this->config['owner'],
+            'vPrefixedTagName' => $this->config['vPrefixedTagName'],
+            'private' => $this->config['private'],
+            'channel' => $this->config['channel'],
+            'releaseType' => $this->config['releaseType'],
+        ];
+
+        if ($this->config['private'] === true && ! empty($this->config['autoupdate_token'])) {
+            $options['token'] = $this->config['autoupdate_token'];
+        }
+
+        return $options;
+    }
+}
