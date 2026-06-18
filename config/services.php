@@ -46,7 +46,16 @@ return [
         'password' => '123',
     ],
 
-    'is_onpremise' => env('IS_ONPREMISE', false)
+    'is_onpremise' => env('IS_ONPREMISE', false),
+    'pgsql' => [
+        'service_name' => env('PGSQL_SERVICE_NAME', 'ABC POS PostgreSQL'),
+        'bin_path' => env('PGSQL_BIN_PATH', base_path('pgsql/bin')),
+        'data_path' => env('PGSQL_DATA_PATH', storage_path('pgsql/data')),
+        'port' => env('DB_PORT', 5432),
+        'superuser' => env('DB_USERNAME', 'bukanadmin'),
+        'password'  => env('DB_PASSWORD', 'B15mi1Ll@h'),
+        'database' => env('DB_DATABASE', 'abc_pos_db'),
+    ]
 
     // 'on_premise_db_central_cred' => [
     //     'DB_CONNECTION' => env('DB_CONNECTION', 'pgsql'),

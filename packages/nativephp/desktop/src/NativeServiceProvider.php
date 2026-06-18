@@ -140,7 +140,7 @@ class NativeServiceProvider extends PackageServiceProvider
 
         $this->configureDisks();
 
-        config(['session.driver' => 'file']);
+        // config(['session.driver' => 'file']);
         config(['queue.default' => 'database']);
 
         // XXX: This logic may need to change when we ditch the internal web server

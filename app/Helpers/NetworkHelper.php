@@ -77,14 +77,16 @@ class NetworkHelper
         }
 
         $token = $result['access_token'];
-
-        GeneralSettings::updateOrCreate(
-            ['key' => 'access_token'],
-            [
-                'value' => $token,
-                'is_hidden' => 1,
-            ]
-        );
+        
+        if (self::getCompanyId()) {
+            GeneralSettings::updateOrCreate(
+                ['key' => 'access_token'],
+                [
+                    'value' => $token,
+                    'is_hidden' => 1,
+                ]
+            );
+        }
 
         return $token;
     }
@@ -237,6 +239,6 @@ class NetworkHelper
 
     private static function getCompanyId()
     {
-        return config('company_id') ?? Session::get('_company_id') ?? request()->header('company-id')[0];
+        return config('company_id') ?? Session::get('_company_id') ?? (request()->header('company-id') ? request()->header('company-id')[0] : null);
     }
 }

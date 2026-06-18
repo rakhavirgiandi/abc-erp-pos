@@ -86,6 +86,8 @@ return [
         'content',
         'node_modules',
         '*/tests',
+        'pgsql',
+        'storage/pgsql'
     ],
 
     /**
@@ -183,4 +185,6 @@ return [
      * Custom PHP binary path.
      */
     'binary_path' => env('NATIVEPHP_PHP_BINARY_PATH', null),
+
+    'single_instance' => true
 ];

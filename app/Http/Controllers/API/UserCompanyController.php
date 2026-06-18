@@ -8,6 +8,7 @@ use App\Models\Companies;
 use App\Models\CompanyCredentials;
 use App\Models\Subscriptions;
 use App\Models\UserCompanies;
+use Cache;
 use Illuminate\Http\Request;
 use Str;
 
@@ -31,12 +32,14 @@ class UserCompanyController extends Controller
                     $insert_subscriptions = [];
                     $insert_company_credentials = [];
 
+
                     if (count($res_url)) {
                         foreach ($res_url as $idx => $item) {
                             $user_company_res = $item;
 
                             $company = $item['company'];
                             $subscription = $item['subscription'];
+
 
                             $find_user_company = UserCompanies::where('id', '=', $item['id'])->first();
 
@@ -107,7 +110,6 @@ class UserCompanyController extends Controller
                         }
                     }
                 }
-
                 $res = UserCompanies::getAllResult($params, $request);
 
                 if (!$internet_connection && $res->original->isEmpty()) {
