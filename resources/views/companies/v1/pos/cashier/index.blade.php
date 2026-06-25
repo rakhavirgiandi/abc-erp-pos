@@ -1828,7 +1828,7 @@
                     if (item?.variant_options?.length > 0) {
                         productVariantsHTML += '<div class="mb-3">';
                         productVariantsHTML += '<h6>'+item.variant_name+'</h6>';
-                        productVariantsHTML += '<div class="row row-cols-1 row-cols-sm-2 row-cols-lg-3" style="--bs-gutter-x: 6px">';
+                        productVariantsHTML += '<div class="row row-cols-1 row-cols-sm-2 row-cols-lg-3" style="--bs-gutter-x: 6px; --bs-gutter-y: 6px;">';
                         item?.variant_options.forEach((opt, optIdx) => {
                             productVariantsHTML += '<div class="col">'
                             productVariantsHTML += '    <button type="button" class="btn btn-lg w-100 select-variant-toggle" data-variant_id="'+item.variant_id+'" data-variant_option_id="'+opt.variant_option_id+'" data-option_value="'+opt.option_value+'">'+opt.option_value+'</button>'
@@ -5845,7 +5845,14 @@
                     try {
                         const result = await fn();
                     } catch (err) {
+                        
+                        if (err.status == 401) {
+                            generalAjaxErrorHandler(err, err.status, err.responseText);
+                            throw err;
+                        }
+                        
                         errors.push(`Terjadi kesalahan ketika menjalankan ${camelToSentence(fn.name)}`);
+                        
                     } finally {
                         processLength++;
                         const progress = Math.round((processLength / dataLength) * 100);
@@ -5891,6 +5898,7 @@
                                 errMessage += '<div style="margin-bottom: .25rem">'+item+'<div>';
                             })
                         }
+
 
                         setTimeout(() => {
                             Swal.fire({

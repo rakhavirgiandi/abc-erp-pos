@@ -129,7 +129,11 @@ class NativeServiceProvider extends PackageServiceProvider
     }
 
     protected function configureApp()
-    {
+    {   
+        if (!env('NATIVEPHP_APP_ID')) {
+            return;
+        }
+
         if (config('app.debug')) {
             app(LogWatcher::class)->register();
         }

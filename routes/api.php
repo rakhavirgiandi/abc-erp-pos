@@ -60,6 +60,7 @@ use App\Models\CompanyCredentials;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\API\Companies\v1\ProductCatalogController;
+use App\Http\Controllers\API\DeviceTokenController;
 // ---- Route Use Generator ----
 
 Route::middleware('auth:api')->get('/me', function (Request $request) {
@@ -253,6 +254,16 @@ Route::controller(CompletedJobController::class)->group(function() {
     Route::put('completed_jobs/{id}', 'put')->name('put.completed_jobs');
     Route::delete('completed_jobs/{id}', 'delete')->name('delete.completed_jobs');
     Route::post('completed_jobs_datatables', 'datatables')->name('datatable.completed_jobs');
+});
+
+Route::controller(DeviceTokenController::class)->group(function() {
+    Route::get('device_tokens/{id?}', 'get')->name('get.device_tokens');
+    Route::post('device_tokens', 'post')->name('post.device_tokens');
+    Route::patch('device_tokens/{id}', 'patch')->name('patch.device_tokens');
+    Route::put('device_tokens/{id}', 'put')->name('put.device_tokens');
+    Route::delete('device_tokens/{id}', 'delete')->name('delete.device_tokens');
+    Route::post('device_tokens_datatables', 'datatables')->name('datatable.device_tokens');
+    Route::patch('device_tokens/{id}/approve', 'approve')->name('approve.device_tokens');
 });
 
 Route::middleware(['auth:api'])->group(function () {

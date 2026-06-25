@@ -1033,7 +1033,23 @@
                 }
             }
 
-            showFailedAlert(message, icon, title);
+            if (xhr.status == 401) {
+                Swal.fire({
+                    title: title,
+                    html: message,
+                    icon: icon,
+                    showCancelButton: false,
+                    confirmButtonColor: 'var(--bs-info)',
+                    allowOutsideClick: false
+                }).then((result) => {
+                    if (result.isConfirmed) {
+                        window.location.href = BASE_URL + '/logout'   
+                    }
+                });
+            } else {
+                showFailedAlert(message, icon, title);
+            }
+
         }
 
         function getUsers(params, callback = null) {

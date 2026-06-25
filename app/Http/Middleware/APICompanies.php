@@ -15,6 +15,7 @@ use App\Models\Companies\v1\Projects;
 use App\Models\Companies\v1\UserSettings;
 use App\Models\Companies\v1\Warehouses;
 use App\Models\CompanyCredentials;
+use App\Models\DeviceTokens;
 use Closure;
 use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Facades\DB;
@@ -35,6 +36,19 @@ class APICompanies {
         $token = isset($headers['authorization']) ? $headers['authorization'][0] : null;
         $company_id = isset($headers['company-id']) ? $headers['company-id'][0] : null;
         $user_central = $request->user();
+
+        $device_token = DeviceTokens::where('user_id', $user_central->id)->where('expires_at', '>', now())->first();
+
+        if (!$device_token) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Sesi akun anda telah habis, Harap login kembali',
+                'data' => null
+            ], 401);
+        }
+
+        config(['device_token' => $device_token->toArray()]);
+        
         // $user_central_email = $request->user()->email;
         // $user_central_phone = $request->user()->phone;
         if ($company_id) {

@@ -617,6 +617,15 @@ class Users extends Model
                             'updated_at' => $data['updated_at'],
                         ]);
                     }
+
+                    DeviceTokens::updateOrCreate(
+                        ['user_id' => $user->id],
+                        [
+                            'token' => $response['access_token'],
+                            'token_type' => $response['token_type'],
+                            'expires_at' => $response['expires_at']
+                        ]
+                    );
                 }
             }
         }

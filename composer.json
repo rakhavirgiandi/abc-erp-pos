@@ -18,7 +18,7 @@
         "laravel/tinker": "^2.10.1",
         "laravolt/indonesia": "^0.41.0",
         "mike42/escpos-php": "2.1",
-        "nativephp/desktop": "*",
+        "nativephp/desktop": "@dev",
         "phpmailer/phpmailer": "^7.0",
         "spatie/laravel-permission": "^7.3"
     },
@@ -54,7 +54,7 @@
         ],
         "post-update-cmd": [
             "@php artisan vendor:publish --tag=laravel-assets --ansi --force",
-            "@php artisan native:install --force --quiet "
+            "@php artisan native:install --force --quiet --publish"
         ],
         "post-root-package-install": [
             "@php -r \"file_exists('.env') || copy('.env.example', '.env');\""
@@ -95,7 +95,10 @@
     "repositories": [
         {
             "type": "path",
-            "url": "./packages/nativephp/desktop"
+            "url": "./packages/nativephp/desktop",
+            "options": {
+                "symlink": false
+            }
         }
     ]
 }

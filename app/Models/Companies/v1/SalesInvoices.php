@@ -767,6 +767,8 @@ class SalesInvoices extends Model
             $update = self::where('id', $params['id'])->update($params);
 
             if ($update) {
+                SalesInvoiceDetails::where('sales_invoice_id', $params['id'])->delete();
+
                 foreach ($sales_invoice_details as $key => &$sales_invoice_detail) {
                     $sales_invoice_detail['sales_invoice_id'] = $params['id'];
                     $sales_invoice_detail['ref_number'] = $params['ref_number'];

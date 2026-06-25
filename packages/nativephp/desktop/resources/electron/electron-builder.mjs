@@ -11,12 +11,12 @@ const appVersion = process.env.NATIVEPHP_APP_VERSION;
 const appCopyright = process.env.NATIVEPHP_APP_COPYRIGHT;
 const deepLinkProtocol = process.env.NATIVEPHP_DEEPLINK_SCHEME;
 const updaterEnabled = process.env.NATIVEPHP_UPDATER_ENABLED === 'true';
-const deleteAppDataOnUninstall = process.env.NATIVEPHP_NSIS_DELETE_APP_DATA === 'true';
+// const deleteAppDataOnUninstall = process.env.NATIVEPHP_NSIS_DELETE_APP_DATA === 'true';
 
 // Azure signing configuration
-const azureEndpoint = process.env.NATIVEPHP_AZURE_ENDPOINT;
-const azureCertificateProfileName = process.env.NATIVEPHP_AZURE_CERTIFICATE_PROFILE_NAME;
-const azureCodeSigningAccountName = process.env.NATIVEPHP_AZURE_CODE_SIGNING_ACCOUNT_NAME;
+// const azureEndpoint = process.env.NATIVEPHP_AZURE_ENDPOINT;
+// const azureCertificateProfileName = process.env.NATIVEPHP_AZURE_CERTIFICATE_PROFILE_NAME;
+// const azureCodeSigningAccountName = process.env.NATIVEPHP_AZURE_CODE_SIGNING_ACCOUNT_NAME;
 
 // Since we do not copy the php executable here, we only need these for building
 const isWindows = process.argv.includes('--win');
@@ -65,6 +65,7 @@ export default {
         '!electron.vite.config.{js,ts,mjs,cjs}',
         '!{.eslintignore,.eslintrc.cjs,.prettierignore,.prettierrc.yaml,dev-app-update.yml,CHANGELOG.md,README.md}',
         '!{.env,.env.*,.npmrc,pnpm-lock.yaml}',
+        // 'pgsql/**/*',
     ],
     beforePack: async (context) => {
         let arch = {
@@ -82,23 +83,35 @@ export default {
     },
     afterSign: 'build/notarize.js',
     win: {
-        executableName: fileName,
-        ...(azureEndpoint && azureCertificateProfileName && azureCodeSigningAccountName
-            ? {
-                  azureSignOptions: {
-                      endpoint: azureEndpoint,
-                      certificateProfileName: azureCertificateProfileName,
-                      codeSigningAccountName: azureCodeSigningAccountName,
-                  },
-              }
-            : {}),
+        target: [
+            {
+                target: 'nsis',
+                arch: ['x64'],
+            },
+        ],
+        icon: 'packages/nativephp/desktop/resources/build/icon.png',
     },
     nsis: {
-        artifactName: appName + '-${version}-setup.${ext}',
-        shortcutName: '${productName}',
-        uninstallDisplayName: '${productName}',
-        createDesktopShortcut: 'always',
-        deleteAppDataOnUninstall: deleteAppDataOnUninstall,
+        // true = satu installer untuk semua user (install ke Program Files)
+        // false = per-user install (tidak butuh admin untuk install file,
+        //         tapi pg_ctl register tetap butuh admin)
+        oneClick: false,
+        perMachine: true,
+        allowElevation: true,
+        allowToChangeInstallationDirectory: true,
+        installerIcon: 'packages/nativephp/desktop/resources/build/icon.png',
+        uninstallerIcon: 'packages/nativephp/desktop/resources/build/icon.png',
+        installerHeaderIcon: 'packages/nativephp/desktop/resources/build/icon.png',
+        createDesktopShortcut: true,
+        createStartMenuShortcut: true,
+        shortcutName: 'ABC POS',
+
+        // Script NSIS custom kita
+        // File ini akan di-include ke dalam NSIS script yang di-generate Electron Builder
+        include: 'build/installer.nsh',
+
+        // Atau pakai script penuh (menggantikan script default Electron Builder):
+        // script: 'build/installer.nsi',
     },
     protocols: {
         name: deepLinkProtocol,
@@ -138,11 +151,9 @@ export default {
             to: 'build',
             filter: ['**/*', '!{.git}'],
         },
-    ],
-    extraFiles: [
         {
-            from: join(process.env.APP_PATH, 'extras'),
-            to: 'extras',
+            from: join(process.env.APP_PATH, 'pgsql'),
+            to: 'pgsql',
             filter: ['**/*'],
         },
     ],

@@ -22,7 +22,7 @@
                 <button type="button" class="btn btn-navbar-action btn-lg btn-icon" id="reload-toggler">
                     <i class="mdi mdi-reload"></i>
                 </button>
-                @if (!!config('user_companies.details')->can('pos.settings'))
+                @if (!!config('user_companies.details')->can('pos.settings') || config('user_companies.is_supervisor') || config('user_companies.details')->hasRole('SuperAdmin'))
                 <a href="{{ url('/pos/settings') }}" class="btn btn-navbar-action btn-lg btn-icon">
                     <i class="mdi mdi-cog"></i>
                 </a>

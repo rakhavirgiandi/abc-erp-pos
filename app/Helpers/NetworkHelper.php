@@ -2,7 +2,7 @@
 
 namespace App\Helpers;
 
-use App\Models\Companies\v1\GeneralSettings;
+use App\Models\GeneralSettings;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Session;
@@ -36,13 +36,13 @@ class NetworkHelper
 
     public static function getAccessToken()
     {
-        $token = config('general_settings.sync_token');
+        $token = config('device_token.token');
 
         if ($token) {
             return $token;
         }
 
-        return self::requestNewToken();
+        return null;
     }
 
     public static function requestNewToken()
@@ -78,15 +78,13 @@ class NetworkHelper
 
         $token = $result['access_token'];
         
-        if (self::getCompanyId()) {
-            GeneralSettings::updateOrCreate(
-                ['key' => 'access_token'],
-                [
-                    'value' => $token,
-                    'is_hidden' => 1,
-                ]
-            );
-        }
+        GeneralSettings::updateOrCreate(
+            ['key' => 'access_token'],
+            [
+                'value' => $token,
+                'is_hidden' => 1,
+            ]
+        );
 
         return $token;
     }
@@ -100,13 +98,6 @@ class NetworkHelper
         }
 
         $response = self::executeCurl($url, $token, $httpCode, $server_token);
-
-        // token expired
-        if ($httpCode == 401) {
-            $token = self::requestNewToken();
-            $response = self::executeCurl($url, $token, $httpCode, $server_token);
-        }
-
         $decoded = json_decode($response, true);
 
         // trap non-2xx http code
