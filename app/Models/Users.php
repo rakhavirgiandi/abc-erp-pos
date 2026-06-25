@@ -7,6 +7,7 @@ use App\Helpers\GlobalHelper;
 use App\Helpers\ModelHelper;
 use App\Helpers\NetworkHelper;
 use App\Models\Companies;
+use App\Models\DeviceTokens;
 use App\Models\Companies\v1\GeneralSettings;
 use App\Models\Companies\v1\Users as CompanyUsers;
 use App\Models\PasswordResets;
