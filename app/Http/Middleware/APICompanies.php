@@ -37,17 +37,19 @@ class APICompanies {
         $company_id = isset($headers['company-id']) ? $headers['company-id'][0] : null;
         $user_central = $request->user();
 
-        $device_token = DeviceTokens::where('user_id', $user_central->id)->where('expires_at', '>', now())->first();
-
-        if (!$device_token) {
-            return response()->json([
-                'status' => 'error',
-                'message' => 'Sesi akun anda telah habis, Harap login kembali',
-                'data' => null
-            ], 401);
+        if (config('services.is_onpremise')) {
+            $device_token = DeviceTokens::where('user_id', $user_central->id)->where('expires_at', '>', now())->first();
+    
+            if (!$device_token) {
+                return response()->json([
+                    'status' => 'error',
+                    'message' => 'Sesi akun anda telah habis, Harap login kembali',
+                    'data' => null
+                ], 401);
+            }
+    
+            config(['device_token' => $device_token->toArray()]);
         }
-
-        config(['device_token' => $device_token->toArray()]);
         
         // $user_central_email = $request->user()->email;
         // $user_central_phone = $request->user()->phone;

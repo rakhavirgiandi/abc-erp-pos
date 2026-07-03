@@ -2090,7 +2090,7 @@
                         refresh: true,
                         search: $(this).val()
                     });
-                }, 500)
+                }, 300)
                 return
             };
 
@@ -2116,7 +2116,7 @@
                             refresh: true,
                             search: $(this).val()
                         });
-                    }, 500);
+                    }, 200);
                 }
             
                 productInputBuffer = '';
@@ -2611,7 +2611,8 @@
             const tag = document.activeElement.tagName;
 
             if (tag === 'INPUT' || tag === 'TEXTAREA') {
-                return;
+                const activeElement = $(document.activeElement);
+                activeElement.focusout();
             }
 
             e.preventDefault();
@@ -3719,13 +3720,19 @@
 
         $(document).on('shown.bs.modal', '#customer-modal', function () {
             if (!customerModalHasBeenOpen) {
-
                 loadCustomers({
                     refresh: true
                 });
             }
             
             customerModalHasBeenOpen = true
+        })
+
+        $(document).on('hidden.bs.modal', '#customer-modal', function () {
+            const searchCustomerVal = $('#input-search-customer').val();
+            if (searchCustomerVal) {
+                $('#input-search-customer').val('');
+            }
         })
 
 
@@ -3759,14 +3766,10 @@
             }
         });
 
-        $('#customer-modal').on('shown.bs.modal', function () {
-            $('#input-search-customer').focus()
-        });
-
         $(document).on('input', '#input-search-customer', function () {
             setTimeout(() => {
               loadCustomers({refresh: true});
-            }, 800);
+            }, 500);
         });
 
         const selectUnit = (id = null, props = {}) => {
@@ -5090,15 +5093,15 @@
                         let labelDate = null;
 
                         $(res?.data).each((i, item) => {
+                            const dateMoment = moment.utc(item.date);
                             if (labelDate != item.date) {
-                                const dateMoment = moment(item.date);
                                 html += '<div class="bg-body fw-bold text-body-secondary" style="width: 100%; padding: .5rem 1.5rem; font-family: \'Lexend\', sans-serif;">'
                                 if (dateMoment.isSame(moment(), 'day')) {
                                     html += 'Today';
-                                } else if (dateMoment.isSame(moment().subtract(1, 'day'), 'day')) {
+                                } else if (dateMoment.utc().isSame(moment().utc().subtract(1, 'day'), 'day')) {
                                     html += 'Yesterday';
                                 } else {
-                                    html += moment(item.date).format('DD MMM YYYY');
+                                    html += dateMoment.format('DD MMM YYYY');
                                 }
                                 html += '</div>'
                             }
@@ -5121,14 +5124,14 @@
 
                             if (activeTab == 'hold') {
                                 dropdownButtonsHtml += '<li><button class="dropdown-item" id="call-back-sales-invoice-'+item.id+'" data-id="'+item.id+'" type="button">Call Back</button></li>';
-                            }
+                            }                            
 
                             html += '<div class="d-flex border-bottom">'
                             html +=     '<div class="d-flex flex-fill justify-content-between h-100" style="padding: 1rem 0 1rem 1.25rem">'
                             html +=         '<div>'
                             html +=             '<h6 class="mb-1 text-secondary">'+item?.customer_name+'</h6>'
                             html +=             '<p class="mb-2 text-body-secondary small">'+item?.ref_number+'</p>'
-                            html +=             '<p class="mb-0 text-body-secondary" style="font-size: 0.7rem;">'+moment(item?.date).format('DD MMM YYYY')+'</p>'
+                            html +=             '<p class="mb-0 text-body-secondary" style="font-size: 0.7rem;">'+dateMoment.format('DD MMM YYYY')+'</p>'
                             html +=         '</div>'
                             html +=         '<div class="text-end">'
                             html +=             '<h5 style="font-size: .95rem;">'+parseFloat(item?.total).toLocaleString('en')+'</h5>'
@@ -5738,6 +5741,15 @@
                     });
         }
 
+        const pointHistoriesSync = () => {
+            return  $.ajax({
+                        url: BASE_URL+'/api/v1/sync/point_histories',
+                        method: 'GET',
+                        contentType: 'application/json',
+                        headers: { 'Authorization': TOKEN, 'company-id': COMPANY_ID, },
+                    });
+        }
+
         const order = [
             'settings',
             'warehouse',
@@ -5784,7 +5796,7 @@
                 transaction: [
                     salesInvoicesSync
                 ],
-                stock_product: [
+                product_stock: [
                     productStockSync
                 ],
                 customer: [
@@ -5800,6 +5812,9 @@
                 reward_point_and_point_rule: [
                     rewardPointsSync,
                     contactPointRulesSync
+                ],
+                point_histories: [
+                    pointHistoriesSync
                 ],
                 accounting_master: [
                     accountingMastersSync

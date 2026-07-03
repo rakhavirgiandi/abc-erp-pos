@@ -785,6 +785,7 @@ Route::group(['prefix' => 'v1', 'middleware' => ['auth:api', 'api.companies']], 
         Route::post('/sales_invoices', [SalesInvoiceController::class, 'syncToServer'])->name('sync.post_sales_invoices');
         Route::get('/stock_cards', [ProductClosingController::class, 'getStockCard'])->name('sync.stock_card');
         Route::get('/product_catalogs', [ProductCatalogController::class, 'syncToLocal'])->name('sync.product_catalogs');
+        Route::get('/point_histories', [PointHistoryController::class, 'syncToLocal'])->name('sync.point_histories');
     });
 
         

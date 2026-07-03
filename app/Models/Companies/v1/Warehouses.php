@@ -113,9 +113,6 @@ class Warehouses extends Model
 				'country_id' => ['column' => $model->table.'.country_id', 'alias' => 'country_id', 'type' => 'int'],
 				'province_id' => ['column' => $model->table.'.province_id', 'alias' => 'province_id', 'type' => 'int'],
 				'city_id' => ['column' => $model->table.'.city_id', 'alias' => 'city_id', 'type' => 'int'],
-                'country_name' => ['column' => 'countries.name', 'alias' => 'country_name', 'type' => 'string '],
-				'province_name' => ['column' => 'indonesia_provinces.name', 'alias' => 'province_name', 'type' => 'string '],
-				'city_name' => ['column' => 'indonesia_cities.name', 'alias' => 'city_name', 'type' => 'string '],
 				'address' => ['column' => $model->table.'.address', 'alias' => 'address', 'type' => 'string'],
 				'is_active' => ['column' => $model->table.'.is_active', 'alias' => 'is_active', 'type' => 'int'],
 				'created_at' => ['column' => $model->table.'.created_at', 'alias' => 'created_at', 'type' => 'date'],
@@ -123,9 +120,6 @@ class Warehouses extends Model
 				'deleted_at' => ['column' => $model->table.'.deleted_at', 'alias' => 'deleted_at', 'type' => 'date'],
             ],
             'join' => [
-                ['table' => 'countries', 'type' => 'left', 'on' => ['countries.id', '=', $model->table . '.country_id']],
-                ['table' => 'indonesia_provinces', 'type' => 'left', 'on' => ['indonesia_provinces.id', '=', $model->table . '.province_id']],
-                ['table' => 'indonesia_cities', 'type' => 'left', 'on' => ['indonesia_cities.id', '=', $model->table . '.city_id']],
             ],
             'where' => [
 

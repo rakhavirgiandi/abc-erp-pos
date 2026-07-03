@@ -31,7 +31,7 @@
                     <div class="col-4">
                         <div class="mb-3">
                             <div class="form-check">
-                                <input class="form-check-input sync-check" value="customer" type="checkbox" id="sync-customer-check"><label class="form-check-label" for="sync-customer-check">Customer</label>
+                                <input class="form-check-input sync-check" value="customer" type="checkbox" id="sync-customer-check"><label class="form-check-label" for="sync-customer-check">Pelanggan</label>
                             </div>
                         </div>
                     </div>
@@ -53,6 +53,13 @@
                         <div class="mb-3">
                             <div class="form-check">
                                 <input class="form-check-input sync-check" value="warehouse" type="checkbox" id="sync-warehouse-check"><label class="form-check-label" for="sync-warehouse-check">Gudang</label>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-4">
+                        <div class="mb-3">
+                            <div class="form-check">
+                                <input class="form-check-input sync-check" value="point_histories" type="checkbox" id="sync-point_histories-check"><label class="form-check-label" for="sync-point_histories-check">Poin Pelanggan</label>
                             </div>
                         </div>
                     </div>

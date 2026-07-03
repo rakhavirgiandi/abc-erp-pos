@@ -152,6 +152,7 @@ class SalesInvoices extends Model
 		'is_from_pos',
 		'ref_number',
 		'bank_account_id',
+        'is_need_sync',
 		'created_at',
 		'updated_at',
 		'deleted_at',
@@ -172,7 +173,7 @@ class SalesInvoices extends Model
      * @var array
      */
     protected $casts = [
-        'number' => 'string', 'date' => 'date', 'description' => 'string', 'is_from_sales_delivery' => 'int', 'sales_order_id' => 'int', 'sales_order_name' => 'string', 'customer_id' => 'int', 'salesman_id' => 'int', 'top_discount_days' => 'int', 'top_due_days' => 'int', 'top_early_discount' => 'int', 'top_late_charge' => 'int', 'delivery_cost' => 'int', 'delivery_coa' => 'string', 'other_cost' => 'int', 'other_coa' => 'string', 'discount_type' => 'string', 'discount_amount' => 'int', 'discount_coa' => 'string', 'status' => 'string', 'down_payment_amount' => 'int', 'down_payment_coa' => 'string', 'coa_cash' => 'string', 'payment_type' => 'string', 'total' => 'float', 'tax_id' => 'int', 'tax_amount' => 'int', 'tax_percentage' => 'int', 'tax_name' => 'string', 'tax_coa' => 'string', 'branch_id' => 'int', 'branch_name' => 'string', 'project_id' => 'int', 'project_name' => 'string', 'currency_id' => 'int', 'currency_name' => 'string', 'exchange_rate' => 'int', 'warehouse_id' => 'int', 'warehouse_name' => 'string', 'subtotal' => 'float', 'total_coa' => 'string', 'is_standard' => 'int', 'sales_quotation_id' => 'int', 'sales_quotation_number' => 'string', 'discount_percentage' => 'int', 'other_income' => 'int', 'other_income_coa' => 'string', 'sales_return_status' => 'string', 'created_by' => 'int', 'total_payment' => 'float', 'total_change' => 'float', 'is_from_pos' => 'int', 'ref_number' => 'string', 'bank_account_id' => 'int', 'created_at' => 'datetime', 'updated_at' => 'datetime', 'deleted_at' => 'datetime'
+        'number' => 'string', 'date' => 'date', 'description' => 'string', 'is_from_sales_delivery' => 'int', 'sales_order_id' => 'int', 'sales_order_name' => 'string', 'customer_id' => 'int', 'salesman_id' => 'int', 'top_discount_days' => 'int', 'top_due_days' => 'int', 'top_early_discount' => 'int', 'top_late_charge' => 'int', 'delivery_cost' => 'int', 'delivery_coa' => 'string', 'other_cost' => 'int', 'other_coa' => 'string', 'discount_type' => 'string', 'discount_amount' => 'int', 'discount_coa' => 'string', 'status' => 'string', 'down_payment_amount' => 'int', 'down_payment_coa' => 'string', 'coa_cash' => 'string', 'payment_type' => 'string', 'total' => 'float', 'tax_id' => 'int', 'tax_amount' => 'int', 'tax_percentage' => 'int', 'tax_name' => 'string', 'tax_coa' => 'string', 'branch_id' => 'int', 'branch_name' => 'string', 'project_id' => 'int', 'project_name' => 'string', 'currency_id' => 'int', 'currency_name' => 'string', 'exchange_rate' => 'int', 'warehouse_id' => 'int', 'warehouse_name' => 'string', 'subtotal' => 'float', 'total_coa' => 'string', 'is_standard' => 'int', 'sales_quotation_id' => 'int', 'sales_quotation_number' => 'string', 'discount_percentage' => 'int', 'other_income' => 'int', 'other_income_coa' => 'string', 'sales_return_status' => 'string', 'created_by' => 'int', 'total_payment' => 'float', 'total_change' => 'float', 'is_from_pos' => 'int', 'ref_number' => 'string', 'bank_account_id' => 'int', 'created_at' => 'datetime', 'updated_at' => 'datetime', 'deleted_at' => 'datetime', 'is_need_sync' => 'int'
     ];
 
     /**
@@ -297,6 +298,7 @@ class SalesInvoices extends Model
                 'total_change' => ['column' => $model->table.'.total_change', 'alias' => 'total_change', 'type' => 'int'],
                 'is_from_pos' => ['column' => $model->table.'.is_from_pos', 'alias' => 'is_from_pos', 'type' => 'int'],
                 'bank_account_id' => ['column' => $model->table.'.bank_account_id', 'alias' => 'bank_account_id', 'type' => 'int'],
+                'is_need_sync' => ['column' => $model->table.'.is_need_sync', 'alias' => 'is_need_sync', 'type' => 'int'],
             ],
             'join' => [
                 ['table' => 'contacts as contact_customer', 'type' => 'left', 'on' => ['contact_customer.id', '=', $model->table . '.customer_id']],
@@ -657,6 +659,7 @@ class SalesInvoices extends Model
         $sales_invoice_details = null;
         $reward_point_applied_ids = [];
         $total_point_applied = 0;
+        $params['is_need_sync'] = 1;
         
         if (isset($params['reward_point_applied_ids']) && $params['reward_point_applied_ids']) {
             $reward_point_applied_ids = $params['reward_point_applied_ids'];

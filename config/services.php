@@ -41,7 +41,7 @@ return [
     ],
 
     'admin_credentials' => [
-        'server_url' => 'https://app.abcerp.id',
+        'server_url' => 'https://abcerp.fanatech.net',
         'email' => 'adminmuaraselatan@gmail.com',
         'password' => 'admin123!',
     ],

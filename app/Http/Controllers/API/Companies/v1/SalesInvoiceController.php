@@ -130,7 +130,7 @@ class SalesInvoiceController extends Controller
             'sales_invoice_details',
             'point_histories',
         ])
-        ->whereNull('number')
+        ->where('is_need_sync', 1)
         ->select('*')
         ->addSelect(DB::raw('0 as print_template_id'))
         ->orderBy('id')
@@ -142,13 +142,13 @@ class SalesInvoiceController extends Controller
             $response = NetworkHelper::postWithToken($url, $payload);
 
             if (($response['status'] ?? '') !== 'success') {
-                dd($response);
                 throw new \Exception('Gagal sync ke server');
             }
 
             foreach ($response['data'] ?? [] as $row) {
                 SalesInvoices::where('id', $row['local_id'])->update([
-                    'number' => $row['number']
+                    'number' => $row['number'],
+                    'is_need_sync' => $row['is_need_sync']
                 ]);
             }
         });
