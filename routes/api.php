@@ -184,78 +184,6 @@ Route::controller(AdminController::class)->group(function() {
     Route::post('admins_datatables', 'datatables')->name('datatable.admins');
 });
 
-Route::controller(CentralRoleController::class)->group(function() {
-    Route::get('roles/{id?}', 'get')->name('get.roles');
-    Route::post('roles', 'post')->name('post.roles');
-    Route::patch('roles/{id}', 'patch')->name('patch.roles');
-    Route::put('roles/{id}', 'put')->name('put.roles');
-    Route::delete('roles/{id}', 'delete')->name('delete.roles');
-    Route::post('roles_datatables', 'datatables')->name('datatable.roles');
-});
-
-Route::controller(CentralModelHasRoleController::class)->group(function() {
-    Route::get('model_has_roles/{id?}', 'get')->name('get.model_has_roles');
-    Route::post('model_has_roles', 'post')->name('post.model_has_roles');
-    Route::patch('model_has_roles/{id}', 'patch')->name('patch.model_has_roles');
-    Route::put('model_has_roles/{id}', 'put')->name('put.model_has_roles');
-    Route::delete('model_has_roles/{id}', 'delete')->name('delete.model_has_roles');
-    Route::post('model_has_roles_datatables', 'datatables')->name('datatable.model_has_roles');
-});
-
-Route::controller(CentralPermissionController::class)->group(function() {
-    Route::get('permissions/{id?}', 'get')->name('get.permissions');
-    Route::post('permissions', 'post')->name('post.permissions');
-    Route::patch('permissions/{id}', 'patch')->name('patch.permissions');
-    Route::put('permissions/{id}', 'put')->name('put.permissions');
-    Route::delete('permissions/{id}', 'delete')->name('delete.permissions');
-    Route::post('permissions_datatables', 'datatables')->name('datatable.permissions');
-});
-
-Route::controller(CentralModelHasPermissionController::class)->group(function() {
-    Route::get('model_has_permissions/{id?}', 'get')->name('get.model_has_permissions');
-    Route::post('model_has_permissions', 'post')->name('post.model_has_permissions');
-    Route::patch('model_has_permissions/{id}', 'patch')->name('patch.model_has_permissions');
-    Route::put('model_has_permissions/{id}', 'put')->name('put.model_has_permissions');
-    Route::delete('model_has_permissions/{id}', 'delete')->name('delete.model_has_permissions');
-    Route::post('model_has_permissions_datatables', 'datatables')->name('datatable.model_has_permissions');
-});
-
-Route::controller(CentralRoleHasPermissionController::class)->group(function() {
-    Route::get('role_has_permissions/{id?}', 'get')->name('get.role_has_permissions');
-    Route::post('role_has_permissions', 'post')->name('post.role_has_permissions');
-    Route::patch('role_has_permissions/{id}', 'patch')->name('patch.role_has_permissions');
-    Route::put('role_has_permissions/{id}', 'put')->name('put.role_has_permissions');
-    Route::delete('role_has_permissions/{id}', 'delete')->name('delete.role_has_permissions');
-    Route::post('role_has_permissions_datatables', 'datatables')->name('datatable.role_has_permissions');
-});
-
-Route::controller(PasswordResetTokenController::class)->group(function() {
-    Route::get('password_reset_tokens/{id?}', 'get')->name('get.password_reset_tokens');
-    Route::post('password_reset_tokens', 'post')->name('post.password_reset_tokens');
-    Route::patch('password_reset_tokens/{id}', 'patch')->name('patch.password_reset_tokens');
-    Route::put('password_reset_tokens/{id}', 'put')->name('put.password_reset_tokens');
-    Route::delete('password_reset_tokens/{id}', 'delete')->name('delete.password_reset_tokens');
-    Route::post('password_reset_tokens_datatables', 'datatables')->name('datatable.password_reset_tokens');
-});
-
-Route::controller(JobController::class)->group(function() {
-    Route::get('jobs/{id?}', 'get')->name('get.jobs');
-    Route::post('jobs', 'post')->name('post.jobs');
-    Route::patch('jobs/{id}', 'patch')->name('patch.jobs');
-    Route::put('jobs/{id}', 'put')->name('put.jobs');
-    Route::delete('jobs/{id}', 'delete')->name('delete.jobs');
-    Route::post('jobs_datatables', 'datatables')->name('datatable.jobs');
-});
-
-Route::controller(CompletedJobController::class)->group(function() {
-    Route::get('completed_jobs/{id?}', 'get')->name('get.completed_jobs');
-    Route::post('completed_jobs', 'post')->name('post.completed_jobs');
-    Route::patch('completed_jobs/{id}', 'patch')->name('patch.completed_jobs');
-    Route::put('completed_jobs/{id}', 'put')->name('put.completed_jobs');
-    Route::delete('completed_jobs/{id}', 'delete')->name('delete.completed_jobs');
-    Route::post('completed_jobs_datatables', 'datatables')->name('datatable.completed_jobs');
-});
-
 Route::controller(DeviceTokenController::class)->group(function() {
     Route::get('device_tokens/{id?}', 'get')->name('get.device_tokens');
     Route::post('device_tokens', 'post')->name('post.device_tokens');
@@ -313,54 +241,7 @@ Route::middleware(['auth:api'])->group(function () {
         Route::delete('invoices/{id}', 'delete')->name('delete.invoices');
         Route::post('invoices_datatables', 'datatables')->name('datatable.invoices');
     });
-    Route::controller(TransactionController::class)->group(function() {
-        Route::get('transactions/{id?}', 'get')->name('get.transactions');
-        Route::post('transactions', 'post')->name('post.transactions');
-        Route::patch('transactions/{id}', 'patch')->name('patch.transactions');
-        Route::put('transactions/{id}', 'put')->name('put.transactions');
-        Route::delete('transactions/{id}', 'delete')->name('delete.transactions');
-        Route::post('transactions_datatables', 'datatables')->name('datatable.transactions');
-    });
-    Route::controller(TransactionDetailController::class)->group(function() {
-        Route::get('transaction_details/{id?}', 'get')->name('get.transaction_details');
-        Route::post('transaction_details', 'post')->name('post.transaction_details');
-        Route::patch('transaction_details/{id}', 'patch')->name('patch.transaction_details');
-        Route::put('transaction_details/{id}', 'put')->name('put.transaction_details');
-        Route::delete('transaction_details/{id}', 'delete')->name('delete.transaction_details');
-        Route::post('transaction_details_datatables', 'datatables')->name('datatable.transaction_details');
-    });
-    Route::controller(EditionController::class)->group(function() {
-        Route::get('editions/{id?}', 'get')->name('get.editions');
-        Route::post('editions', 'post')->name('post.editions');
-        Route::patch('editions/{id}', 'patch')->name('patch.editions');
-        Route::put('editions/{id}', 'put')->name('put.editions');
-        Route::delete('editions/{id}', 'delete')->name('delete.editions');
-        Route::post('editions_datatables', 'datatables')->name('datatable.editions');
-    });
-    Route::controller(PeriodController::class)->group(function() {
-        Route::get('periods/{id?}', 'get')->name('get.periods');
-        Route::post('periods', 'post')->name('post.periods');
-        Route::patch('periods/{id}', 'patch')->name('patch.periods');
-        Route::put('periods/{id}', 'put')->name('put.periods');
-        Route::delete('periods/{id}', 'delete')->name('delete.periods');
-        Route::post('periods_datatables', 'datatables')->name('datatable.periods');
-    });
-    Route::controller(ReferralCodeController::class)->group(function() {
-        Route::get('referral_codes/{id?}', 'get')->name('get.referral_codes');
-        Route::post('referral_codes', 'post')->name('post.referral_codes');
-        Route::patch('referral_codes/{id}', 'patch')->name('patch.referral_codes');
-        Route::put('referral_codes/{id}', 'put')->name('put.referral_codes');
-        Route::delete('referral_codes/{id}', 'delete')->name('delete.referral_codes');
-        Route::post('referral_codes_datatables', 'datatables')->name('datatable.referral_codes');
-    });
-    Route::controller(VoucherController::class)->group(function() {
-        Route::get('vouchers/{id?}', 'get')->name('get.vouchers');
-        Route::post('vouchers', 'post')->name('post.vouchers');
-        Route::patch('vouchers/{id}', 'patch')->name('patch.vouchers');
-        Route::put('vouchers/{id}', 'put')->name('put.vouchers');
-        Route::delete('vouchers/{id}', 'delete')->name('delete.vouchers');
-        Route::post('vouchers_datatables', 'datatables')->name('datatable.vouchers');
-    });
+
     Route::controller(EmailQueueController::class)->group(function() {
         Route::get('email_queues/{id?}', 'get')->name('get.email_queues');
         Route::post('email_queues', 'post')->name('post.email_queues');
@@ -369,14 +250,7 @@ Route::middleware(['auth:api'])->group(function () {
         Route::delete('email_queues/{id}', 'delete')->name('delete.email_queues');
         Route::post('email_queues_datatables', 'datatables')->name('datatable.email_queues');
     });
-    Route::controller(CentralGeneralSettingControlle::class)->group(function() {
-        Route::get('general_settings/{id?}', 'get')->name('get.general_settings');
-        Route::post('general_settings', 'post')->name('post.general_settings');
-        Route::patch('general_settings/{id}', 'patch')->name('patch.general_settings');
-        Route::put('general_settings/{id}', 'put')->name('put.general_settings');
-        Route::delete('general_settings/{id}', 'delete')->name('delete.general_settings');
-        Route::post('general_settings_datatables', 'datatables')->name('datatable.general_settings');
-    });
+
     Route::controller(SubscriptionHistoryController::class)->group(function() {
         Route::get('subscription_histories/{id?}', 'get')->name('get.subscription_histories');
         Route::post('subscription_histories', 'post')->name('post.subscription_histories');
@@ -811,7 +685,7 @@ Route::group(['prefix' => 'v1', 'middleware' => ['auth:api', 'api.companies']], 
 
     Route::get('/persib_bandung_juara', function (Request $request) {
         // $halo = 'asd';
-        return response()->json($halo);
+        return response()->json(['persib_bandung_juara']);
     });
 
 // ---- Route Controller Generator ----

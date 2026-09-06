@@ -200,6 +200,69 @@
             timer: timer
         });
     }
+
+    $(function () {
+        let progressSwalOpen = false;
+
+        // window.Native.on('Native\\Desktop\\Events\\AutoUpdater\\UpdateAvailable', function (payload) {
+        //     Swal.fire({
+        //         icon: 'info',
+        //         title: 'Update Tersedia',
+        //         text: 'Versi ' + (payload.version ?? ''),
+        //         timer: 2000,
+        //         showConfirmButton: false
+        //     });
+        // });
+    
+        window.Native.on('Native\\Desktop\\Events\\AutoUpdater\\DownloadProgress', function (payload) {
+            const percent = Math.round(payload.percent ?? 0);
+
+            if (!progressSwalOpen) {
+                progressSwalOpen = true;
+                Swal.fire({
+                    title: 'Mengunduh Update...',
+                    html: '<div class="progress" style="height: 25px;">' +
+                              '<div id="update-progress-bar" class="progress-bar progress-bar-striped progress-bar-animated" ' +
+                                   'role="progressbar" style="width: 0%;">0%</div>' +
+                          '</div>',
+                    allowOutsideClick: false,
+                    allowEscapeKey: false,
+                    showConfirmButton: false
+                });
+            }
+
+            $('#update-progress-bar')
+                .css('width', percent + '%')
+                .text(percent + '%');
+        });
+
+        window.Native.on('Native\\Desktop\\Events\\AutoUpdater\\UpdateDownloaded', function (payload) {
+            progressSwalOpen = false;
+
+            Swal.fire({
+                icon: 'success',
+                title: 'Update Siap Dipasang',
+                text: 'Restart aplikasi sekarang untuk memasang update versi ' + (payload.version ?? '') + '?',
+                showCancelButton: true,
+                confirmButtonText: 'Restart Sekarang',
+                cancelButtonText: 'Nanti'
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    $.post('/native/update/install');
+                }
+            });
+        });
+
+        window.Native.on('Native\\Desktop\\Events\\AutoUpdater\\Error', function (payload) {
+            progressSwalOpen = false;
+            Swal.close();
+            Swal.fire({
+                icon: 'error',
+                title: 'Gagal Update',
+                text: payload.error ?? 'Terjadi kesalahan saat memeriksa update.'
+            });
+        });
+    });
 </script>
 
 </body>

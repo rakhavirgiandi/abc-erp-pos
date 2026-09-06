@@ -27,6 +27,7 @@ return Application::configure(basePath: dirname(__DIR__))
 
         $middleware->web([
             \App\Http\Middleware\SetLocale::class,
+            \App\Http\Middleware\NativeMenu::class
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions) {

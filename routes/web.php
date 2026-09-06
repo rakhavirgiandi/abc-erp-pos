@@ -41,3 +41,7 @@ Route::group(['middleware' => ['auth.primary']], function () {
         });
     });
 });
+
+Route::post('/native/update/install', function () {
+    \Native\Desktop\Facades\AutoUpdater::quitAndInstall();
+});
