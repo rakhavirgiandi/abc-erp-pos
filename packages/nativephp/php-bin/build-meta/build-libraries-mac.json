@@ -1,0 +1,21 @@
+[
+    "lib-base",
+    "micro",
+    "libiconv",
+    "zlib",
+    "libxml2",
+    "frankenphp",
+    "php",
+    "bzip2",
+    "openssl",
+    "libsodium",
+    "curl",
+    "libpng",
+    "libwebp",
+    "libjpeg",
+    "freetype",
+    "icu",
+    "onig",
+    "sqlite",
+    "libzip"
+]

@@ -1,0 +1,12 @@
+waiting for server to start....2026-07-16 10:47:58.733 +07 [23956] LOG:  starting PostgreSQL 14.23, compiled by Visual C++ build 1944, 64-bit
+2026-07-16 10:47:58.739 +07 [23956] LOG:  listening on IPv6 address "::1", port 1933
+2026-07-16 10:47:58.739 +07 [23956] LOG:  listening on IPv4 address "127.0.0.1", port 1933
+2026-07-16 10:47:58.769 +07 [20744] LOG:  database system was shut down at 2026-07-16 10:47:57 +07
+2026-07-16 10:47:58.804 +07 [23956] LOG:  database system is ready to accept connections
+ done
+server started
+2026-07-16 10:48:00.759 +07 [23956] LOG:  received fast shutdown request
+2026-07-16 10:48:00.761 +07 [23956] LOG:  aborting any active transactions
+2026-07-16 10:48:00.768 +07 [23956] LOG:  background worker "logical replication launcher" (PID 16560) exited with exit code 1
+2026-07-16 10:48:00.768 +07 [26016] LOG:  shutting down
+2026-07-16 10:48:00.793 +07 [23956] LOG:  database system is shut down

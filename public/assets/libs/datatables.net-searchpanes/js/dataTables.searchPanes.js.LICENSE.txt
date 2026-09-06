@@ -1,0 +1,7 @@
+/*! SearchPanes 2.3.5
+     * © SpryMedia Ltd - datatables.net/license
+     */
+
+/*! SearchPanes 2.3.5
+ * © SpryMedia Ltd - datatables.net/license
+ */

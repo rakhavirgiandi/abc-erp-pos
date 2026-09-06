@@ -1,0 +1,26 @@
+<?php
+
+namespace Native\Desktop\Facades;
+
+use Illuminate\Support\Facades\Facade;
+
+/**
+ * @method static static title(string $title)
+ * @method static static event(string $event)
+ * @method static static sound(string $sound)
+ * @method static static silent(bool $silent = true)
+ * @method static static message(string $body)
+ * @method static static reference(string $reference)
+ * @method static static hasReply(string $placeholder = '')
+ * @method static static addAction(string $label)
+ * @method static void show()
+ * @method static static when($value = null, ?callable $callback = null, ?callable $default = null)
+ * @method static static unless($value = null, ?callable $callback = null, ?callable $default = null)
+ */
+class Notification extends Facade
+{
+    protected static function getFacadeAccessor()
+    {
+        return \Native\Desktop\Notification::class;
+    }
+}

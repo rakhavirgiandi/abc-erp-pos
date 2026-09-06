@@ -1,0 +1,214 @@
+<?php
+
+namespace App\Http\Controllers\API\Companies\v1;
+
+use App\Helpers\NetworkHelper;
+use Illuminate\Support\Facades\DB;
+use App\Http\Controllers\Controller;
+use App\Models\Companies\v1\Media;
+use Illuminate\Http\Request;
+
+class MediumController extends Controller
+{
+    public function get(Request $request, $id = null)
+    {
+        $params = $request->all();
+
+        if ($id != null) {
+            $res = Media::getById($id, $params, $request);
+        } else if (isset($params['all']) && $params['all']) {
+            $res = Media::getAllResult($params, $request);
+        } else {
+            $res = Media::getPaginatedResult($params, $request);
+        }
+
+        return $res;
+    }
+
+    public function post(Request $request)
+    {
+        $params = $request->all();
+        return Media::createOrUpdate($params, $request->method(), $request);
+    }
+
+    public function put(Request $request, $id)
+    {
+        $params = $request->all();
+        $params['id'] = $id;
+        return Media::createOrUpdate($params, $request->method(), $request);
+    }
+
+    public function patch(Request $request, $id)
+    {
+        $params = $request->all();
+        $params['id'] = $id;
+        return Media::createOrUpdate($params, $request->method(), $request);
+    }
+
+    public function delete(Request $request, $id)
+    {
+        $params = $request->all();
+
+        return Media::deleteById($id, $params, $request);
+    }
+
+    public function approve(Request $request, $id)
+    {
+        $params = $request->all();
+
+        return Media::approveById($id, $params, $request);
+    }
+
+    public function datatables(Request $request)
+    {
+        $user = auth()->guard('sanctum')->user();
+
+        $columns = [
+            'media.id'
+        ];
+
+        $dataOrder = [];
+
+        $limit = $request->length;
+
+        $start = $request->start;
+
+        foreach ($request->order as $row) {
+            $nestedOrder['column'] = $columns[$row['column']];
+            $nestedOrder['dir'] = $row['dir'];
+
+            $dataOrder[] = $nestedOrder;
+        }
+
+        $order = $dataOrder;
+
+        $dir = $request->order[0]['dir'];
+
+        $search = $request->search['value'];
+
+        $filter = $request->filter;
+
+        $res = Media::datatables($start, $limit, $order, $dir, $search, $filter);
+
+        $data = [];
+
+        if (!empty($res['data'])) {
+            foreach ($res['data'] as $row) {
+                $nestedData = $row;
+                $nestedData['action'] = '';
+                $nestedData['action'] .= '<div class="actions">';
+                $nestedData['action'] .= '<a href="#" class="btn btn-icon btn-warning" id="edit-data" data-id="'.$row['id'].'"><i class="fa fa-pencil"></i></a>';
+                $nestedData['action'] .= '&nbsp;';
+                $nestedData['action'] .= '<a href="#" class="btn btn-icon btn-danger" id="delete-data" data-id="'.$row['id'].'"><i class="fa fa-trash-o"></i></a>';
+                $nestedData['action'] .= '</div>';
+
+                $data[] = $nestedData;
+            }
+        }
+
+        $json_data = [
+            'draw'  => intval($request->draw),
+            'recordsTotal'  => intval($res['totalData']),
+            'recordsFiltered' => intval($res['totalFiltered']),
+            'data'  => $data,
+            'order' => $order
+        ];
+
+        return json_encode($json_data);
+    }
+
+    public static function syncToLocal(Request $request)
+    {
+        if (!NetworkHelper::isConnected()) {
+            $params = $request->all();
+            $res = Media::getPaginatedResult($params, $request);
+
+            return response()->json([
+                'status' => 'offline',
+                'message' => 'Tidak ada koneksi, menggunakan data lokal',
+                'data' => $res
+            ]);
+        }
+
+        $page = 1;
+        $perPage = 500;
+
+        $model = new Media();
+        $fillable = array_flip($model->getFillable());
+        $all_server_keys = [];
+        $is_success = true;
+
+        do {
+            $url = config('services.admin_credentials.server_url') . "/api/v1/media?model=Products&page={$page}&per_page={$perPage}&is_simple=true&order[id]=asc";
+            $result = NetworkHelper::curlWithToken($url);
+
+            $rows = $result['data'] ?? [];
+            if (empty($rows)) break;
+
+            DB::connection('pgsql_companies')->beginTransaction();
+
+            try {
+                $existing = Media::where('model', 'Products')->get()->keyBy(function ($item) {
+                    return $item->model.'-'.$item->model_id.'-'.$item->filename;
+                });
+
+                $insert = [];
+
+                foreach ($rows as $row) {
+                    $key = $row['model'].'-'.$row['model_id'].'-'.$row['filename'];
+                    $all_server_keys[] = $key;
+                    $media = $existing[$key] ?? null;
+
+                    $row = array_intersect_key($row, $fillable);
+
+                    if ($media) {
+                        unset($row['id']);
+                        $media->update($row);
+                    } else {
+                        $insert[] = $row;
+                    }
+                }
+
+                if (!empty($insert)) {
+                    Media::insert($insert);
+                }
+
+                DB::connection('pgsql_companies')->commit();
+                DB::connection('pgsql_companies')->statement("SELECT SETVAL('media_id_seq', COALESCE((SELECT MAX(id) + 1 FROM media), 1))");
+            } catch (\Exception $e) {
+                DB::connection('pgsql_companies')->rollBack();
+                $is_success = false;
+                return response()->json([
+                    'status' => 'error',
+                    'message' => 'Gagal sync media',
+                    'error' => $e->getMessage()
+                ], 500);
+            }
+
+            $page++;
+        } while ($page <= ($result['nav']['totalPage'] ?? 1));
+
+        /**
+         * DELETE PHASE (SETELAH SEMUA PAGE SELESAI)
+         */
+        if ($is_success && !empty($all_server_keys)) {
+            $all_server_keys = array_unique($all_server_keys);
+            $existing_all = Media::where('model', 'Products')->withTrashed()->get();
+
+            foreach ($existing_all as $item) {
+                $key = $item->model.'-'.$item->model_id.'-'.$item->filename;
+
+                if (!in_array($key, $all_server_keys)) {
+                    $item->forceDelete();
+                }
+            }
+        }
+
+        DB::connection('pgsql_companies')->statement("SELECT SETVAL('media_id_seq', COALESCE((SELECT MAX(id) + 1 FROM media), 1))");
+
+        return response()->json([
+            'status' => 'success',
+            'message' => 'Sync media berhasil',
+        ]);
+    }
+}

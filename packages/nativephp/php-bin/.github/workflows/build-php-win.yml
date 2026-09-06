@@ -1,0 +1,146 @@
+name: Build PHP (Windows)
+
+permissions:
+  contents: write
+  pull-requests: write
+
+on:
+  schedule:
+    - cron: '0 0 * * 5'
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'PHP version to build'
+        type: choice
+        options:
+          - all
+          - "8.3"
+          - "8.4"
+          - "8.5"
+        default: all
+
+env:
+  GITHUB_TOKEN: ${{ secrets.PAT }}
+  SPC_VERSION: 2.8.5
+  SPC_BUILD_OS: win
+
+jobs:
+  build:
+    name: ${{ matrix.version }} ${{ matrix.os }}
+    runs-on: ${{ matrix.os }}
+
+    strategy:
+      fail-fast: false
+      matrix:
+        version: ${{ fromJSON((github.event.inputs.version || 'all') == 'all' && '["8.3","8.4","8.5"]' || format('["{0}"]', github.event.inputs.version)) }}
+        os: [windows-2025]
+        include:
+          - os: windows-2025
+            arch: x64
+            spc_asset: spc-windows-x64.exe
+
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Download SPC
+        run: |
+          cd ..
+          Invoke-WebRequest -Uri "https://github.com/crazywhalecc/static-php-cli/releases/download/${{ env.SPC_VERSION }}/${{ matrix.spc_asset }}" -OutFile spc.exe
+          New-Item -ItemType Directory -Force -Path static-php-cli/bin | Out-Null
+          Move-Item spc.exe static-php-cli/bin/
+
+      - name: Setup system PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: 8.3
+          tools: pecl, composer
+          extensions: curl, openssl, mbstring, sodium, tokenizer, filter
+          ini-values: memory_limit=-1
+
+      - name: SPC doctor
+        run: |
+          cd ../static-php-cli
+          ./bin/spc.exe doctor
+
+      - name: Read PHP extensions and libraries
+        run: |
+          $extensions = php -r "echo trim(file_get_contents('php-extensions.txt'));"
+          $env:EXTENSIONS = $extensions
+          $extHash = php -r "echo md5(getenv('EXTENSIONS'));"
+          $libraries = php -r "echo trim(file_get_contents('php-libraries.txt'));"
+          Add-Content -Path $env:GITHUB_ENV -Value "PHP_EXTENSIONS=$extensions"
+          Add-Content -Path $env:GITHUB_ENV -Value "PHP_EXT_HASH=$extHash"
+          Add-Content -Path $env:GITHUB_ENV -Value "PHP_LIBS=$libraries"
+
+      - id: cache-spc-downloads
+        uses: actions/cache@v5
+        with:
+          path: ../static-php-cli/downloads
+          key: spc-downloads-${{ env.PHP_EXT_HASH }}
+
+      - name: Download PHP extension sources
+        if: steps.cache-spc-downloads.outputs.cache-hit != 'true'
+        run: |
+          cd ../static-php-cli
+          ./bin/spc.exe download --with-php=${{ matrix.version }} --for-extensions "${{ env.PHP_EXTENSIONS }}" --prefer-pre-built
+
+      # SPC 2.8.5 has no Windows zstd builder, but PHP ext/curl/config.w32
+      # requires libzstd.lib. Stage a pre-built copy into buildroot so the
+      # curl extension's config check passes.
+      - name: Stage libzstd for curl extension
+        env:
+          ZSTD_VERSION: v1.5.7
+        run: |
+          cd ..
+          Invoke-WebRequest -Uri "https://github.com/facebook/zstd/releases/download/${env:ZSTD_VERSION}/zstd-${env:ZSTD_VERSION}-win64.zip" -OutFile zstd.zip
+          Expand-Archive -Path zstd.zip -DestinationPath .
+          New-Item -ItemType Directory -Force -Path "static-php-cli/buildroot/lib", "static-php-cli/buildroot/include" | Out-Null
+          Copy-Item "zstd-${env:ZSTD_VERSION}-win64/static/libzstd_static.lib" "static-php-cli/buildroot/lib/libzstd.lib"
+          Copy-Item "zstd-${env:ZSTD_VERSION}-win64/include/*.h" "static-php-cli/buildroot/include/"
+          Remove-Item -Recurse -Force zstd.zip, "zstd-${env:ZSTD_VERSION}-win64"
+
+      # SPC's bundled icu-static-win is ICU 78, whose headers require C++17.
+      # PHP 8.3's ext/intl/config.w32 doesn't pass /std:c++17 to MSVC (8.4+
+      # does), so intl_convertcpp.cpp fails to compile. Extract php-src
+      # manually and patch in /std:c++17 before SPC runs the build.
+      - name: Patch PHP 8.3 ext/intl for C++17 (ICU 78 compatibility)
+        if: matrix.version == '8.3'
+        run: |
+          cd ../static-php-cli
+          ./bin/spc.exe extract php-src
+          $f = 'source/php-src/ext/intl/config.w32'
+          (Get-Content -Path $f -Raw) -replace '"/EHsc /DUNISTR_FROM_CHAR_EXPLICIT', '"/std:c++17 /EHsc /DUNISTR_FROM_CHAR_EXPLICIT' | Set-Content -Path $f -NoNewline
+
+      - name: Build PHP
+        run: |
+          cd ../static-php-cli
+          ./bin/spc.exe build --build-cli "${{ env.PHP_EXTENSIONS }}" --with-libs="${{ env.PHP_LIBS }}" --debug
+
+      - name: Get built PHP version
+        run: |
+          $phpVersionFull = ../static-php-cli/buildroot/bin/php.exe -r "echo PHP_VERSION;"
+          Add-Content -Path $env:GITHUB_ENV -Value "PHP_VERSION_FULL=$phpVersionFull"
+
+      - name: Create bin directories
+        run: |
+          New-Item -ItemType Directory -Force -Path "bin/${{ env.SPC_BUILD_OS }}/${{ matrix.arch }}", "license-files", "build-meta" | Out-Null
+
+      - name: Zip PHP binary, copy metadata
+        run: |
+          Compress-Archive -Path "../static-php-cli/buildroot/bin/php.exe" -DestinationPath "bin/${{ env.SPC_BUILD_OS }}/${{ matrix.arch }}/php-${{ matrix.version }}.zip" -Force
+          Copy-Item ../static-php-cli/buildroot/license/* license-files/
+          Copy-Item ../static-php-cli/buildroot/build-extensions.json build-meta/build-extensions-${{ env.SPC_BUILD_OS }}.json
+          Copy-Item ../static-php-cli/buildroot/build-libraries.json build-meta/build-libraries-${{ env.SPC_BUILD_OS }}.json
+
+      - name: Create Pull Request
+        uses: peter-evans/create-pull-request@v8
+        with:
+          branch: update-php-${{ matrix.version }}-${{ env.SPC_BUILD_OS }}-${{ matrix.arch }}
+          title: "Update PHP ${{ matrix.version }} build for ${{ env.SPC_BUILD_OS }} ${{ matrix.arch }}"
+          commit-message: "Update PHP ${{ matrix.version }} build for ${{ env.SPC_BUILD_OS }} ${{ matrix.arch }}"
+          body: |
+            PHP: ${{ env.PHP_VERSION_FULL }}
+            Exts: ${{ env.PHP_EXTENSIONS }}
+            OS: ${{ env.SPC_BUILD_OS }}
+            Arch: ${{ matrix.arch }}
+          base: main
