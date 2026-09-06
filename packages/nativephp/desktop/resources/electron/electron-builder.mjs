@@ -1,47 +1,35 @@
 import { exec } from 'child_process';
 import { join } from 'path';
 
-const appUrl = process.env.APP_URL;
-const appId = process.env.NATIVEPHP_APP_ID;
-const appName = process.env.NATIVEPHP_APP_NAME;
-const isBuilding = process.env.NATIVEPHP_BUILDING;
-const appAuthor = process.env.NATIVEPHP_APP_AUTHOR;
-const fileName = process.env.NATIVEPHP_APP_FILENAME;
-const appVersion = process.env.NATIVEPHP_APP_VERSION;
-const appCopyright = process.env.NATIVEPHP_APP_COPYRIGHT;
+const appUrl          = process.env.APP_URL;
+const appId           = process.env.NATIVEPHP_APP_ID;
+const appName         = process.env.NATIVEPHP_APP_NAME;
+const isBuilding      = process.env.NATIVEPHP_BUILDING;
+const appAuthor       = process.env.NATIVEPHP_APP_AUTHOR;
+const fileName        = process.env.NATIVEPHP_APP_FILENAME;
+const appVersion      = process.env.NATIVEPHP_APP_VERSION;
+const appCopyright    = process.env.NATIVEPHP_APP_COPYRIGHT;
 const deepLinkProtocol = process.env.NATIVEPHP_DEEPLINK_SCHEME;
-const updaterEnabled = process.env.NATIVEPHP_UPDATER_ENABLED === 'true';
-// const deleteAppDataOnUninstall = process.env.NATIVEPHP_NSIS_DELETE_APP_DATA === 'true';
+const updaterEnabled  = process.env.NATIVEPHP_UPDATER_ENABLED === 'true';
 
-// Azure signing configuration
-// const azureEndpoint = process.env.NATIVEPHP_AZURE_ENDPOINT;
-// const azureCertificateProfileName = process.env.NATIVEPHP_AZURE_CERTIFICATE_PROFILE_NAME;
-// const azureCodeSigningAccountName = process.env.NATIVEPHP_AZURE_CODE_SIGNING_ACCOUNT_NAME;
+// APP_PATH hanya tersedia saat dipanggil via php artisan native:build/run.
+// Saat app dijalankan langsung oleh user, APP_PATH tidak ada — semua
+// yang bergantung pada APP_PATH harus di-guard dengan kondisi isBuilding.
+const appPath         = process.env.APP_PATH || '';
+const buildPath       = process.env.NATIVEPHP_BUILD_PATH || '';
 
-// Since we do not copy the php executable here, we only need these for building
 const isWindows = process.argv.includes('--win');
-const isLinux = process.argv.includes('--linux');
-const isDarwin = process.argv.includes('--mac');
+const isLinux   = process.argv.includes('--linux');
+const isDarwin  = process.argv.includes('--mac');
 
 let targetOs;
-
-if (isWindows) {
-    targetOs = 'win';
-}
-
-if (isLinux) {
-    targetOs = 'linux';
-}
-
-if (isDarwin) {
-    targetOs = 'mac';
-}
+if (isWindows) targetOs = 'win';
+if (isLinux)   targetOs = 'linux';
+if (isDarwin)  targetOs = 'mac';
 
 let updaterConfig = {};
-
 try {
-    updaterConfig = process.env.NATIVEPHP_UPDATER_CONFIG;
-    updaterConfig = JSON.parse(updaterConfig);
+    updaterConfig = JSON.parse(process.env.NATIVEPHP_UPDATER_CONFIG);
 } catch {
     updaterConfig = {};
 }
@@ -50,14 +38,37 @@ if (isBuilding) {
     console.log('  • updater config', updaterConfig);
 }
 
+// Hanya generate extraResources pgsql saat build (appPath tersedia)
+const extraResources = [
+    ...(buildPath ? [{
+        from: buildPath,
+        to: 'build',
+        filter: ['**/*', '!{.git}'],
+    }] : []),
+    ...(appPath ? [{
+        from: join(appPath, 'pgsql'),
+        to: 'build/pgsql',
+        filter: ['**/*'],
+    }] : []),
+];
+
+// Icon path — hanya valid saat build
+const iconIco = appPath ? join(appPath, 'build', 'icon.ico') : undefined;
+const iconPng = appPath ? join(appPath, 'build', 'icon.png') : undefined;
+const installerNsh = appPath ? join(appPath, 'build', 'installer.nsh') : undefined;
+
 export default {
-    appId: appId,
+    appId,
     productName: appName,
-    copyright: appCopyright,
+    copyright:   appCopyright,
+
     directories: {
         buildResources: 'build',
-        output: isBuilding ? join(process.env.APP_PATH, 'nativephp', 'electron', 'dist') : undefined,
+        output: isBuilding && appPath
+            ? join(appPath, 'nativephp', 'electron', 'dist')
+            : undefined,
     },
+
     files: [
         '!**/.vscode/*',
         '!src/*',
@@ -65,13 +76,10 @@ export default {
         '!electron.vite.config.{js,ts,mjs,cjs}',
         '!{.eslintignore,.eslintrc.cjs,.prettierignore,.prettierrc.yaml,dev-app-update.yml,CHANGELOG.md,README.md}',
         '!{.env,.env.*,.npmrc,pnpm-lock.yaml}',
-        // 'pgsql/**/*',
     ],
+
     beforePack: async (context) => {
-        let arch = {
-            1: 'x64',
-            3: 'arm64',
-        }[context.arch];
+        const arch = { 1: 'x64', 3: 'arm64' }[context.arch];
 
         if (arch === undefined) {
             console.error('Cannot build PHP for unsupported architecture');
@@ -79,83 +87,79 @@ export default {
         }
 
         console.log(`  • building php binary - exec php.js --${targetOs} --${arch}`);
-        exec(`node php.js --${targetOs} --${arch}`);
+
+        await new Promise((resolve, reject) => {
+            const child = exec(`node php.js --${targetOs} --${arch}`);
+            child.stdout?.on('data', (d) => process.stdout.write(d));
+            child.stderr?.on('data', (d) => process.stderr.write(d));
+            child.on('exit', (code) => code === 0 ? resolve() : reject(new Error(`php.js failed: ${code}`)));
+            child.on('error', reject);
+        });
     },
+
     afterSign: 'build/notarize.js',
+
     win: {
-        target: [
-            {
-                target: 'nsis',
-                arch: ['x64'],
-            },
-        ],
-        icon: 'packages/nativephp/desktop/resources/build/icon.png',
+        target: [{ target: 'nsis', arch: ['x64'] }],
+        ...(iconPng ? { icon: iconPng } : {}),
     },
+
     nsis: {
-        // true = satu installer untuk semua user (install ke Program Files)
-        // false = per-user install (tidak butuh admin untuk install file,
-        //         tapi pg_ctl register tetap butuh admin)
         oneClick: false,
         perMachine: true,
         allowElevation: true,
         allowToChangeInstallationDirectory: true,
-        installerIcon: 'packages/nativephp/desktop/resources/build/icon.png',
-        uninstallerIcon: 'packages/nativephp/desktop/resources/build/icon.png',
-        installerHeaderIcon: 'packages/nativephp/desktop/resources/build/icon.png',
-        createDesktopShortcut: true,
+        ...(iconIco ? {
+            installerIcon:       iconIco,
+            uninstallerIcon:     iconIco,
+            installerHeaderIcon: iconIco,
+        } : {}),
+        createDesktopShortcut:  true,
         createStartMenuShortcut: true,
         shortcutName: 'ABC POS',
-
-        // Script NSIS custom kita
-        // File ini akan di-include ke dalam NSIS script yang di-generate Electron Builder
-        include: 'build/installer.nsh',
-
-        // Atau pakai script penuh (menggantikan script default Electron Builder):
-        // script: 'build/installer.nsi',
+        include: installerNsh,
     },
+
     protocols: {
-        name: deepLinkProtocol,
+        name:    deepLinkProtocol,
         schemes: [deepLinkProtocol],
     },
+
     mac: {
         entitlementsInherit: 'build/entitlements.mac.plist',
         artifactName: appName + '-${version}-${arch}.${ext}',
         extendInfo: {
-            NSCameraUsageDescription: "Application requests access to the device's camera.",
-            NSMicrophoneUsageDescription: "Application requests access to the device's microphone.",
+            NSCameraUsageDescription:      "Application requests access to the device's camera.",
+            NSMicrophoneUsageDescription:  "Application requests access to the device's microphone.",
             NSDocumentsFolderUsageDescription: "Application requests access to the user's Documents folder.",
             NSDownloadsFolderUsageDescription: "Application requests access to the user's Downloads folder.",
         },
     },
+
     dmg: {
         artifactName: appName + '-${version}-${arch}.${ext}',
     },
+
     linux: {
-        target: ['AppImage', 'deb'],
+        target:     ['AppImage', 'deb'],
         maintainer: appUrl,
-        category: 'Utility',
+        category:   'Utility',
     },
+
     appImage: {
         artifactName: appName + '-${version}.${ext}',
     },
+
     npmRebuild: false,
+
     extraMetadata: {
-        name: fileName,
+        name:     fileName,
         homepage: appUrl,
-        version: appVersion,
-        author: appAuthor,
+        version:  appVersion,
+        author:   appAuthor,
     },
-    extraResources: [
-        {
-            from: process.env.NATIVEPHP_BUILD_PATH,
-            to: 'build',
-            filter: ['**/*', '!{.git}'],
-        },
-        {
-            from: join(process.env.APP_PATH, 'pgsql'),
-            to: 'pgsql',
-            filter: ['**/*'],
-        },
-    ],
+
+    extraResources,
+
     ...(updaterEnabled ? { publish: updaterConfig } : {}),
 };

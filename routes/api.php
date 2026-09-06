@@ -8,6 +8,7 @@ use App\Http\Controllers\API\InvoiceController;
 use App\Http\Controllers\API\RegDistrictController;
 use App\Http\Controllers\API\RegProvinceController;
 use App\Http\Controllers\API\RegVillageController;
+use App\Http\Controllers\API\StartupController;
 use App\Http\Controllers\API\SubscriptionHistoryController;
 use App\Http\Controllers\API\UserCompanyController;
 use App\Http\Controllers\API\UserController as CentralUserController;
@@ -67,6 +68,9 @@ Route::middleware('auth:api')->get('/me', function (Request $request) {
     return $request->user();
 });
 
+Route::get('/startup/status', [StartupController::class, 'status'])->name('startup.status');
+Route::post('/startup/retry', [StartupController::class, 'retry'])->name('startup.retry');
+
 Route::middleware('auth:api')->get('/v1/user_companies/me', function (Request $request) {
     $headers = $request->header();
 
@@ -78,11 +82,7 @@ Route::middleware('auth:api')->get('/v1/user_companies/me', function (Request $r
         if ($company_credential) {
             config(['database.connections.pgsql_companies' => [
                 'driver' => 'pgsql',
-                'host' => $company_credential['db_host'],
-                'port' => $company_credential['db_port'],
                 'database' => $company_credential['db_database'],
-                'username' => $company_credential['db_username'],
-                'password' => $company_credential['db_password'],
                 'charset' => 'utf8',
                 'prefix' => '',
                 'prefix_indexes' => true,

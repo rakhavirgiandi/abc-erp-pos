@@ -22,6 +22,7 @@ return Application::configure(basePath: dirname(__DIR__))
             'auth.stock_opname' => \App\Http\Middleware\SOKey::class,
             'companies' => \App\Http\Middleware\Companies::class,
             'api.companies' => \App\Http\Middleware\APICompanies::class,
+            'auth.guest' => \App\Http\Middleware\GuestAuth::class,
         ]);
 
         $middleware->web([

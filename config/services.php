@@ -41,7 +41,7 @@ return [
     ],
 
     'admin_credentials' => [
-        'server_url' => 'https://abcerp.fanatech.net',
+        'server_url' => 'https://app.abcerp.id',
         'email' => 'adminmuaraselatan@gmail.com',
         'password' => 'admin123!',
     ],
@@ -49,11 +49,12 @@ return [
     'is_onpremise' => env('IS_ONPREMISE', false),
     'pgsql' => [
         'service_name' => env('PGSQL_SERVICE_NAME', 'ABC POS PostgreSQL'),
-        'bin_path' => env('PGSQL_BIN_PATH', base_path('pgsql/bin')),
+        'bin_path' => env('PGSQL_BIN_PATH'),
         'data_path' => env('PGSQL_DATA_PATH', storage_path('pgsql/data')),
-        'port' => env('DB_PORT', 5432),
-        'superuser' => env('DB_USERNAME', 'bukanadmin'),
-        'password'  => env('DB_PASSWORD', 'B15mi1Ll@h'),
+        'host' => env('DB_HOST', '127.0.0.1'),
+        'port' => env('DB_PORT', 5433),
+        'superuser' => env('DB_USERNAME', 'abc_pos_postgres'),
+        'password'  => env('DB_PASSWORD', 'root'),
         'database' => env('DB_DATABASE', 'abc_pos_db'),
     ]
 

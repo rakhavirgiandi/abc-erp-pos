@@ -15,6 +15,7 @@ use App\Models\Companies\v1\UserSettings;
 use App\Models\Companies\v1\Warehouses;
 use App\Models\CompanyCredentials;
 use App\Models\Users as ModelsUsers;
+use App\Services\PostgresWindowsService;
 use Closure;
 use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Facades\DB;
@@ -47,6 +48,16 @@ class Companies
                 'schema' => 'public',
                 'sslmode' => 'prefer',
             ]]);
+
+            if (!config('services.is_onpremise') && config('database.connection_mode') == 'service') {
+                $pg_service = app(PostgresWindowsService::class);
+                $connection_info = $pg_service->getConnectionInfo();
+
+                config(['database.connections.pgsql_companies.host' => $connection_info['host']]);
+                config(['database.connections.pgsql_companies.port' => $connection_info['port']]);
+                config(['database.connections.pgsql_companies.username' => $connection_info['username']]);
+                config(['database.connections.pgsql_companies.password' => $connection_info['password']]);
+            }
 
             $settings = GeneralSettings::get();
             foreach ($settings->toArray() as $row) {
@@ -112,6 +123,16 @@ class Companies
                 'schema' => 'public',
                 'sslmode' => 'prefer',
             ]]);
+
+            if (!config('services.is_onpremise') && config('database.connection_mode') == 'service') {
+                $pg_service = app(PostgresWindowsService::class);
+                $connection_info = $pg_service->getConnectionInfo();
+
+                config(['database.connections.pgsql_companies.host' => $connection_info['host']]);
+                config(['database.connections.pgsql_companies.port' => $connection_info['port']]);
+                config(['database.connections.pgsql_companies.username' => $connection_info['username']]);
+                config(['database.connections.pgsql_companies.password' => $connection_info['password']]);
+            }
 
             $user = Users::select('users.*', 'roles.name as role_name')->where('email', $request->session()->get('_email'))->join('roles', 'roles.id', '=', 'users.role_id')->first();
 
@@ -199,6 +220,7 @@ class Companies
                 'pos.authorize',
                 'pos.logout',
                 'pos.print-receipts',
+                'pos.settings',
             ];
 
             $route_name = $request->route()->getName();

@@ -169,9 +169,9 @@ return [
 
     'postbuild' => [
         // 'rm -rf public/build',
-        'php artisan migrate --force',
-        'php artisan passport:client --personal --name="ABC POS Personal Access Client" --no-interaction',
-        'php artisan passport:keys --force'
+        // 'php artisan migrate --force',
+        // 'php artisan passport:client --personal --name="ABC POS Personal Access Client" --no-interaction',
+        // 'php artisan passport:keys --force'
     ],
 
     /**

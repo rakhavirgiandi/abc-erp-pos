@@ -4,14 +4,15 @@
 ; Di-include oleh Electron Builder ke dalam installer utama
 ; =============================================================================
 
+!include "LogicLib.nsh"
+
+!define PG_PORT_START "5433"   ; Port awal pencarian
+
 ; Macro ini dipanggil SETELAH semua file ter-copy ke destination
 !macro customInstall
     DetailPrint "Menyiapkan database PostgreSQL..."
 
     ; --- Tentukan path ---
-    ; $INSTDIR = folder instalasi (misal: C:\Program Files\ABCPOS)
-    ; $APPDATA = C:\Users\<user>\AppData\Roaming
-
     StrCpy $0 "$INSTDIR\resources\pgsql\bin\pg_ctl.exe"
     StrCpy $1 "$APPDATA\ABCPOS\storage\pgsql\data"
     StrCpy $2 "ABCPOSPostgreSQL"
@@ -21,18 +22,43 @@
     CreateDirectory "$APPDATA\ABCPOS\storage"
     CreateDirectory "$APPDATA\ABCPOS\storage\pgsql"
 
-    ; --- Cek apakah service sudah terdaftar ---
-    ; Query service, jika exit code 0 berarti sudah ada
+    ; =========================================================
+    ; Deteksi port kosong mulai dari PG_PORT_START
+    ; =========================================================
+    StrCpy $7 "${PG_PORT_START}"
+
+    find_port:
+        ; netstat findstr: exit 0 = port dipakai, exit 1 = port kosong
+        nsExec::ExecToStack 'cmd /c netstat -an | findstr /C:":$7 "'
+        Pop $R0
+        Pop $R1
+
+        ${If} $R0 == 0
+            DetailPrint "Port $7 sudah dipakai, mencoba berikutnya..."
+            IntOp $7 $7 + 1
+            ${If} $7 > 65000
+                MessageBox MB_ICONSTOP "Tidak ada port yang tersedia untuk PostgreSQL."
+                Abort
+            ${EndIf}
+            Goto find_port
+        ${EndIf}
+
+    DetailPrint "Menggunakan port: $7"
+
+    ; Simpan port ke registry — dibaca oleh PostgresWindowsService saat app buka
+    WriteRegStr HKLM "Software\ABCPOS" "PgPort" "$7"
+
+    ; =========================================================
+    ; Cek apakah service sudah terdaftar
+    ; =========================================================
     nsExec::ExecToLog 'sc query "$2"'
-    Pop $R0  ; exit code
+    Pop $R0
     ${If} $R0 == 0
         DetailPrint "Service $2 sudah terdaftar, skip registrasi."
         Goto done_register
     ${EndIf}
 
     ; --- Register PostgreSQL sebagai Windows Service ---
-    ; Installer sudah berjalan sebagai Administrator (perMachine: true)
-    ; jadi pg_ctl register langsung berhasil tanpa UAC tambahan
     DetailPrint "Mendaftarkan service $2..."
     nsExec::ExecToLog '"$0" register -N "$2" -D "$1" -S auto -w'
     Pop $R0
@@ -44,8 +70,9 @@
     ${EndIf}
 
     done_register:
-    DetailPrint "Setup database selesai."
+    DetailPrint "Setup database selesai. Port: $7"
 !macroend
+
 
 ; Macro ini dipanggil SEBELUM file dihapus saat uninstall
 !macro customUnInstall
@@ -58,7 +85,7 @@
     ; Stop service dulu
     DetailPrint "Menghentikan service $2..."
     nsExec::ExecToLog 'sc stop "$2"'
-    Sleep 3000  ; tunggu 3 detik
+    Sleep 3000
 
     ; Hapus service
     DetailPrint "Menghapus service $2..."
@@ -70,7 +97,8 @@
         DetailPrint "Service $2 tidak ditemukan atau sudah dihapus."
     ${EndIf}
 
-    ; Catatan: data di $APPDATA\ABCPOS\storage\pgsql\data TIDAK dihapus
-    ; agar data user tetap aman saat uninstall
+    ; Hapus registry key
+    DeleteRegKey HKLM "Software\ABCPOS"
+
     DetailPrint "Catatan: Data database di $APPDATA\ABCPOS\storage tidak dihapus."
 !macroend

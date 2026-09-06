@@ -17,9 +17,9 @@ class AppServiceProvider extends ServiceProvider
         //
         $this->app->singleton(\App\Services\PrintBridgeService::class);
 
-        // $this->app->singleton(PostgresWindowsService::class, function () {
-        //     return new PostgresWindowsService();
-        // });
+        $this->app->singleton(PostgresWindowsService::class, function () {
+            return new PostgresWindowsService();
+        });
     }
 
     /**
@@ -27,48 +27,8 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {   
-        // if ($this->runningAsNativeApp()) {
-        //     $this->bootPostgresService();
-        // }
+        if (!app()->environment('production')) {
+            // config(['services.admin_credentials.server_url' => 'https://abcerp.fanatech.net']);
+        }
     }
-
-    // protected function bootPostgresService(): void
-    // {
-    //     /** @var PostgresWindowsService $pgService */
-    //     $pgService = $this->app->make(PostgresWindowsService::class);
-
-    //     try {
-    //         $pgService->ensureRunning();
-    //         $this->verifyDatabaseConnection();
-    //     } catch (\Throwable $e) {
-    //         Log::critical('[AppServiceProvider] PostgreSQL boot failed: ' . $e->getMessage());
-
-    //         if (class_exists(\Native\Laravel\Facades\Alert::class)) {
-    //             \Native\Laravel\Facades\Alert::error(
-    //                 'Database Error',
-    //                 "Gagal menjalankan database PostgreSQL:\n\n" . $e->getMessage()
-    //                     . "\n\nCoba jalankan aplikasi sebagai Administrator untuk instalasi pertama."
-    //             );
-    //         }
-
-    //     }
-    // }
-
-    // protected function verifyDatabaseConnection(): void
-    // {
-    //     try {
-    //         DB::connection()->getPdo();
-    //         Log::info('[AppServiceProvider] Database connection verified successfully.');
-    //     } catch (\Throwable $e) {
-    //         Log::error('[AppServiceProvider] Database connection failed after pg start: ' . $e->getMessage());
-    //         throw $e;
-    //     }
-    // }
-
-    // protected function runningAsNativeApp(): bool
-    // {
-    //     return env('NATIVEPHP_RUNNING', false) === true
-    //         || env('NATIVEPHP_RUNNING', '') === 'true'
-    //         || app()->runningInConsole() === false; 
-    // }
 }

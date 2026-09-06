@@ -7,126 +7,241 @@ use RuntimeException;
 
 class PostgresWindowsService
 {
-    /**
-     * Nama Windows Service yang akan didaftarkan.
-     */
     protected string $serviceName;
-
-    /**
-     * Path ke folder PostgreSQL binaries (bundled dalam project).
-     * Contoh: C:\MyApp\pgsql
-     */
     protected string $pgBinPath;
-
-    /**
-     * Path ke data directory PostgreSQL (runtime, di storage/).
-     * Contoh: C:\MyApp\storage\pgsql\data
-     */
     protected string $pgDataPath;
-
-    /**
-     * Port PostgreSQL.
-     */
-    protected int $pgPort;
-
-    /**
-     * Username superuser PostgreSQL awal.
-     */
+    protected int    $pgPort;
     protected string $pgUser;
-
-    /**
-     * Password superuser PostgreSQL awal.
-     */
     protected string $pgPassword;
-
-    /**
-     * Nama database default yang akan dibuat.
-     */
     protected string $pgDatabase;
 
     public function __construct()
     {
-        $this->serviceName = config('services.pgsql.service_name', 'ABC POS');
-        $this->pgBinPath   = str_replace('/', DIRECTORY_SEPARATOR, config('services.pgsql.bin_path', base_path('pgsql/bin')));
-        $this->pgDataPath  = str_replace('/', DIRECTORY_SEPARATOR, config('services.pgsql.data_path', storage_path('pgsql/data')));
-        $this->pgPort      = (int) config('services.pgsql.port', 5432);
-        $this->pgUser      = config('services.pgsql.superuser', 'bukanadmin');
-        $this->pgPassword  = config('services.pgsql.password', 'B15mi1Ll@h');
-        $this->pgDatabase  = config('services.pgsql.database', 'abc_erp_db');
+        $this->serviceName = config('services.pgsql.service_name', 'ABC POS PostgreSQL');
+        $this->pgPort      = (int) config('services.pgsql.port', 1933);
+        $this->pgUser      = config('services.pgsql.superuser', 'abc_pos_postgres');
+        $this->pgPassword  = config('services.pgsql.password', 'root');
+        $this->pgDatabase  = config('services.pgsql.database', 'abc_pos_db');
+        $this->pgBinPath   = $this->resolvePgsqlBinPath();
+        $this->pgDataPath  = $this->resolvePgsqlDataPath();
+
+        Log::info('[PgService] pgBinPath: ' . $this->pgBinPath);
+        Log::info('[PgService] pgDataPath: ' . $this->pgDataPath);
     }
 
-    // -------------------------------------------------------------------------
+    // =========================================================================
     // Public API
-    // -------------------------------------------------------------------------
+    // =========================================================================
 
-    /**
-     * Entry point utama: dipanggil dari AppServiceProvider saat boot.
-     * Menginisialisasi data dir jika belum ada, mendaftarkan service jika belum,
-     * dan memastikan service sedang berjalan.
-     */
-    public function ensureRunning(): void
+    public function ensureRunning(): array
     {
         if (! $this->isWindows()) {
-            // Di luar Windows (dev Mac/Linux), skip — pakai PostgreSQL sistem
-            Log::info('[PgService] Non-Windows environment detected, skipping Windows service setup.');
-            return;
+            return $this->readyResponse('Non-Windows environment, menggunakan PostgreSQL sistem.');
         }
 
-        try {
-            $this->initDataDirectoryIfNeeded();
-            $this->registerServiceIfNeeded();
-            $this->startServiceIfNotRunning();
-        } catch (\Throwable $e) {
-            Log::error('[PgService] Failed to ensure PostgreSQL is running: ' . $e->getMessage());
-            throw $e;
+        [$resolvedPort, $portChanged, $originalPort] = $this->resolvePort();
+
+        // Kalau sudah listening — cek apakah data directory milik kita
+        if ($this->isPortOpen($resolvedPort)) {
+            Log::info("[PgService] PostgreSQL sudah berjalan di port {$resolvedPort}.");
+
+            if (! file_exists($this->pgDataPath . DIRECTORY_SEPARATOR . 'PG_VERSION')) {
+                Log::info('[PgService] Port open tapi data directory belum ada, menjalankan init...');
+                $this->initDataDirectoryIfNeeded();
+            }
+
+            return $this->readyResponse(
+                "PostgreSQL sudah berjalan di port {$resolvedPort}.",
+                $resolvedPort, $portChanged, $portChanged ? $originalPort : null
+            );
         }
+
+        // Init → register → start
+        $this->initDataDirectoryIfNeeded();
+        $this->registerServiceIfNeeded();
+        $this->startServiceIfNotRunning();
+
+        return $this->readyResponse(
+            "PostgreSQL berhasil dijalankan di port {$resolvedPort}.",
+            $resolvedPort, $portChanged, $portChanged ? $originalPort : null
+        );
     }
 
-    /**
-     * Hentikan dan hapus Windows Service (untuk uninstall app).
-     */
     public function removeService(): void
     {
         $name = $this->serviceName;
-    
         if ($this->isServiceRunning()) {
             $this->runCommand("sc stop \"{$name}\"");
             sleep(3);
         }
-    
         if ($this->isServiceRegistered()) {
             $this->runCommand("sc delete \"{$name}\"");
             Log::info("[PgService] Service '{$name}' removed.");
         }
     }
 
-    /**
-     * Cek apakah service sedang berjalan.
-     */
     public function isServiceRunning(): bool
     {
-        $name   = $this->serviceName;
-        $output = shell_exec("sc query \"{$name}\" 2>&1");
+        $output = shell_exec("sc query \"{$this->serviceName}\" 2>&1");
         return $output !== null && str_contains($output, 'RUNNING');
     }
 
-    /**
-     * Cek apakah service sudah terdaftar di Windows.
-     */
     public function isServiceRegistered(): bool
     {
-        $name   = $this->serviceName;
-        $output = shell_exec("sc query \"{$name}\" 2>&1");
+        $output = shell_exec("sc query \"{$this->serviceName}\" 2>&1");
         return $output !== null && ! str_contains($output, 'FAILED 1060');
     }
 
-    // -------------------------------------------------------------------------
-    // Internal Steps
-    // -------------------------------------------------------------------------
+    public function isPortOpen(int $port): bool
+    {
+        $conn = @fsockopen('127.0.0.1', $port, $errno, $errstr, 1);
+        if ($conn) { fclose($conn); return true; }
+        return false;
+    }
+
+    public function getPort(): int        { return $this->pgPort; }
+    public function getDatabase(): string { return $this->pgDatabase; }
+    public function getUsername(): string { return $this->pgUser; }
+    public function getPassword(): string { return $this->pgPassword; }
+
+    public function getConnectionInfo(): array
+    {
+        return [
+            'host'     => '127.0.0.1',
+            'port'     => $this->pgPort,
+            'database' => $this->pgDatabase,
+            'username' => $this->pgUser,
+            'password' => $this->pgPassword,
+        ];
+    }
+
+    // =========================================================================
+    // Path Resolution
+    // =========================================================================
+
+    protected function resolvePgsqlBinPath(): string
+    {
+        // __DIR__ = .../resources/build/app/app/Services
+        // dirname x3  = .../resources/build
+        // + pgsql/bin = .../resources/build/pgsql/bin  ← lokasi production
+        $candidates = [
+            dirname(dirname(dirname(__DIR__))) . DIRECTORY_SEPARATOR . 'pgsql' . DIRECTORY_SEPARATOR . 'bin',
+            base_path('pgsql' . DIRECTORY_SEPARATOR . 'bin'),
+        ];
+
+        foreach ($candidates as $path) {
+            $path = str_replace('/', DIRECTORY_SEPARATOR, $path);
+            if (file_exists($path . DIRECTORY_SEPARATOR . 'pg_ctl.exe') ||
+                file_exists($path . DIRECTORY_SEPARATOR . 'pg_ctl')) {
+                Log::info("[PgService] pg binary found: {$path}");
+                return $path;
+            }
+        }
+
+        // Fallback — akan error di bin() kalau tidak ketemu
+        return str_replace('/', DIRECTORY_SEPARATOR, base_path('pgsql/bin'));
+    }
+
+    protected function resolvePgsqlDataPath(): string
+    {
+        // Data directory selalu di AppData\Roaming agar writable oleh user
+        // (tidak di Program Files yang butuh Admin untuk write)
+        $appData = getenv('APPDATA') ?: (getenv('PROGRAMDATA') ?: 'C:\\ProgramData');
+        return $appData
+            . DIRECTORY_SEPARATOR . 'ABCPOS'
+            . DIRECTORY_SEPARATOR . 'storage'
+            . DIRECTORY_SEPARATOR . 'pgsql'
+            . DIRECTORY_SEPARATOR . 'data';
+    }
+
+    // =========================================================================
+    // Port Management
+    // =========================================================================
 
     /**
-     * Inisialisasi PostgreSQL data directory menggunakan initdb jika belum ada.
+     * Resolve port yang akan dipakai.
+     * Return [resolvedPort, portChanged, originalPort]
      */
+    protected function resolvePort(): array
+    {
+        $originalPort = $this->pgPort;
+
+        if (! $this->isPortUsedByOther($this->pgPort)) {
+            return [$this->pgPort, false, $originalPort];
+        }
+
+        $newPort = $this->findAvailablePort($this->pgPort + 1);
+        Log::warning("[PgService] Port {$this->pgPort} dipakai proses lain. Beralih ke {$newPort}.");
+
+        $this->pgPort = $newPort;
+        $this->updatePostgresPort($newPort);
+        $this->updateEnvPort($newPort);
+        config(['database.connections.pgsql.port'           => $newPort]);
+        config(['database.connections.pgsql_companies.port' => $newPort]);
+
+        return [$newPort, true, $originalPort];
+    }
+
+    protected function isPortUsedByOther(int $port): bool
+    {
+        $output = shell_exec("netstat -ano | findstr :{$port} 2>&1");
+        if (empty(trim($output ?? ''))) return false;
+
+        preg_match_all('/\s+(\d+)\s*$/m', $output, $matches);
+        foreach (array_unique($matches[1] ?? []) as $pid) {
+            if (empty($pid)) continue;
+            $proc = shell_exec("tasklist /FI \"PID eq {$pid}\" /FO CSV /NH 2>&1");
+            if ($proc && str_contains(strtolower($proc), 'postgres')) return false;
+        }
+        return true;
+    }
+
+    protected function findAvailablePort(int $startPort = 5434): int
+    {
+        for ($port = $startPort; $port < 65535; $port++) {
+            $conn = @fsockopen('127.0.0.1', $port, $errno, $errstr, 0.5);
+            if (! $conn) return $port;
+            fclose($conn);
+        }
+        throw new RuntimeException('Tidak ada port yang tersedia untuk PostgreSQL.');
+    }
+
+    protected function updatePostgresPort(int $newPort): void
+    {
+        $autoConf = $this->pgDataPath . DIRECTORY_SEPARATOR . 'postgresql.auto.conf';
+        $content  = file_exists($autoConf) ? file_get_contents($autoConf) : '';
+        $content  = preg_match('/^port\s*=/m', $content)
+            ? preg_replace('/^port\s*=.*/m', "port = {$newPort}", $content)
+            : $content . "\nport = {$newPort}\n";
+
+        file_put_contents($autoConf, $content);
+        Log::info("[PgService] postgresql.auto.conf: port={$newPort}");
+    }
+
+    protected function updateEnvPort(int $newPort): void
+    {
+        // Development: skip — jangan ubah .env yang akan ter-bundle saat build
+        if (app()->environment('local', 'development')) {
+            Log::info('[PgService] Dev mode — skip .env update.');
+            return;
+        }
+
+        $envFile = app()->environmentFilePath();
+        if (! file_exists($envFile)) return;
+
+        $content = file_get_contents($envFile);
+        $content = preg_match('/^DB_PORT=/m', $content)
+            ? preg_replace('/^DB_PORT=.*/m', "DB_PORT={$newPort}", $content)
+            : $content . "\nDB_PORT={$newPort}\n";
+
+        file_put_contents($envFile, $content);
+        Log::info("[PgService] .env: DB_PORT={$newPort}");
+    }
+
+    // =========================================================================
+    // Init & Setup
+    // =========================================================================
+
     protected function initDataDirectoryIfNeeded(): void
     {
         $pgVersionFile = $this->pgDataPath . DIRECTORY_SEPARATOR . 'PG_VERSION';
@@ -136,39 +251,31 @@ class PostgresWindowsService
             return;
         }
 
-        // Hapus folder jika ada (termasuk sisa run sebelumnya)
+        // Hapus folder nanggung jika ada
         if (is_dir($this->pgDataPath)) {
             Log::info('[PgService] Removing stale data directory...');
             exec('cmd /c rd /s /q "' . $this->pgDataPath . '"');
             sleep(1);
         }
 
-        Log::info('[PgService] Initializing PostgreSQL data directory...');
+        Log::info('[PgService] Initializing data directory...');
 
-        // Buat folder parent saja (storage/pgsql/), 
-        // biarkan initdb yang buat folder data/ sendiri
         $parentDir = dirname($this->pgDataPath);
         if (! is_dir($parentDir)) {
             mkdir($parentDir, 0755, true);
         }
 
-        // Tulis pwfile di parent dir, BUKAN di data dir
+        // Tulis password ke file sementara di parent (bukan di data dir)
         $pwFile = $parentDir . DIRECTORY_SEPARATOR . 'pwfile.tmp';
         file_put_contents($pwFile, $this->pgPassword);
 
-        $initdb = $this->bin('initdb');
         $output = [];
-        $cmd = "\"{$initdb}\" "
-            . "-D \"{$this->pgDataPath}\" "
-            . "-U \"{$this->pgUser}\" "
-            . "--pwfile=\"{$pwFile}\" "
-            . "--encoding=UTF8 "
-            . "--locale=C "
-            . "-A md5";
-
-        $result = $this->runCommand($cmd, $output);
-
-        @unlink($pwFile);  // hapus pwfile dari parent dir
+        $result = $this->runCommand(
+            "\"{$this->bin('initdb')}\" -D \"{$this->pgDataPath}\" -U \"{$this->pgUser}\" "
+            . "--pwfile=\"{$pwFile}\" --encoding=UTF8 --locale=C -A md5",
+            $output
+        );
+        @unlink($pwFile);
 
         if ($result !== 0) {
             throw new RuntimeException("initdb failed:\n" . implode("\n", $output));
@@ -177,246 +284,203 @@ class PostgresWindowsService
         $this->patchPostgresConf();
         $this->createAppDatabase();
 
-        Log::info('[PgService] Data directory initialized successfully.');
+        Log::info('[PgService] Data directory initialized.');
     }
 
-    protected function removeDirectory(string $path): void
-    {
-        if (! is_dir($path)) {
-            return;
-        }
-    
-        $items = new \RecursiveIteratorIterator(
-            new \RecursiveDirectoryIterator($path, \FilesystemIterator::SKIP_DOTS),
-            \RecursiveIteratorIterator::CHILD_FIRST
-        );
-    
-        foreach ($items as $item) {
-            $item->isDir() ? rmdir($item->getRealPath()) : unlink($item->getRealPath());
-        }
-    
-        rmdir($path);
-    }
-
-    /**
-     * Patch postgresql.conf untuk set port dan listen_addresses.
-     */
     protected function patchPostgresConf(): void
     {
         $confFile = $this->pgDataPath . DIRECTORY_SEPARATOR . 'postgresql.conf';
-
         if (! file_exists($confFile)) {
-            throw new RuntimeException("postgresql.conf not found at: {$confFile}");
+            throw new RuntimeException("postgresql.conf not found: {$confFile}");
         }
 
         $conf = file_get_contents($confFile);
-
-        // Set port
-        $conf = preg_replace('/^#?port\s*=.*/m', "port = {$this->pgPort}", $conf);
-
-        // Listen hanya localhost (aman untuk desktop app)
+        $conf = preg_replace('/^#?port\s*=.*/m',             "port = {$this->pgPort}",   $conf);
         $conf = preg_replace('/^#?listen_addresses\s*=.*/m', "listen_addresses = 'localhost'", $conf);
-
         file_put_contents($confFile, $conf);
 
-        Log::info("[PgService] postgresql.conf patched: port={$this->pgPort}, listen_addresses=localhost");
+        Log::info("[PgService] postgresql.conf patched: port={$this->pgPort}");
     }
 
-    /**
-     * Buat database aplikasi setelah initdb menggunakan createdb.
-     * Perlu start PostgreSQL sementara via pg_ctl untuk bisa menjalankan createdb.
-     */
     protected function createAppDatabase(): void
     {
         $pgCtl   = $this->bin('pg_ctl');
         $logFile = $this->pgDataPath . DIRECTORY_SEPARATOR . 'pg_init.log';
 
-        // JANGAN pakai runCommand() di sini — exec() selalu blocking di Windows
-        // Pakai proc_open agar benar-benar detached
-        Log::info('[PgService] Starting PostgreSQL (detached via proc_open)...');
-
+        // Start sementara — detached via proc_open agar tidak blocking
         $descriptors = [
             0 => ['pipe', 'r'],
             1 => ['file', $logFile, 'a'],
             2 => ['file', $logFile, 'a'],
         ];
-
-        $cmd     = "\"{$pgCtl}\" start -D \"{$this->pgDataPath}\"";
-        $process = proc_open($cmd, $descriptors, $pipes);
-
+        $process = proc_open("\"{$pgCtl}\" start -D \"{$this->pgDataPath}\"", $descriptors, $pipes);
         if (! is_resource($process)) {
-            throw new RuntimeException('Failed to spawn pg_ctl via proc_open.');
+            throw new RuntimeException('Failed to spawn pg_ctl.');
         }
-
         fclose($pipes[0]);
-        proc_close($process); // lepas — proses jalan di background
+        proc_close($process);
 
-        // Polling port sampai ready
-        Log::info('[PgService] Polling port ' . $this->pgPort . '...');
-        $ready  = false;
-        $waited = 0;
-
-        while ($waited < 30) {
+        // Polling sampai siap
+        $ready = false;
+        for ($i = 1; $i <= 30; $i++) {
             sleep(1);
-            $waited++;
-            $conn = @fsockopen('127.0.0.1', $this->pgPort, $errno, $errstr, 1);
-            if ($conn) {
-                fclose($conn);
+            if ($this->isPortOpen($this->pgPort)) {
+                Log::info("[PgService] PostgreSQL ready after {$i}s.");
                 $ready = true;
-                Log::info("[PgService] PostgreSQL ready after {$waited}s.");
                 break;
             }
-            Log::debug("[PgService] Waiting... ({$waited}s) errno={$errno} {$errstr}");
         }
 
         if (! $ready) {
-            $pgLog = file_exists($logFile) ? file_get_contents($logFile) : '(no log)';
-            throw new RuntimeException("PostgreSQL tidak ready dalam 30s.\n\n--- pg_init.log ---\n{$pgLog}");
+            $log = file_exists($logFile) ? file_get_contents($logFile) : '(no log)';
+            throw new RuntimeException("PostgreSQL tidak ready dalam 30s.\n\n{$log}");
         }
 
-        // Buat database
-        $createdb = $this->bin('createdb');
-        $out      = [];
-
-        // Set via putenv agar tersedia untuk child process
+        // Buat database aplikasi
+        $out = [];
         putenv("PGPASSWORD={$this->pgPassword}");
-        $cmd = "\"{$createdb}\" -h localhost -p {$this->pgPort} -U {$this->pgUser} {$this->pgDatabase}";
-        $this->runCommand($cmd, $out);
+        $this->runCommand(
+            "\"{$this->bin('createdb')}\" -h localhost -p {$this->pgPort} -U {$this->pgUser} {$this->pgDatabase}",
+            $out
+        );
         putenv('PGPASSWORD');
-
         Log::info('[PgService] createdb: ' . implode(' | ', $out));
 
         // Stop temp instance
         $out = [];
-        $cmd = "\"{$pgCtl}\" stop -D \"{$this->pgDataPath}\" -m fast";
-        $this->runCommand($cmd, $out);
+        $this->runCommand("\"{$pgCtl}\" stop -D \"{$this->pgDataPath}\" -m fast", $out);
         Log::info('[PgService] pg_ctl stop: ' . implode(' | ', $out));
-
         Log::info("[PgService] Database '{$this->pgDatabase}' created.");
     }
 
-    /**
-     * Daftarkan PostgreSQL sebagai Windows Service menggunakan pg_ctl register.
-     */
     protected function registerServiceIfNeeded(): void
     {
         if ($this->isServiceRegistered()) {
-            Log::info("[PgService] Service '{$this->serviceName}' already registered.");
+            Log::info("[PgService] Service already registered.");
             return;
         }
 
         Log::info("[PgService] Registering Windows Service '{$this->serviceName}'...");
 
-        $pgCtl = $this->bin('pg_ctl');
-
-        // pg_ctl register mendaftarkan PostgreSQL sebagai Windows Service
-        // Perlu dijalankan sebagai Administrator saat pertama kali install
-        $cmd = "\"{$pgCtl}\" register "
-            . "-N \"{$this->serviceName}\" "
-            . "-D \"{$this->pgDataPath}\" "
-            . "-S auto ";  // auto = start otomatis saat Windows boot
+        $pgCtl  = $this->bin('pg_ctl');
+        $name   = $this->serviceName;
         $output = [];
+        $result = $this->runCommand(
+            "\"{$pgCtl}\" register -N \"{$name}\" -D \"{$this->pgDataPath}\" -S auto",
+            $output
+        );
 
-        $result = $this->runCommand($cmd, $output);
-
-        if ($result !== 0) {
-            $msg = implode("\n", $output);
-            // Jika error karena tidak ada hak admin, beri pesan yang jelas
-            if (str_contains($msg, 'Access is denied') || str_contains($msg, 'OpenSCManager')) {
-                throw new RuntimeException(
-                    "Gagal mendaftar Windows Service karena kurang hak Administrator.\n"
-                    . "Jalankan aplikasi sekali sebagai Administrator untuk instalasi awal.\n"
-                    . "Detail: {$msg}"
-                );
-            }
-            throw new RuntimeException("pg_ctl register failed:\n{$msg}");
+        if ($result === 0) {
+            Log::info("[PgService] Service registered.");
+            return;
         }
 
-        Log::info("[PgService] Service '{$this->serviceName}' registered successfully.");
+        $msg = implode("\n", $output);
+
+        // Coba via UAC elevation jika kurang Admin
+        if (str_contains($msg, 'could not open service manager') ||
+            str_contains($msg, 'Access is denied') ||
+            str_contains($msg, 'OpenSCManager')) {
+
+            Log::info('[PgService] Elevating via UAC...');
+            $psCmd = "Start-Process -FilePath '\"{$pgCtl}\"' "
+                . "-ArgumentList 'register','-N','\"{$name}\"','-D','\"{$this->pgDataPath}\"','-S','auto' "
+                . "-Verb RunAs -Wait";
+
+            if ($this->runCommand("powershell -Command \"{$psCmd}\"") === 0) {
+                Log::info('[PgService] Service registered via UAC.');
+                return;
+            }
+
+            throw new RuntimeException(
+                "Gagal mendaftarkan Windows Service.\n"
+                . "Jalankan aplikasi sekali sebagai Administrator (klik kanan → Run as administrator)."
+            );
+        }
+
+        throw new RuntimeException("pg_ctl register failed:\n{$msg}");
     }
 
-    /**
-     * Start Windows Service jika belum running.
-     */
     protected function startServiceIfNotRunning(): void
     {
         if ($this->isServiceRunning()) {
-            Log::info("[PgService] Service '{$this->serviceName}' is already running.");
+            Log::info("[PgService] Service already running.");
             return;
         }
 
         Log::info("[PgService] Starting service '{$this->serviceName}'...");
 
-        $name   = $this->serviceName;
-        $result = $this->runCommand("sc start \"{$name}\"", $output);  // ← quotes!
+        $output = [];
+        $result = $this->runCommand("sc start \"{$this->serviceName}\"", $output);
 
         if ($result !== 0) {
             throw new RuntimeException(
-                "Failed to start service '{$this->serviceName}':\n"
-                . implode("\n", $output)
+                "Failed to start service:\n" . implode("\n", $output)
             );
         }
 
-        $waited = 0;
-        while (! $this->isServiceRunning() && $waited < 15) {
+        // Tunggu port terbuka (lebih reliable daripada cek service state)
+        for ($i = 0; $i < 20 && ! $this->isPortOpen($this->pgPort); $i++) {
             sleep(1);
-            $waited++;
         }
 
-        if (! $this->isServiceRunning()) {
-            throw new RuntimeException("Service '{$this->serviceName}' did not start within 15 seconds.");
+        if (! $this->isPortOpen($this->pgPort)) {
+            throw new RuntimeException(
+                "Service started but port {$this->pgPort} tidak bisa diakses dalam 20 detik."
+            );
         }
 
-        Log::info("[PgService] Service '{$this->serviceName}' started.");
+        Log::info("[PgService] Service started on port {$this->pgPort}.");
     }
 
     public function stopPostgres(): void
     {
-        if (! $this->isRunning()) {
-            return;
-        }
+        if (! $this->isPortOpen($this->pgPort)) return;
 
-        $pgCtl = $this->bin('pg_ctl');
-        $out   = [];
-        $this->runCommand("\"{$pgCtl}\" stop -D \"{$this->pgDataPath}\" -m fast", $out);
-        Log::info('[PgService] PostgreSQL stopped: ' . implode(' ', $out));
+        $out = [];
+        $this->runCommand("\"{$this->bin('pg_ctl')}\" stop -D \"{$this->pgDataPath}\" -m fast", $out);
+        Log::info('[PgService] PostgreSQL stopped.');
     }
 
-    // -------------------------------------------------------------------------
+    // =========================================================================
     // Helpers
-    // -------------------------------------------------------------------------
+    // =========================================================================
 
-    /**
-     * Dapatkan path lengkap ke executable PostgreSQL.
-     */
     protected function bin(string $executable): string
     {
-        $ext  = $this->isWindows() ? '.exe' : '';
-        $path = rtrim($this->pgBinPath, '\\/') . DIRECTORY_SEPARATOR . $executable . $ext;
+        $path = rtrim($this->pgBinPath, '\\/') . DIRECTORY_SEPARATOR
+            . $executable . ($this->isWindows() ? '.exe' : '');
 
         if (! file_exists($path)) {
             throw new RuntimeException("PostgreSQL binary not found: {$path}");
         }
-
         return $path;
     }
 
-    /**
-     * Jalankan shell command, return exit code.
-     *
-     * @param  string   $cmd
-     * @param  array    $output  (by reference) output baris per baris
-     */
     protected function runCommand(string $cmd, ?array &$output = null): int
     {
         $buf = [];
-        Log::debug("[PgService] Running: {$cmd}");
-        exec($cmd . ' 2>&1', $buf, $exitCode);
-        Log::debug("[PgService] Exit code: {$exitCode}", $buf);
-        if ($output !== null) {
-            $output = $buf;
-        }
-        return $exitCode;
+        Log::debug("[PgService] Run: {$cmd}");
+        exec($cmd . ' 2>&1', $buf, $code);
+        Log::debug("[PgService] Exit: {$code}", $buf);
+        if ($output !== null) $output = $buf;
+        return $code;
+    }
+
+    protected function readyResponse(
+        string $message,
+        int    $port = 0,
+        bool   $portChanged = false,
+        ?int   $oldPort = null
+    ): array {
+        return [
+            'status'       => 'ready',
+            'step'         => 'Database siap.',
+            'port'         => $port ?: $this->pgPort,
+            'port_changed' => $portChanged,
+            'old_port'     => $oldPort,
+            'message'      => $message,
+        ];
     }
 
     protected function isWindows(): bool

@@ -515,6 +515,7 @@ class Users extends Model
 
     public static function generateToken($params, $method, $request, $type = 'member')
     {   
+        // dd(config('services.admin_credentials.server_url'));
         if (config('services.is_onpremise')) {
             if (NetworkHelper::isConnected()) {
 

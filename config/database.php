@@ -17,6 +17,7 @@ return [
     */
 
     'default' => env('DB_CONNECTION', 'pgsql'),
+    'connection_mode' => env('DB_CONNECTION_MODE', 'default'),
 
     /*
     |--------------------------------------------------------------------------
@@ -85,11 +86,11 @@ return [
         'pgsql' => [
             'driver' => 'pgsql',
             'url' => env('DB_URL'),
-            'database' => env('DB_DATABASE', 'abcerp_central'),
             'host' => env('DB_HOST', '127.0.0.1'),
-            'port' => env('DB_PORT', '5432'),
-            'username' => env('DB_USERNAME', 'bukanadmin'),
-            'password' => env('DB_PASSWORD', 'B15mi1Ll@h'),
+            'database' => env('DB_DATABASE', 'abc_pos_db'),
+            'username' => env('DB_USERNAME', 'abc_pos_postgres'),
+            'port' => env('DB_PORT', 5433),
+            'password' => env('DB_PASSWORD', 'root'),
             'charset' => env('DB_CHARSET', 'utf8'),
             'prefix' => '',
             'prefix_indexes' => true,
@@ -100,11 +101,11 @@ return [
         'pgsql_admin' => [
             'driver' => 'pgsql',
             'url' => env('DB_URL'),
-            'database' => 'postgres',
             'host' => env('DB_HOST', '127.0.0.1'),
-            'port' => env('DB_PORT', '5432'),
-            'username' => env('DB_USERNAME', 'bukanadmin'),
-            'password' => env('DB_PASSWORD', 'B15mi1Ll@h'),
+            'database' => env('DB_DATABASE', 'abc_pos_db'),
+            'username' => env('DB_USERNAME', 'abc_pos_postgres'),
+            'port' => env('DB_PORT', 5433),
+            'password' => env('DB_PASSWORD', 'root'),
             'charset' => env('DB_CHARSET', 'utf8'),
             'prefix' => '',
             'prefix_indexes' => true,
@@ -115,11 +116,11 @@ return [
         'pgsql_companies' => [
             'driver' => 'pgsql',
             // 'url' => env('DATABASE_URL'),
-            'host' => env('COMPANIES_DB_HOST', '127.0.0.1'),
-            'port' => env('COMPANIES_DB_PORT', '5432'),
-            'database' => env('COMPANIES_DB_DATABASE', 'forge'),
-            'username' => env('COMPANIES_DB_USERNAME', 'bukanadmin'),
-            'password' => env('COMPANIES_DB_PASSWORD', 'B15mi1Ll@h'),
+            'database' => env('DB_DATABASE', 'forge'),
+            'host' => env('DB_HOST', '127.0.0.1'),
+            'username' => env('DB_USERNAME', 'abc_pos_postgres'),
+            'port' => env('DB_PORT', 5433),
+            'password' => env('DB_PASSWORD', 'root'),
             'charset' => 'utf8',
             'prefix' => '',
             'prefix_indexes' => true,

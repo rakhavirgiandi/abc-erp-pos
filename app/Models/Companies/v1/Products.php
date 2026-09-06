@@ -458,7 +458,6 @@ class Products extends Model
         }
 
         $results = ModelHelper::generatePagingResults($schema, $paramsPage, $params, $request, $db, $append);
-        
 
         return response()->json($results);
     }

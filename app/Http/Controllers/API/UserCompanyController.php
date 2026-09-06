@@ -59,7 +59,7 @@ class UserCompanyController extends Controller
 
                             if ($company) {
                                 $find_company = Companies::where('id', '=', $company['id'])->first();
-
+                                unset($company['accounting_standard']);
                                 if ($find_company) {
                                     $find_company->update($company);
                                 } else {

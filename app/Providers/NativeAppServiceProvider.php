@@ -2,6 +2,7 @@
 
 namespace App\Providers;
 
+use App\Services\PostgresWindowsService;
 use Native\Desktop\Facades\Window;
 use Native\Desktop\Contracts\ProvidesPhpIni;
 
@@ -14,7 +15,25 @@ class NativeAppServiceProvider implements ProvidesPhpIni
     public function boot(): void
     {   
         config(['services.is_onpremise' => true]);
-        Window::open();
+
+        if (config('database.connection_mode') == 'service') {
+            $pg_service = app(PostgresWindowsService::class);
+            $connection_info = $pg_service->getConnectionInfo();
+    
+            config(['database.connections.pgsql.host' => $connection_info['host']]);
+            config(['database.connections.pgsql.port' => $connection_info['port']]);
+            config(['database.connections.pgsql.username' => $connection_info['username']]);
+            config(['database.connections.pgsql.password' => $connection_info['password']]);
+        }
+
+        Window::open()
+            ->title(config('app.name'))
+            ->width(1280)
+            ->height(800)
+            ->minWidth(900)
+            ->minHeight(600)
+            ->url(route('startup'))
+            ->resizable(true);
     }
 
     /**
@@ -23,6 +42,9 @@ class NativeAppServiceProvider implements ProvidesPhpIni
     public function phpIni(): array
     {
         return [
+            'memory_limit'       => '512M',
+            'max_execution_time' => '0',
+            'max_input_vars' => '500000'
         ];
     }
 }
