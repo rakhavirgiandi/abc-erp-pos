@@ -171,7 +171,7 @@ class NativeAppServiceProvider implements ProvidesPhpIni
             ->height(800)
             ->minWidth(900)
             ->minHeight(600)
-            // ->url(route('startup'))
+            ->url(route('startup'))
             // ->fullscreen()
             // ->titleBarHidden()
             ->resizable(true);
