@@ -545,10 +545,10 @@ class Users extends Model
                 if ($response) {
                     $db = config('database.connections.pgsql.database');
         
-                    $exists = DB::connection('pgsql_admin')->select("SELECT 1 FROM pg_database WHERE datname = ?", [$db]);
+                    $exists = DB::connection('pgsql')->select("SELECT 1 FROM pg_database WHERE datname = ?", [$db]);
         
                     if (empty($exists)) {
-                        DB::connection('pgsql_admin')->statement("CREATE DATABASE \"{$db}\"");
+                        DB::connection('pgsql')->statement("CREATE DATABASE \"{$db}\"");
                     }
         
                     DB::purge('pgsql');

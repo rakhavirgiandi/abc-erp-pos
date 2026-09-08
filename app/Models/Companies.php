@@ -644,10 +644,10 @@ class Companies extends Model
 
                 $slug = $params['slug'];
 
-                $check_db = DB::connection('pgsql_admin')->select("SELECT 1 FROM pg_catalog.pg_database WHERE datname = ?", [$slug]);
+                $check_db = DB::connection('pgsql')->select("SELECT 1 FROM pg_catalog.pg_database WHERE datname = ?", [$slug]);
 
                 if (empty($check_db)) {
-                    DB::connection('pgsql_admin')->rollBack();
+                    DB::connection('pgsql')->rollBack();
                     return response()->json([
                         'status' => 'error',
                         'message' => 'Database tidak ditemukan, Harap sinkron ulang'
@@ -813,10 +813,10 @@ class Companies extends Model
                 /**
                  * CHECK DB EXISTS
                  */
-                $check_db = DB::connection('pgsql_admin')->select("SELECT 1 FROM pg_catalog.pg_database WHERE datname = ?", [$slug]);
+                $check_db = DB::connection('pgsql')->select("SELECT 1 FROM pg_catalog.pg_database WHERE datname = ?", [$slug]);
 
                 if (!empty($check_db)) {
-                    DB::connection('pgsql_admin')->rollBack();
+                    DB::connection('pgsql')->rollBack();
                     return response()->json([
                         'status' => 'error',
                         'message' => 'Database already exists'
@@ -841,7 +841,7 @@ class Companies extends Model
                 /**
                  * CREATE DATABASE
                  */
-                DB::connection('pgsql_admin')->statement("CREATE DATABASE \"{$slug}\"");
+                DB::connection('pgsql')->statement("CREATE DATABASE \"{$slug}\"");
             }
 
             /**
