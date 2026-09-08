@@ -82,7 +82,6 @@ class StartupController extends Controller
      */
     protected function runPostInstallIfNeeded(): void
     {
-        // Skip saat development
         if (! app()->isProduction()) {
             Log::info('[Startup] Development mode — skip post-install commands.');
             return;
@@ -97,31 +96,44 @@ class StartupController extends Controller
 
         Log::info('[Startup] Menjalankan post-install commands...');
 
-        // Pastikan folder ada
         $flagDir = dirname($flagFile);
         if (! is_dir($flagDir)) {
             mkdir($flagDir, 0755, true);
         }
 
         $commands = [
-            'migrate --force',
-            'passport:client --personal --name="ABC POS Personal Access Client" --no-interaction',
-            'passport:keys --force',
+            ['migrate', ['--force' => true]],
+            ['passport:client', [
+                '--personal' => true,
+                '--name'     => 'ABC POS Personal Access Client',
+                '--no-interaction' => true,
+            ]],
+            ['passport:keys', ['--force' => true]],
         ];
 
-        foreach ($commands as $cmd) {
-            Log::info("[Startup] Running: php artisan {$cmd}");
+        $allSuccess = true;
+
+        foreach ($commands as [$command, $options]) {
+            Log::info("[Startup] Running: php artisan {$command}");
             try {
-                Artisan::call($cmd);
+                $exitCode = Artisan::call($command, $options);
                 Log::info("[Startup] Output: " . Artisan::output());
+
+                if ($exitCode !== 0) {
+                    $allSuccess = false;
+                    Log::error("[Startup] Command '{$command}' exited with code {$exitCode}");
+                }
             } catch (\Throwable $e) {
-                Log::error("[Startup] Command '{$cmd}' failed: " . $e->getMessage());
-                // Tidak throw — lanjutkan command berikutnya
+                $allSuccess = false;
+                Log::error("[Startup] Command '{$command}' failed: " . $e->getMessage());
             }
         }
-
-        // Tandai selesai
-        file_put_contents($flagFile, date('Y-m-d H:i:s'));
-        Log::info('[Startup] Post-install selesai: ' . date('Y-m-d H:i:s'));
+        
+        if ($allSuccess) {
+            file_put_contents($flagFile, date('Y-m-d H:i:s'));
+            Log::info('[Startup] Post-install selesai: ' . date('Y-m-d H:i:s'));
+        } else {
+            Log::warning('[Startup] Post-install ada yang gagal — akan dicoba lagi di startup berikutnya.');
+        }
     }
 }
