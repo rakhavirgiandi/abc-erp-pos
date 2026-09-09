@@ -82,7 +82,7 @@ class StartupController extends Controller
      */
     protected function runPostInstallIfNeeded(): void
     {
-        if (! app()->isProduction()) {
+        if (!app()->isProduction()) {
             Log::info('[Startup] Development mode — skip post-install commands.');
             return;
         }
@@ -128,7 +128,7 @@ class StartupController extends Controller
                 Log::error("[Startup] Command '{$command}' failed: " . $e->getMessage());
             }
         }
-        
+
         if ($allSuccess) {
             file_put_contents($flagFile, date('Y-m-d H:i:s'));
             Log::info('[Startup] Post-install selesai: ' . date('Y-m-d H:i:s'));

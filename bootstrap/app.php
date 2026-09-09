@@ -15,6 +15,10 @@ return Application::configure(basePath: dirname(__DIR__))
         commands: __DIR__.'/../routes/console.php',
         health: '/up',
     )
+    ->withCommands([
+        \Laravel\Passport\Console\KeysCommand::class,
+        \Laravel\Passport\Console\ClientCommand::class,
+    ])
     ->withMiddleware(function (Middleware $middleware): void {
         $middleware->alias([
             'auth.primary' => \App\Http\Middleware\PrimaryAuth::class,
