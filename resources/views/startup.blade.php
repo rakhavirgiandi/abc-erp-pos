@@ -1,20 +1,18 @@
-<!DOCTYPE html>
-<html lang="id">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="csrf-token" content="{{ csrf_token() }}">
-    <title>{{ config('app.name') }}</title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet">
-    <style>
+
+
+
+@extends('companies.v1.layouts.guest.index')
+
+@section('title', isset($title))
+
+@section('style')
+     <style>
         body {
-            background: #f8f9fa;
-            min-height: 100vh;
+            /* min-height: 100vh;
             display: flex;
             align-items: center;
             justify-content: center;
-            user-select: none;
+            user-select: none; */
         }
 
         .splash-card {
@@ -47,7 +45,6 @@
             transition: width 0.5s ease;
             border-radius: 99px;
         }
-        }
         .error-detail {
             font-family: monospace;
             font-size: 0.72rem;
@@ -60,10 +57,21 @@
             word-break: break-word;
             color: #664d03;
         }
+
+        #main-content {
+            width: 100%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            user-select: none;
+        }
     </style>
-</head>
-<body>
-    <div class="splash-card shadow-sm p-4">
+@endsection
+
+@section('content')
+<meta name="csrf-token" content="{{ csrf_token() }}">
+
+  <div class="splash-card shadow-sm p-4">
 
         {{-- Header --}}
         <div class="d-flex align-items-center gap-3 mb-4">
@@ -106,8 +114,10 @@
                 </button>
             </div>
         </div>
+</div>
+@endsection
 
-    </div>
+@section('script')
 
     <script>
         const statusUrl = "{{ route('startup.status') }}";
@@ -237,5 +247,4 @@
         startCycling();
         startPolling();
     </script>
-</body>
-</html>
+@endsection

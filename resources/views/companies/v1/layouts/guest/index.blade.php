@@ -3,7 +3,7 @@
 <head>
 
     <meta charset="utf-8">
-    <title>Login - {{env('APP_NAME')}}</title>
+    <title>Login - {{config('app.name')}}</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="title" content="ABC ERP">
     <meta name="description" content="ABC ERP adalah solusi ERP terintegrasi untuk membantu bisnis mengelola operasional, keuangan, stok, dan laporan dalam satu platform.">
@@ -39,7 +39,7 @@
 <div id="main-content">
     @yield('content')
 </div>
-
+<script src="{{ asset('assets/libs/jquery/jquery.min.js') }}"></script>
 @yield('script')
 @stack('script')
 </body>
