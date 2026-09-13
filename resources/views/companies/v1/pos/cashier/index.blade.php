@@ -751,7 +751,7 @@
         const salesInvoiceSync = (props = {}) => {
             $.ajax({
                 type: 'post',
-                url: BASE_URL + "/api/v1/sync/sales_invoices",
+                url: BASE_URL + "/api/v1/sync/sales_invoices?order[id]=asc",
                 "headers": {
                     'Authorization': TOKEN,
                     'company-id': COMPANY_ID,
@@ -1586,10 +1586,10 @@
 
             const reqParams = $.param(req);
 
-            let url = BASE_URL + '/api/v1/products?'+reqParams;
+            let url = BASE_URL + '/api/v1/products?'+reqParams+'&order[id]=asc';
 
             if (IS_DISPLAY_CATALOG_MODE) {
-                url = BASE_URL + '/api/v1/product_catalogs?'+reqParams;
+                url = BASE_URL + '/api/v1/product_catalogs?'+reqParams+'&order[id]=asc';
             }
 
             $.ajax({
@@ -2135,7 +2135,7 @@
             const reqParams = $.param(req);
 
             $.ajax({
-                url: BASE_URL + '/api/v1/product_categories?'+reqParams+'?is_pos_display=true',
+                url: BASE_URL + '/api/v1/product_categories?'+reqParams+'?is_pos_display=true&order[id]=asc',
                 type: "GET",
                 dataType: "json",
                 headers: {
@@ -2613,6 +2613,7 @@
             if (tag === 'INPUT' || tag === 'TEXTAREA') {
                 const activeElement = $(document.activeElement);
                 activeElement.focusout();
+                return;
             }
 
             e.preventDefault();
@@ -2675,7 +2676,7 @@
             const reqParams = $.param(req);
 
             $.ajax({
-                url: BASE_URL + '/api/v1/products?'+reqParams,
+                url: BASE_URL + '/api/v1/products?'+reqParams+'&order[id]=asc',
                 type: "GET",
                 dataType: "json",
                 headers: {
@@ -3238,7 +3239,7 @@
             const reqParams = $.param(req);
     
             $.ajax({
-                url: BASE_URL + '/api/v1/reward_points?'+reqParams,
+                url: BASE_URL + '/api/v1/reward_points?'+reqParams+'&order[id]=asc',
                 type: "GET",
                 dataType: "json",
                 headers: {
@@ -3678,7 +3679,7 @@
             }
         
             $.ajax({
-                url: BASE_URL + '/api/v1/contacts',
+                url: BASE_URL + '/api/v1/contacts?order[id]=asc',
                 type: "GET",
                 dataType: "json",
                 data: req,
@@ -3842,7 +3843,7 @@
             const reqParams = $.param(req);
     
             $.ajax({
-                url: BASE_URL + '/api/v1/units?'+reqParams,
+                url: BASE_URL + '/api/v1/units?'+reqParams+'&order[id]=asc',
                 type: "GET",
                 dataType: "json",
                 headers: {
@@ -4206,7 +4207,7 @@
             }
         
             $.ajax({
-                url: BASE_URL + '/api/v1/taxes',
+                url: BASE_URL + '/api/v1/taxes?order[id]=asc',
                 type: "GET",
                 dataType: "json",
                 data: req,
@@ -4350,7 +4351,7 @@
             const reqParams = $.param(req);
     
             $.ajax({
-                url: BASE_URL + '/api/v1/bank_accounts?'+reqParams,
+                url: BASE_URL + '/api/v1/bank_accounts?'+reqParams+'&order[id]=asc',
                 type: "GET",
                 dataType: "json",
                 headers: {
@@ -5059,7 +5060,7 @@
             const reqParams = $.param(req);
 
             $.ajax({
-                url: BASE_URL + '/api/v1/sales_invoices?'+reqParams,
+                url: BASE_URL + '/api/v1/sales_invoices?'+reqParams+'&order[id]=asc',
                 type: "GET",
                 dataType: "json",
                 headers: {
@@ -5968,7 +5969,7 @@
             const reqParams = $.param(req);
     
             $.ajax({
-                url: BASE_URL + '/api/v1/reward_points?'+reqParams,
+                url: BASE_URL + '/api/v1/reward_points?'+reqParams+'&order[id]=asc',
                 type: "GET",
                 dataType: "json",
                 headers: {

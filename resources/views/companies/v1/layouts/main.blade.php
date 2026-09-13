@@ -40,7 +40,7 @@
     <!--icons css-->
     <link href="{{ asset('assets/css/icons.min.css') }}" rel="stylesheet" type="text/css">
     <!-- App Css-->
-    <link href="{{ asset('assets/css/app.css') }}" id="app-style" rel="stylesheet" type="text/css">
+    <link href="{{ asset('assets/css/app.min.css') }}" id="app-style" rel="stylesheet" type="text/css">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/dist/tabler-icons.min.css" />
     <link rel="stylesheet" href="{{ asset('assets/libs/flatpickr/flatpickr.min.css') }}">
     @if (Request::segment(1) == 'pos')
@@ -97,6 +97,7 @@
         }
     </style>
     @yield('style')
+    @stack('style')
 </head>
 
 <script type="text/javascript">
@@ -122,77 +123,81 @@
 
 <body class="horizontal-layout">
     <!-- Begin page -->
-    <div id="layout-wrapper">
-        <!-- Start topbar -->
-        @if (Request::segment(1) == 'pos' && Request::segment(2) == 'cashier')
-            @include('companies.v1.layouts.pos.cashier.header')
-        @elseif (Request::segment(1) == 'pos' && Request::segment(2) == 'settings')
-            @include('companies.v1.layouts.pos.settings.header')
-        @else
-            @include('companies.v1.layouts.header')
-        @endif
-        <!-- End topbar -->
-        <!-- ========== Left Sidebar Start ========== -->
-        <!-- Left Sidebar End -->
-        <div class="sidebar-backdrop" id="sidebar-backdrop"></div>
-        <!-- ========== Left Sidebar Start ========== -->
-       
-        @if (Request::segment(1) == 'pos' && Request::segment(2) == 'cashier')
-        @elseif (Request::segment(1) == 'pos' && Request::segment(2) == 'settings')
-            @include('companies.v1.layouts.pos.settings.navbar')
-        @elseif (Request::segment(1) == 'hrm')
-            @include('companies.v1.layouts.navbar_hrm')
-        @else
-            @include('companies.v1.layouts.navbar')
-        @endif
-        <!-- Left Sidebar End -->
-        <!-- ============================================================== -->
-        <!-- Start right Content here -->
-        <!-- ============================================================== -->
-        <div class="main-content">
-            <div class="page-content">
-                @if (Request::segment(1) == 'pos' && Request::segment(2) == 'cashier')
-                    @yield('content')
-                    @yield('modal')
-                @elseif (Request::segment(1) == 'pos' && Request::segment(2) == 'settings')
-                    @yield('content')
-                    @yield('modal')
-                @elseif(Request::segment(1) == 'hrm')
-                    @include('companies.v1.layouts.navbar_hrm')
-                    <div class="container-fluid">
-                        @yield('content')
-    
-                        @yield('modal')
-                    </div><!-- container-fluid -->
-                @else
-                    @include('companies.v1.layouts.navbar')
-                    <div class="container-fluid">
-                        @yield('content')
-    
-                        @yield('modal')
-                    </div><!-- container-fluid -->
-                @endif
-            </div><!-- End Page-content -->
+    <x-desktop-header />
+    <div id="main-content">
 
-            <!-- Begin Footer -->
+        <div id="layout-wrapper">
+            <!-- Start topbar -->
             @if (Request::segment(1) == 'pos' && Request::segment(2) == 'cashier')
-            @include('companies.v1.layouts.pos.cashier.footer')
+                @include('companies.v1.layouts.pos.cashier.header')
             @elseif (Request::segment(1) == 'pos' && Request::segment(2) == 'settings')
+                @include('companies.v1.layouts.pos.settings.header')
             @else
-                @include('companies.v1.layouts.footer')
+                @include('companies.v1.layouts.header')
             @endif
-            <!-- END Footer -->
-            <!-- Begin scroll top -->
-            <div class="progress-wrap" id="progress-scroll">
-                <svg class="progress-circle" width="100%" height="100%" viewBox="-1 -1 102 102">
-                    <path d="M50,1 a49,49 0 0,1 0,98 a49,49 0 0,1 0,-98" />
-                </svg>
+            <!-- End topbar -->
+            <!-- ========== Left Sidebar Start ========== -->
+            <!-- Left Sidebar End -->
+            <div class="sidebar-backdrop" id="sidebar-backdrop"></div>
+            <!-- ========== Left Sidebar Start ========== -->
+           
+            @if (Request::segment(1) == 'pos' && Request::segment(2) == 'cashier')
+            @elseif (Request::segment(1) == 'pos' && Request::segment(2) == 'settings')
+                @include('companies.v1.layouts.pos.settings.navbar')
+            @elseif (Request::segment(1) == 'hrm')
+                @include('companies.v1.layouts.navbar_hrm')
+            @else
+                @include('companies.v1.layouts.navbar')
+            @endif
+            <!-- Left Sidebar End -->
+            <!-- ============================================================== -->
+            <!-- Start right Content here -->
+            <!-- ============================================================== -->
+            <div class="main-content">
+                <div class="page-content">
+                    @if (Request::segment(1) == 'pos' && Request::segment(2) == 'cashier')
+                        @yield('content')
+                        @yield('modal')
+                    @elseif (Request::segment(1) == 'pos' && Request::segment(2) == 'settings')
+                        @yield('content')
+                        @yield('modal')
+                    @elseif(Request::segment(1) == 'hrm')
+                        @include('companies.v1.layouts.navbar_hrm')
+                        <div class="container-fluid">
+                            @yield('content')
+        
+                            @yield('modal')
+                        </div><!-- container-fluid -->
+                    @else
+                        @include('companies.v1.layouts.navbar')
+                        <div class="container-fluid">
+                            @yield('content')
+        
+                            @yield('modal')
+                        </div><!-- container-fluid -->
+                    @endif
+                </div><!-- End Page-content -->
+    
+                <!-- Begin Footer -->
+                @if (Request::segment(1) == 'pos' && Request::segment(2) == 'cashier')
+                @include('companies.v1.layouts.pos.cashier.footer')
+                @elseif (Request::segment(1) == 'pos' && Request::segment(2) == 'settings')
+                @else
+                    @include('companies.v1.layouts.footer')
+                @endif
+                <!-- END Footer -->
+                <!-- Begin scroll top -->
+                <div class="progress-wrap" id="progress-scroll">
+                    <svg class="progress-circle" width="100%" height="100%" viewBox="-1 -1 102 102">
+                        <path d="M50,1 a49,49 0 0,1 0,98 a49,49 0 0,1 0,-98" />
+                    </svg>
+                </div>
+                <!-- END scroll top -->
             </div>
-            <!-- END scroll top -->
-        </div>
-        <!-- end main content-->
-
-    </div><!-- END layout-wrapper -->
+            <!-- end main content-->
+    
+        </div><!-- END layout-wrapper -->
+    </div>
 
     <!-- Bootstrap bundle js -->
     <script src="{{ asset('assets/libs/bootstrap/js/bootstrap.bundle.min.js') }}"></script>
@@ -5128,6 +5133,7 @@
 
     </script>
  @yield('script')
+ @stack('script')
 </body>
 
 </html>

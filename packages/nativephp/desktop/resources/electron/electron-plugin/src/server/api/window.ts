@@ -9,10 +9,26 @@ import { enable } from '@electron/remote/main/index.js';
 
 const router = express.Router();
 
+const DEFAULT_ZOOM_FACTOR = 1;
+
+function parseZoomFactor(zoomFactor) {
+    const zoom = parseFloat(zoomFactor);
+
+    return Number.isFinite(zoom) && zoom > 0 ? zoom : DEFAULT_ZOOM_FACTOR;
+}
+
 router.post('/maximize', (req, res) => {
     const { id } = req.body;
 
     state.windows[id]?.maximize();
+
+    res.sendStatus(200);
+});
+
+router.post('/unmaximize', (req, res) => {
+    const { id } = req.body;
+
+    state.windows[id]?.unmaximize();
 
     res.sendStatus(200);
 });
@@ -84,7 +100,7 @@ router.post('/hide-dev-tools', (req, res) => {
 router.post('/set-zoom-factor', (req, res) => {
     const { id, zoomFactor } = req.body;
 
-    state.windows[id]?.webContents.setZoomFactor(parseFloat(zoomFactor));
+    state.windows[id]?.webContents.setZoomFactor(parseZoomFactor(zoomFactor));
 
     res.sendStatus(200);
 });
@@ -144,11 +160,24 @@ router.post('/always-on-top', (req, res) => {
     res.sendStatus(200);
 });
 
+router.post('/fullscreen', (req, res) => {
+    const { id, fullscreen } = req.body;
+
+    state.windows[id]?.setFullScreen(fullscreen);
+
+    res.sendStatus(200);
+});
+
 router.get('/current', (req, res) => {
+    const focused = BrowserWindow.getFocusedWindow();
+
+    if (!focused) {
+        res.sendStatus(404);
+        return;
+    }
+
     // Find the current window object
-    const currentWindow = Object.values(state.windows).find(
-        (window) => window.id === BrowserWindow.getFocusedWindow().id,
-    );
+    const currentWindow = Object.values(state.windows).find((window) => window.id === focused.id);
 
     // Get the developer-assigned id for that window
     const id = Object.keys(state.windows).find((key) => state.windows[key] === currentWindow);
@@ -348,6 +377,27 @@ router.post('/open', (req, res) => {
         });
     });
 
+    window.on('unmaximize', () => {
+        notifyLaravel('events', {
+            event: 'Native\\Desktop\\Events\\Windows\\WindowUnmaximized',
+            payload: [id],
+        });
+    });
+
+    window.on('enter-full-screen', () => {
+        notifyLaravel('events', {
+            event: 'Native\\Desktop\\Events\\Windows\\WindowFullscreened',
+            payload: [id],
+        });
+    });
+
+    window.on('leave-full-screen', () => {
+        notifyLaravel('events', {
+            event: 'Native\\Desktop\\Events\\Windows\\WindowUnfullscreened',
+            payload: [id],
+        });
+    });
+
     window.on('show', () => {
         notifyLaravel('events', {
             event: 'Native\\Desktop\\Events\\Windows\\WindowShown',
@@ -390,7 +440,7 @@ router.post('/open', (req, res) => {
     window.loadURL(url);
 
     window.webContents.on('dom-ready', () => {
-        window.webContents.setZoomFactor(parseFloat(zoomFactor));
+        window.webContents.setZoomFactor(parseZoomFactor(zoomFactor));
     });
 
     if (preventLeaveDomain || preventLeavePage) {

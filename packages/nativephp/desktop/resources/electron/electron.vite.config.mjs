@@ -14,6 +14,10 @@ const outDir = isInNativephpFolder
         ? join(appPath, 'nativephp', 'electron', 'out', 'main')
         : resolve(__dirname, 'out', 'main');
 
+console.log('DEBUG outDir:', outDir);
+console.log('DEBUG __dirname:', __dirname);
+console.log('DEBUG isInNativephpFolder:', isInNativephpFolder);
+
 // Saat development (native:run) → pakai path absolut dari NATIVEPHP_BUILD_PATH
 // Saat production build (native:build) → pakai path relatif yang valid di perangkat user
 const nativephpBuildPath = isBuilding

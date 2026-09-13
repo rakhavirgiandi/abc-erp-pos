@@ -1,34 +1,19 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
 
-    <meta charset="utf-8">
-    <title>Login - {{env('APP_NAME')}}</title>
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="title" content="ABC ERP">
-    <meta name="description" content="ABC ERP adalah solusi ERP terintegrasi untuk membantu bisnis mengelola operasional, keuangan, stok, dan laporan dalam satu platform.">
-    <meta name="keywords" content="ERP, sistem ERP, manajemen bisnis, software akuntansi, stok, inventory">
-    <meta name="author" content="ABC ERP">
 
-    <link rel="shortcut icon" href="{{ asset('assets/images/logo-sm-new.ico')}}">
-    <link rel="apple-touch-icon" sizes="180x180" href="{{ asset('assets/images/favicon/apple-touch-icon.png') }}">
-    <link rel="icon" type="image/png" sizes="32x32" href="{{ asset('assets/images/logo-sm-new.png')}}">
-    <link rel="icon" type="image/png" sizes="16x16" href="{{ asset('assets/images/logo-sm-new.png')}}">
 
-    <link href="{{ asset('assets/css/bootstrap.min.css')}}" rel="stylesheet">
-    <link href="{{ asset('assets/css/icons.min.css')}}" rel="stylesheet">
-    <link href="{{ asset('assets/css/app.min.css')}}" rel="stylesheet">
-    <link rel="stylesheet" href="{{ asset('assets/libs/sweetalert2/sweetalert2.min.css')}}">
+@extends('companies.v1.layouts.guest.index')
+
+@section('title', $title)
+
+@section('style')
     <style>
         body {
             background: url('{{ asset("assets/images/auth/cover_bg.png") }}') no-repeat center center;
             background-size: cover;
-            min-height: 100vh;
         }
 
         .login-overlay {
-            /* background: rgba(0, 0, 0, 0.45); */
-            min-height: 100vh;
+            min-height: calc(100vh - 38px);
             display: flex;
             align-items: center;
             justify-content: center;
@@ -46,7 +31,7 @@
 
         .login-logo {
             width: 200px;
-            height: 70px;
+            /* height: 70px; */
         }
 
         .btn-primary {
@@ -59,13 +44,9 @@
             border-color: #1F2933;
         }
     </style>
+@endsection
 
-</head>
-<script type="text/javascript">
-    let BASE_URL = '{{ url('/') }}';
-</script>
-<body>
-
+@section('content')
 <meta name="csrf-token" content="{{ csrf_token() }}">
 
 <div class="login-overlay">
@@ -113,6 +94,9 @@
 
     </div>
 </div>
+@endsection
+
+@section('script')
 
 <script src="{{ asset('assets/libs/jquery/jquery.min.js') }}"></script>
 <script src="{{ asset('assets/libs/bootstrap/js/bootstrap.bundle.min.js') }}"></script>
@@ -190,80 +174,101 @@
         })
     });
 
-    function showLoading(title = i18n?.alert?.info?.processing?.title, message = i18n?.alert?.info?.processing?.text, timer = 0) {
+    $(document).on('click', '#menu-check-update', function () {
         Swal.fire({
-            title: title,
-            html: message,
-            didOpen: () => {
-                Swal.showLoading();
-            },
-            timer: timer
+            title: 'Memeriksa Update...',
+            allowOutsideClick: false,
+            allowEscapeKey: false,
+            didOpen: () => Swal.showLoading(),
         });
+
+        $.post(BASE_URL + '/native/updater/check')
+            .then(() => pollUpdateStatus())
+            .catch(() => {
+                Swal.fire('Gagal', 'Tidak dapat memulai pengecekan update.', 'error');
+            });
+    });
+
+    function pollUpdateStatus(maxAttempts = 30) {
+        let attempts = 0;
+
+        const interval = setInterval(function () {
+            attempts++;
+
+            $.get(BASE_URL + '/native/updater/status').then(function (status) {
+                if (status.state === 'checking') {
+                    if (attempts >= maxAttempts) {
+                        clearInterval(interval);
+                        Swal.fire('Timeout', 'Pengecekan update memakan waktu terlalu lama.', 'warning');
+                    }
+                    return;
+                }
+
+                clearInterval(interval);
+
+                if (status.state === 'available') {
+                    Swal.fire({
+                        icon: 'info',
+                        title: 'Update Tersedia',
+                        html: `Versi <b>${status.version}</b> siap diunduh.` +
+                              (status.releaseNotes ? `<br><br><small>${status.releaseNotes}</small>` : ''),
+                        showCancelButton: true,
+                        confirmButtonText: 'Update Sekarang',
+                        cancelButtonText: 'Nanti',
+                    }).then((result) => {
+                        if (result.isConfirmed) {
+                            startDownload();
+                        }
+                    });
+                } else if (status.state === 'not-available') {
+                    Swal.fire('Sudah Terbaru', 'Aplikasi kamu sudah menggunakan versi terbaru.', 'success');
+                } else if (status.state === 'error') {
+                    Swal.fire('Gagal', status.message || 'Terjadi kesalahan saat memeriksa update.', 'error');
+                }
+            }).catch(function () {
+                clearInterval(interval);
+                Swal.fire('Gagal', 'Tidak dapat memeriksa status update.', 'error');
+            });
+        }, 1000);
     }
 
-    $(function () {
-        let progressSwalOpen = false;
-
-        // window.Native.on('Native\\Desktop\\Events\\AutoUpdater\\UpdateAvailable', function (payload) {
-        //     Swal.fire({
-        //         icon: 'info',
-        //         title: 'Update Tersedia',
-        //         text: 'Versi ' + (payload.version ?? ''),
-        //         timer: 2000,
-        //         showConfirmButton: false
-        //     });
-        // });
-    
-        window.Native.on('Native\\Desktop\\Events\\AutoUpdater\\DownloadProgress', function (payload) {
-            const percent = Math.round(payload.percent ?? 0);
-
-            if (!progressSwalOpen) {
-                progressSwalOpen = true;
-                Swal.fire({
-                    title: 'Mengunduh Update...',
-                    html: '<div class="progress" style="height: 25px;">' +
-                              '<div id="update-progress-bar" class="progress-bar progress-bar-striped progress-bar-animated" ' +
-                                   'role="progressbar" style="width: 0%;">0%</div>' +
-                          '</div>',
-                    allowOutsideClick: false,
-                    allowEscapeKey: false,
-                    showConfirmButton: false
-                });
-            }
-
-            $('#update-progress-bar')
-                .css('width', percent + '%')
-                .text(percent + '%');
+    function startDownload() {
+        Swal.fire({
+            title: 'Mengunduh Update...',
+            html: 'Progress: <b>0%</b>',
+            allowOutsideClick: false,
+            allowEscapeKey: false,
+            didOpen: () => Swal.showLoading(),
         });
 
-        window.Native.on('Native\\Desktop\\Events\\AutoUpdater\\UpdateDownloaded', function (payload) {
-            progressSwalOpen = false;
+        $.post(BASE_URL + '/native/updater/download');
 
-            Swal.fire({
-                icon: 'success',
-                title: 'Update Siap Dipasang',
-                text: 'Restart aplikasi sekarang untuk memasang update versi ' + (payload.version ?? '') + '?',
-                showCancelButton: true,
-                confirmButtonText: 'Restart Sekarang',
-                cancelButtonText: 'Nanti'
-            }).then((result) => {
-                if (result.isConfirmed) {
-                    $.post('/native/update/install');
+        const interval = setInterval(function () {
+            $.get(BASE_URL + '/native/updater/status').then(function (status) {
+                if (status.state === 'downloading') {
+                    Swal.update({
+                        html: `Progress: <b>${status.percent}%</b>`,
+                    });
+                } else if (status.state === 'downloaded') {
+                    clearInterval(interval);
+                    Swal.fire({
+                        icon: 'success',
+                        title: 'Update Siap Dipasang',
+                        text: 'Restart aplikasi sekarang untuk memasang update?',
+                        showCancelButton: true,
+                        confirmButtonText: 'Restart Sekarang',
+                        cancelButtonText: 'Nanti',
+                    }).then((result) => {
+                        if (result.isConfirmed) {
+                            $.post(BASE_URL + '/native/updater/install');
+                        }
+                    });
+                } else if (status.state === 'error') {
+                    clearInterval(interval);
+                    Swal.fire('Gagal', status.message || 'Gagal mengunduh update.', 'error');
                 }
             });
-        });
-
-        window.Native.on('Native\\Desktop\\Events\\AutoUpdater\\Error', function (payload) {
-            progressSwalOpen = false;
-            Swal.close();
-            Swal.fire({
-                icon: 'error',
-                title: 'Gagal Update',
-                text: payload.error ?? 'Terjadi kesalahan saat memeriksa update.'
-            });
-        });
-    });
+        }, 1000);
+    }
 </script>
-
-</body>
-</html>
+@endsection

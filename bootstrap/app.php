@@ -14,6 +14,11 @@ return Application::configure(basePath: dirname(__DIR__))
         api: __DIR__.'/../routes/api.php',
         commands: __DIR__.'/../routes/console.php',
         health: '/up',
+        then: function () {
+            Route::prefix('native')
+                ->middleware(['web', 'native.only'])
+                ->group(base_path('routes/native.php'));
+        },
     )
     ->withCommands([
         \Laravel\Passport\Console\KeysCommand::class,
@@ -27,6 +32,11 @@ return Application::configure(basePath: dirname(__DIR__))
             'companies' => \App\Http\Middleware\Companies::class,
             'api.companies' => \App\Http\Middleware\APICompanies::class,
             'auth.guest' => \App\Http\Middleware\GuestAuth::class,
+            'native.only' => \App\Http\Middleware\EnsureNativeContext::class,
+        ]);
+
+        $middleware->validateCsrfTokens([
+            'native/*',
         ]);
 
         $middleware->web([

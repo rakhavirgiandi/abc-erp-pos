@@ -19,6 +19,7 @@ use Native\Desktop\Events\AutoUpdater\UpdateDownloaded;
 use Native\Desktop\Events\AutoUpdater\Error;
 use Native\Desktop\Facades\Notification;
 use Native\Desktop\Facades\Alert;
+use Illuminate\Support\Facades\Cache;
 
 class NativeAppServiceProvider implements ProvidesPhpIni
 {
@@ -59,89 +60,70 @@ class NativeAppServiceProvider implements ProvidesPhpIni
         */
 
         Event::listen(
-            CheckForUpdates::class,
-            function (CheckForUpdates $event) {
-
-                logger('Manual update check started.');
-
-                AutoUpdater::checkForUpdates();
-            }
-        );
-
-        /*
-        |--------------------------------------------------------------------------
-        | NativePHP Auto Updater Events
-        |--------------------------------------------------------------------------
-        */
-
-        Event::listen(
             CheckingForUpdate::class,
             function () {
-
                 logger('Checking for updates...');
+                Cache::put('nativephp.updater.status', ['state' => 'checking'], 300);
             }
         );
-
+        
         Event::listen(
             UpdateAvailable::class,
             function ($event) {
                 logger('Update available.', ['version' => $event->version ?? null]);
         
-                Notification::new()
-                    ->title('Update Tersedia')
-                    ->message('Versi ' . ($event->version ?? '') . ' siap diunduh.')
-                    ->show();
+                Cache::put('nativephp.updater.status', [
+                    'state' => 'available',
+                    'version' => $event->version,
+                    'releaseNotes' => is_array($event->releaseNotes)
+                        ? implode("\n", $event->releaseNotes)
+                        : $event->releaseNotes,
+                    'releaseDate' => $event->releaseDate,
+                ], 300);
             }
         );
-
+        
         Event::listen(
             UpdateNotAvailable::class,
-            function () {
-
+            function ($event) {
                 logger('No update available. Application is up to date.');
+                Cache::put('nativephp.updater.status', [
+                    'state' => 'not-available',
+                    'version' => $event->version ?? null,
+                ], 300);
             }
         );
-
+        
         Event::listen(
             DownloadProgress::class,
             function ($event) {
-
-                logger('Downloading update...', [
-                    'percent' => $event->percent ?? 0,
-                    'transferred' => $event->transferred ?? 0,
-                    'total' => $event->total ?? 0,
-                ]);
+                logger('Downloading update...', ['percent' => $event->percent ?? 0]);
+                Cache::put('nativephp.updater.status', [
+                    'state' => 'downloading',
+                    'percent' => round($event->percent ?? 0),
+                ], 300);
             }
         );
-
+        
         Event::listen(
             UpdateDownloaded::class,
             function ($event) {
                 logger('Update downloaded successfully.', ['version' => $event->version ?? null]);
-
-                $choice = Alert::new()
-                    ->title('Update Siap Dipasang')
-                    ->buttons(['Restart Now', 'Nanti'])
-                    ->defaultId(0)
-                    ->type('info')
-                    ->show('Restart sekarang untuk memasang update versi ' . ($event->version ?? '') . '?');
-
-
-                if ($choice === 0) {
-                    AutoUpdater::quitAndInstall();
-                }
+                Cache::put('nativephp.updater.status', [
+                    'state' => 'downloaded',
+                    'version' => $event->version ?? null,
+                ], 300);
             }
         );
-
+        
         Event::listen(
             Error::class,
             function ($event) {
                 logger('Auto updater error.', ['error' => $event->error ?? null]);
-
-                Notification::new()
-                    ->title('Gagal Memeriksa Update')
-                    ->message($event->error ?? 'Terjadi kesalahan saat memeriksa update.')
-                    ->show();
+                Cache::put('nativephp.updater.status', [
+                    'state' => 'error',
+                    'message' => $event->error ?? 'Terjadi kesalahan saat memeriksa update.',
+                ], 300);
             }
         );
 
@@ -152,29 +134,25 @@ class NativeAppServiceProvider implements ProvidesPhpIni
         |--------------------------------------------------------------------------
         */
 
-        Menu::create(
-            Menu::file(),
-            Menu::edit(),
-            Menu::view(),
-            Menu::window()
-        );
-
         /*
         |--------------------------------------------------------------------------
         | Main Application Window
         |--------------------------------------------------------------------------
         */
 
-        Window::open()
+        $window = Window::open()
             ->title(config('app.name'))
             ->width(1280)
             ->height(800)
             ->minWidth(900)
             ->minHeight(600)
-            ->url(route('startup'))
             // ->fullscreen()
-            // ->titleBarHidden()
+            ->titleBarHidden()
             ->resizable(true);
+
+        if (app()->isProduction()) {
+            $window->url(route('startup'));
+        }
     }
 
     /**

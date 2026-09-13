@@ -1,34 +1,13 @@
-<!DOCTYPE html>
-<html lang="en" dir="ltr" data-nav-layout="vertical" data-vertical-style="overlay" data-theme-mode="light" data-header-styles="light" data-menu-styles="light" data-toggled="close">
-
-<head>
-
-    <!-- Meta Data -->
-    <meta charset="UTF-8">
-    <meta name='viewport' content='width=device-width, initial-scale=1.0'>
-    <meta http-equiv="X-UA-Compatible" content="IE=edge">
-    <title>Daftar - {{env('APP_NAME')}} </title>
-    <meta name="Description" content="Sakola Software Administrasi dan Keuangan Sekolah">
-    <meta name="Author" content="ABC Group Teknologi Indonesia">
-    <meta name="keywords" content="ABC, Aplikasi Sekolah, Software Sekolah, PT Alimrugi Bisnis Creative, ABC Group Teknologi Indonesia">
-    <!-- Favicon -->
-    <link rel="shortcut icon" href="{{ asset('assets/images/logo-sm-new.ico')}}">
-
-    {{-- <script src="{{ asset('assets/js/authentication-main.js') }}"></script> --}}
-
-    <!-- Bootstrap Css -->
-    <link id="style" href="{{ asset('assets/libs/bootstrap/css/bootstrap.min.css') }}" rel="stylesheet" >
-
-    <!-- Style Css -->
-    <link href="{{ asset('assets/css/app.css') }}" id="app-style" rel="stylesheet" type="text/css">
-
-    <!-- Icons Css -->
-    <link href="{{ asset('assets/css/icons.min.css') }}" rel="stylesheet" type="text/css">
-
-    <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet">
 
 
-    <style>
+
+@extends('companies.v1.layouts.guest.index')
+
+@section('title', $title)
+
+@section('style')
+<link href="{{ asset('assets/libs/select2/css/select2.min.css')}}" rel="stylesheet" type="text/css">
+   <style>
     	body {
             background: url('{{ asset("assets/images/auth/cover_bg.png") }}') no-repeat center center;
             background-size: cover;
@@ -54,8 +33,8 @@
         }
 
         .login-logo {
-            width: 200px;
-            height: 70px;
+            width: 180px;
+            height: 40px;
         }
 
         .btn-primary {
@@ -73,16 +52,59 @@
             0 10px 25px rgba(0, 0, 0, 0.1),
             0 20px 60px rgba(0, 0, 0, 0.15);
         }
+
+        /* .select2-container--default .select2-selection--single .select2-selection__clear {
+            height: 0px !important;
+            margin-right: 35px !important;
+            padding-right: 0px !important;
+            margin-top: -6px !important;
+        } */
+
+        input[readonly] {
+            background-color: #e9ecef !important;
+            cursor: not-allowed;
+        }
+
+        .custom-scrollbar::-webkit-scrollbar {
+            width: 6px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-track {
+            background: #f1f1f1;
+            border-radius: 4px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb {
+            background: #ccc;
+            border-radius: 4px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+            background: #aaa;
+        }
+
+        /* Custom Modal Transition */
+        .modal.fade {
+            transition: opacity 0.15s linear;
+        }
+        .modal.fade .modal-dialog {
+            transform: scale(0.9) translateY(20px);
+            transition: transform 0.15s ease-out; /* Smooth transition for closing */
+        }
+        .modal.show .modal-dialog {
+            transform: scale(1) translateY(0);
+            transition: transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275); /* Bouncy transition for opening */
+        }
     </style>
-</head>
+@endsection
+
+@section('content')
 <script type="text/javascript">
-	let BASE_URL = '{{ env('APP_URL') }}';
+	// let BASE_URL = '{{ env('APP_URL') }}';
 	let TOKEN = 'Bearer {{Session::get('_access_token')}}';
 	let EMAIL = '{{Session::get('_email')}}';
 	let NAME = '{{Session::get('_name')}}';
 	let PHONE = '{{Session::get('_phone')}}';
 </script>
-<body class="authentication-background authenticationcover-background position-relative" id="particles-js">
+<meta name="csrf-token" content="{{ csrf_token() }}">
+
 	<meta name="csrf-token" content="{{ csrf_token() }}" />
     <div class="container d-flex align-items-center justify-content-center" style="min-height: 100vh;">
     
@@ -91,47 +113,189 @@
     
                 <!-- LOGO -->
                 <div class="text-center">
-                    <img src="{{ asset('assets/images/logo2.png') }}" style="height:60px;">
+                    <img src="{{ asset('assets/images/logo2.png') }}" class="login-logo">
                 </div>
     
                 <hr>
     
                 <!-- HEADER -->
                 <div class="d-flex justify-content-between align-items-start">
+
+                    <!-- KIRI -->
                     <div>
-                        <h5 class="mb-1">
-                            Halo <b>{{Session::get('_name')}} ({{Session::get('_email')}})</b>,
+                        <h5 class="mb-0">
+                            Halo, <b>{{Session::get('_name')}}</b>
                         </h5>
+                        <div class="text-muted small mb-1">{{Session::get('_email')}}</div>
                         <small class="text-muted fst-italic">
-                            Silahkan Masuk ke Data Perusahaan Anda
+                            Please Select Your Company
                         </small>
                     </div>
-    
-                    <a href="{{url('/logout')}}" class="btn btn-danger btn-sm">
-                        <i class="fa fa-power-off"></i> Logout
-                    </a>
+                
+                    <!-- KANAN -->
+                    <div class="d-flex gap-2">
+                        
+                        @if (isset($_GET['is_setup_data']) && $_GET['is_setup_data'] == 'true')
+                            <button class="btn btn-success btn-sm" id="new_company-btn">
+                                <i class="fa fa-plus"></i> Create New Company
+                            </button>
+                        @endif
+                
+                        <a href="{{url('/logout')}}" class="btn btn-danger btn-sm">
+                            <i class="fa fa-power-off"></i> Logout
+                        </a>
+                
+                    </div>
+                
                 </div>
     
                 <hr>
-    
+
+                <!-- SEARCH & FILTER -->
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                    <div class="text-muted fw-bold small" id="company-count">
+                        <i class="fa fa-spinner fa-spin me-1"></i> Loading...
+                    </div>
+                    <div class="d-flex gap-2 align-items-center">
+                        <div class="input-group input-group-sm" style="width: 200px;">
+                            <input type="text" class="form-control" id="search-company" placeholder="Search company...">
+                            <span class="input-group-text"><i class="fa fa-search text-muted"></i></span>
+                        </div>
+
+                        <div style="width: 150px;">
+                            <select class="form-select form-select-sm" id="filter-company" style="width: 100%;">
+                                <option value="all">All</option>
+                                <option value="active">Active</option>
+                                <option value="trial">Trial</option>
+                                <option value="awaiting payment">Awaiting Payment</option>
+                                <option value="post subscribe">Post Subscribe</option>
+                            </select>
+                        </div>
+
+                        <button class="btn btn-light btn-sm border" id="refresh-btn" onclick="getUserCompanies()"><i class="fa fa-sync-alt"></i></button>
+                    </div>
+                </div>
+
                 <!-- COMPANY LIST -->
-                <div class="row justify-content-start">
-                    <div class="row" id="company-content"></div>
+                <div class="pe-2 custom-scrollbar" style="max-height: 400px; min-height: 180px; overflow-y: auto;">
+                    <table class="table table-hover table-borderless align-middle mb-0" style="position: relative; border-bottom: 1px solid #dee2e6;">
+                        <thead style="position: sticky; top: 0; z-index: 2;">
+                            <tr>
+                                <th class="text-dark small fw-semibold py-2 ps-3 position-sticky top-0 bg-white" style="border-bottom: 2px solid #dee2e6; z-index: 1;">COMPANY</th>
+                                <th class="text-dark small fw-semibold py-2 position-sticky top-0 bg-white" style="border-bottom: 2px solid #dee2e6; z-index: 1;">STATUS</th>
+                                <th class="text-dark small fw-semibold py-2 position-sticky top-0 bg-white" style="border-bottom: 2px solid #dee2e6; z-index: 1;">ACTIVE PERIOD</th>
+                                <th class="py-2 position-sticky top-0 bg-white" style="border-bottom: 2px solid #dee2e6; z-index: 1;"></th>
+                            </tr>
+                        </thead>
+                        <tbody id="company-content">
+                        </tbody>
+                    </table>
                 </div>
     
             </div>
         </div>
-    
+        <!-- Detail Modal -->
+        <div class="modal fade" id="detail-company-modal" tabindex="-1" aria-labelledby="detailCompanyModalLabel" aria-hidden="true">
+            <div class="modal-dialog modal-dialog-centered">
+                <div class="modal-content border-0 shadow">
+                    <div class="modal-header border-bottom-0 pb-0">
+                        <h5 class="modal-title fw-bold" id="detailCompanyModalLabel">Company Detail</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                    </div>
+                    <div class="modal-body pt-3 pb-4 px-4">
+                        <table class="table table-borderless table-sm mb-0">
+                            <tr>
+                                <td class="text-muted py-1" style="width: 130px; white-space: nowrap;">Name</td>
+                                <td class="py-1">: <span id="detail-name" class="fw-semibold text-dark">Company Name</span></td>
+                            </tr>
+                            <tr>
+                                <td class="text-muted py-1">Email</td>
+                                <td class="py-1">: <span id="detail-email">email@example.com</span></td>
+                            </tr>
+                            <tr>
+                                <td class="text-muted py-1 align-middle">Status</td>
+                                <td class="py-1 align-middle">: <span class="badge px-2 py-1 fw-medium" id="detail-status">Status</span></td>
+                            </tr>
+                            <tr>
+                                <td class="text-muted py-1">Active Period</td>
+                                <td class="py-1">: <span id="detail-expired" class="fw-semibold text-dark">-</span></td>
+                            </tr>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="modal fade" id="create_company-modal" tabindex="-1" aria-labelledby="createCompanyModalLabel">
+            <div class="modal-dialog modal-md">
+                <div class="modal-content border-0 shadow">
+                    <div class="modal-header border-bottom-0 pb-0">
+                        <h5 class="modal-title fw-bold" id="createCompanyModalTitle">Create New Company</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                    </div>
+                    <form id="create_new_company-form">
+                        <div class="modal-body pt-3 pb-4 px-4">
+                            <div class="mb-3">
+                                <label class="form-label text-muted small fw-medium mb-1" for="input-company_name">Company Name</label>
+                                <input class="form-control" type="text" name="company_name" id="input-company_name" placeholder="Enter company name" required>
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label text-muted small fw-medium mb-1" for="input-company_city">Company City</label>
+                                <select class="form-control" id="input-company_city" name="company_city" required>
+                                </select>
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label text-muted small fw-medium mb-1" for="input-period_accounting">Accounting Period</label>
+                                <input type="month" class="form-control" id="input-period_accounting" name="period_accounting" value="{{ date('Y-m') }}" required>
+                            </div>
+                            <div class="mb-2">
+                                <label class="form-label text-muted small fw-medium mb-1">Accounting Standard</label>
+                                <select class="form-control" id="input-accounting_standard" name="accounting_standard">
+                                    <option value="general_company">General Company</option>
+                                    <option value="non_profit_organization">Non-Profit Organization</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="modal-footer border-top-0 pt-0 px-4 pb-4">
+                            <button class="btn btn-outline-danger px-3" type="button" data-bs-dismiss="modal">Cancel</button>
+                            <button class="btn btn-primary px-4" type="submit">Create</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
     </div>
+@endsection
 
+@section('script')
 
-    <!-- Bootstrap JS -->
-    <script src="https://code.jquery.com/jquery-3.6.1.min.js" integrity="sha256-o88AwQnZB+VDvE9tvIXrMQaPlFFSUTR+nldQm1LuPXQ=" crossorigin="anonymous"></script>
+  <script src="{{ asset('assets/libs/bootstrap/js/bootstrap.bundle.min.js') }}"></script>
 
-    <script src="{{ asset('assets/libs/sweetalert2/sweetalert2.all.min.js') }}"></script>
-    <script src="{{ asset('assets/libs/bootstrap/js/bootstrap.bundle.min.js') }}"></script>
-    <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
-    <script src="{{ asset('assets/libs/moment/dist/moment.min.js')}}"></script>
+  <!-- Layouts main js -->
+  <script src="{{ asset('assets/libs/jquery/jquery.min.js') }}"></script>
+
+  <!-- Metimenu js -->
+  <script src="{{ asset('assets/libs/metismenu/metisMenu.min.js') }}"></script>
+
+  <!-- simplebar js -->
+  <script src="{{ asset('assets/libs/simplebar/simplebar.min.js') }}"></script>
+
+  <script src="{{ asset('assets/libs/eva-icons/eva.min.js') }}"></script>
+
+  <!-- Scroll Top init -->
+  <script src="{{ asset('assets/js/scroll-top.init.js') }}"></script>
+  <!-- slick-carousel js -->
+  <script src="{{ asset('assets/libs/slick-carousel/slick/slick.min.js') }}"></script>
+  <!-- select2 -->
+  <script src="{{ asset('assets/libs/select2/js/select2.min.js')}}"></script>
+  <!-- Sweet Alerts js -->
+  <script src="{{ asset('assets/libs/sweetalert2/sweetalert2.min.js')}}"></script>
+  <!-- Bootstrap datepicker -->
+  <script src="{{ asset('assets/libs/bootstrap-datepicker/js/bootstrap-datepicker.min.js') }}"></script>
+  <script src="{{ asset('assets/libs/flatpickr/flatpickr.min.js')}}"></script>
+  <script src="{{ asset('assets/libs/moment/dist/moment.min.js')}}"></script>
+  <script src="{{ asset('assets/libs/accounting.min.js') }}"></script>
+  <script src="{{ asset('assets/js/numeric-input/numeric-input.js') }}"></script>
 
     <script type="text/javascript">
 		$.ajaxSetup({
@@ -143,13 +307,19 @@
     	getUserCompanies();
 		getCitySearch('#input-company_city');
 
+        $('#input-accounting_standard').select2({
+            width: '100%',
+            dropdownParent: $('#create_company-modal'),
+            placeholder: 'Select Accounting Standard',
+        });
+
 		function getCitySearch(element, selectedValObject = []) {
             $(element).select2({
             	dropdownParent: $('#create_company-modal'),
                 width: '100%',
                 minimumInputLength: 3,
                 minimumResultsForSearch: '',
-                placeholder: 'Pilih Kota Domisili',
+                placeholder: 'Select Domicile City',
                 delay: 300,
                 ajax: {
                     url: BASE_URL + "/api/reg_regencies?per_page=20",
@@ -184,105 +354,189 @@
         }
 
 	    function getUserCompanies() {
+	        $('#company-content').stop(true, true).html('<tr><td colspan="4" class="text-center py-5"><div class="spinner-border text-primary" role="status"></div><div class="mt-2 text-muted small">Loading data...</div></td></tr>').hide().fadeIn(200);
+	        $('#refresh-btn i').addClass('fa-spin');
 	        $.ajax({
 	            url: BASE_URL+"/api/user_companies?all=true",
 	            type: 'GET',
 	            headers: { 'Authorization': TOKEN },
 	            dataType: 'JSON',
 	            success: function(res, textStatus, jqXHR){
-                    window.userCompanies = res;
+	                $('#refresh-btn i').removeClass('fa-spin');
 	                let html = '';
-	                let badge = 'badge bg-warning';
 
 			        $.each(res, function(key, val) {
-			        	if (val.subscription.status == 'Subscribe') {
-			        		badge = 'badge bg-success';
-			        	} else if (val.subscription.status == 'Awaiting Payment') {
-			        		badge = 'badge bg-secondary';
-			        	} else if (val.subscription.status == 'Suspend') {
-			        		badge = 'badge bg-danger';
-			        	} else if (val.subscription.status == 'Not Active') {
-			        		badge = 'badge bg-danger';
+			        	let disabled = '';
+			        	if (val.is_active == 0) {
+			        		disabled = 'disabled';
 			        	}
 
-                        html += '<div class="col-md-4">';
-                        html += '    <div class="card border rounded-4 shadow-sm company-card">';
-                        html += '        <div class="card-body">';
-                        html += '            <div class="d-flex justify-content-between mb-3">';
-                        html += '                <h6 class="fw-bold mb-0">'+val.company.name+'</h6>';
-                        html += '                <span class="'+badge+'">'+val.subscription.status+'</span>';
-                        html += '            </div>';
-                        html += '            <hr>';
-                        html += '            <div class="d-flex justify-content-between mb-3">';
-                        html += '                <div>';
-                        html += '                    <small class="text-muted">Berakhir Pada</small>';
-                        html += '                    <div class="fw-semibold">'+moment(val.subscription.finish_at || '').format('DD MMM YYYY')+'</div>';
-                        html += '                </div>';
-                        html += '            </div>';
-                        html += '            <hr>';
-                        html += '            <button type="button" class="btn btn-light border w-100 text-warning fw-semibold" id="open-data" data-company_id="'+val.company_id+'" data-index="'+key+'">';
-                        html += '                Masuk Perusahaan ▶';
+                        let displayStatus = 'Status';
+                        if (val.status && val.status.name) {
+                            displayStatus = val.status.name;
+                        } else if (val.subscription && val.subscription.status) {
+                            displayStatus = val.subscription.status;
+                        }
+
+                        let expDate = '-';
+                        if (val.subscription && val.subscription.expired_at) {
+                            expDate = new Date(val.subscription.expired_at).toLocaleDateString('id-ID', {day: 'numeric', month: 'long', year: 'numeric'});
+                        } else if (val.subscription && val.subscription.finish_at) {
+                            expDate = moment(val.subscription.finish_at).format('DD MMM YYYY');
+                        }
+
+                        let badgeClass = 'badge-label-danger';
+			        	if (displayStatus == 'Subscribe' || displayStatus == 'Active' || displayStatus == 'ACTIVE') {
+                            displayStatus = 'Active';
+			        		badgeClass = 'badge-label-success';
+                        } else if (displayStatus == 'Trial' || displayStatus == 'TRIAL') {
+                            displayStatus = 'Trial';
+                            badgeClass = 'badge-label-warning';
+			        	} else if (displayStatus == 'Awaiting Payment') {
+			        		badgeClass = 'badge-label-secondary';
+                        } else if (displayStatus == 'Post Subscribe') {
+                            badgeClass = 'badge-label-danger';
+                        } else {
+                            badgeClass = 'badge-label-danger';
+                        }
+
+                        html += '<tr class="company-row border-bottom" data-name="'+val.company.name.toLowerCase()+'">';
+                        html += '    <td class="py-3 px-3">';
+                        html += '        <div class="fw-semibold mb-1">'+val.company.name+'</div>';
+                        html += '    </td>';
+                        html += '    <td class="py-3 align-middle">';
+                        html += '        <span class="badge fw-bold text-capitalize ' + badgeClass + '">' + displayStatus.toLowerCase() + '</span>';
+                        html += '    </td>';
+                        html += '    <td class="py-3 align-middle text-muted fw-bold">';
+                        html += '        '+expDate;
+                        html += '    </td>';
+                        html += '    <td class="py-3 align-middle text-end px-3">';
+                        html += '        <div class="d-flex justify-content-end align-items-center gap-2">';
+                        html += '            <button type="button" class="btn btn-sm px-3" id="open-data" data-company_id="'+val.company_id+'" style="background-color: #23C560; color: white; border-radius: 4px; font-weight: 500; border: none;">';
+                        html += '                Open Company';
                         html += '            </button>';
+                        html += '            <div class="dropdown">';
+                        html += '                <button class="btn btn-sm btn-link text-muted p-1" type="button" data-bs-toggle="dropdown" data-bs-boundary="window" aria-expanded="false"><i class="fa fa-ellipsis-v"></i></button>';
+                        html += '                <ul class="dropdown-menu dropdown-menu-end shadow-sm" style="border: 1px solid #ced4da !important;">';
+                        html += '                    <li><a class="dropdown-item d-flex align-items-center" href="#" id="detail-data" data-name="'+val.company.name+'" data-status="'+displayStatus.toLowerCase()+'" data-badge="'+badgeClass+'" data-expired="'+expDate+'" data-email="'+(val.company.email || EMAIL)+'"><i class="fa fa-info-circle me-2 text-primary"></i> Detail</a></li>';
                         @if (isset($_GET['is_setup_data']) && $_GET['is_setup_data'] == 'true')
-                        html += '            <button type="button" class="btn btn-danger border w-100 mt-2 text-light fw-semibold" id="delete-data" data-company_id="'+val.company_id+'" data-index="'+key+'">';
-                        html += '               Hapus Perusahaan <i class="fas fa-trash-alt ms-2 fs-12 text-white"></i>';
-                        html += '            </button>';
-						@endif
+                        html += '                    <li><a class="dropdown-item text-danger d-flex align-items-center" href="#" id="delete-data" data-company_id="'+val.company_id+'"><i class="fa fa-trash-alt me-2"></i> Delete Data</a></li>';
+                        @endif
+                        html += '                </ul>';
+                        html += '            </div>';
                         html += '        </div>';
-                        html += '    </div>';
-                        html += '</div>';
+                        html += '    </td>';
+                        html += '</tr>';
 			        });
 
-	                $('#company-content').html(html);
+                    html += '<tr id="no-data-row" style="display: none;">';
+                    html += '    <td colspan="4" class="text-center py-5 text-muted">';
+                    html += '        <i class="fa fa-folder-open mb-2 fs-3"></i><br>';
+                    html += '        No data found';
+                    html += '    </td>';
+                    html += '</tr>';
+
+	                $('#company-content').stop(true, true).html(html).hide().fadeIn(300);
+                    $('#filter-company').trigger('change');
 	            },
-                error: function(jqXHR, textStatus, errorThrown){
-                    let html = '';
-
-                    let res = JSON.parse(jqXHR.responseText);
-
-                    html += '<div class="col-md-12">';
-                    html += '    <div class="card border rounded-4 shadow-sm company-card">';
-                    html += '        <div class="card-body bg-warning">';
-                    html += '           <p class="fw-bold">'+res.message+'</p>'
-                    html += '        </div>';
-                    html += '    </div>';
-                    html += '</div>';
-
-                    $('#company-content').html(html);
-                },
+	            error: function(jqXHR, textStatus, errorThrown){
+	                $('#refresh-btn i').removeClass('fa-spin');
+	                $('#company-content').html('<tr><td colspan="4" class="text-center py-4 text-danger">Failed to load data.</td></tr>');
+	            },
 	        });
 	    }
+
+        $(document).ready(function() {
+            $('#filter-company').select2({
+                minimumResultsForSearch: Infinity,
+                width: '100%'
+            });
+
+            function filterCompanies() {
+                let search = $('#search-company').val().toLowerCase();
+                let status = $('#filter-company').val().toLowerCase();
+                let visibleCount = 0;
+
+                $('.company-row').each(function() {
+                    let name = $(this).data('name') || '';
+                    let badgeStatus = $(this).find('.badge').text().toLowerCase();
+
+                    let matchSearch = name.includes(search);
+                    let matchStatus = (status === 'all') || (badgeStatus === status);
+
+                    if (matchSearch && matchStatus) {
+                        $(this).show();
+                        visibleCount++;
+                    } else {
+                        $(this).hide();
+                    }
+                });
+
+                if (visibleCount === 0) {
+                    $('#no-data-row').show();
+                } else {
+                    $('#no-data-row').hide();
+                }
+
+                let totalCount = $('.company-row').length;
+                if (visibleCount === totalCount) {
+                    $('#company-count').text(totalCount + ' Companies');
+                } else {
+                    $('#company-count').html(visibleCount + ' <span class="fw-normal">of ' + totalCount + ' Companies</span>');
+                }
+            }
+
+            $('#search-company').on('keyup', filterCompanies);
+            $('#filter-company').on('change', filterCompanies);
+        });
+
+        $(document).on('click', '#detail-data', function(e) {
+            e.preventDefault();
+            let name = $(this).data('name');
+            let status = $(this).data('status');
+            let badgeClass = $(this).data('badge');
+            let expired = $(this).data('expired');
+            let email = $(this).data('email');
+
+            $('#detail-name').text(name);
+            $('#detail-avatar').text(name.charAt(0).toUpperCase());
+            $('#detail-email').text(email);
+            $('#detail-expired').text(expired);
+
+            let statusEl = $('#detail-status');
+            statusEl.removeClass().addClass('badge px-2 py-1 text-capitalize fw-bold ' + badgeClass);
+            statusEl.text(status);
+
+            statusEl.removeAttr('style');
+
+            $('#detail-company-modal').modal('show');
+        });
 
 		$(document).on("click", "button#open-data",function(e) {
 			e.preventDefault();
 			Swal.fire({
-			  title: 'Harap Menunggu',
-			  html: 'Data anda sedang di sinkronkan',
+			  title: 'Please Wait',
+			  html: 'Your data is being synchronized',
 			  didOpen: () => {
 			      Swal.showLoading();
 			  }
 			});
 			let companyId = $(this).data('company_id');
-			let index = $(this).data('index');
-            let data = window.userCompanies[index];
 
-            let payload = {
-                id: data.id,
-                user_id: data.user_id,
-                company_id: data.company_id,
-                type: data.type,
-                company: data.company,
-                subscription: data.subscription,
-                slug: data.slug
-            };
+            let data = {};
+            data.company_id = companyId;
 
             $.ajax({
-                type: 'POST',
+                type: 'post',
                 url: BASE_URL + '/open-database',
-                data: JSON.stringify(payload),
-                contentType: 'application/json',
+                data: JSON.stringify(data),
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                cache: false,
+                contentType: false,
                 processData: false,
-                dataType: 'json',
+                dataType: 'JSON',
                 success: function(res) {
                 	if (res.status == 'success') {
 				        $.ajax({
@@ -299,7 +553,7 @@
 				            error: function(jqXHR, textStatus, errorThrown){
 				            	let res = JSON.parse(jqXHR.responseText);
 					            Swal.fire({
-					                title: "Gagal",
+					                title: "Failed",
 					                text: res.message,
 					                showConfirmButton: true,
 					                confirmButtonColor: '#0760ef',
@@ -311,7 +565,7 @@
 				        });
                 	} else {
 			            Swal.fire({
-			                title: "Gagal",
+			                title: "Failed",
 			                text: res.message,
 			                showConfirmButton: true,
 			                confirmButtonColor: '#0760ef',
@@ -320,18 +574,6 @@
 
 			            return true;
                 	}
-                },
-                error: function(jqXHR, textStatus, errorThrown){
-                    let res = JSON.parse(jqXHR.responseText);
-                    Swal.fire({
-                        title: "Gagal",
-                        text: res.message,
-                        showConfirmButton: true,
-                        confirmButtonColor: '#0760ef',
-                        icon: "error"
-                    });
-
-                    return true;
                 },
             });
 		});
@@ -350,7 +592,7 @@
             if (params.status == 'success') {
                 setTimeout(function() {
                     Swal.fire({
-                        title: "Sukses",
+                        title: "Success",
                         text: params.message,
                         icon: "success"
                     }).then((result) => {
@@ -386,9 +628,8 @@
 		        $.ajax({
 		            type: 'post',
 		            url: BASE_URL + '/api/companies',
-		            "headers": {
-		                'Authorization': TOKEN,
-                        'company-id': COMPANY_ID
+		            headers: {
+		                'Authorization': TOKEN
 		            },
 		            data: formData,
 		            cache: false,
@@ -396,7 +637,7 @@
 		            processData: false,
 		            dataType: 'json',
 		            beforeSend: function() {
-		                showLoading('Harap Menunggu!', 'Sedang menyimpan data');
+		                showLoading('Please Wait!', 'Saving data...');
 		            },
 		            success: function(res) {
 		                Swal.close();
@@ -406,22 +647,22 @@
 		    });
 	    @endif
 
-		$(document).on("click", "button#delete-data",function(e) {
+		$(document).on("click", "#delete-data",function(e) {
 			e.preventDefault();
 			let companyId = $(this).data('company_id');
 
-			showDeletePopup(BASE_URL+'/api/companies/'+companyId, companyId, '', '', '{{url()->current()}}');
+			showDeletePopup(BASE_URL+'/api/companies/'+companyId, companyId, '', '', '');
 		});
 
         function showDeletePopup(url, companyId, modal, table, reload) {
             Swal.fire({
-                title: 'Apakah Anda yakin menghapus data ini?',
-                text: 'Data tidak dapat di kembalikan ketika dihapus!',
+                title: 'Are you sure you want to delete this data?',
+                text: 'Data cannot be recovered once deleted!',
                 icon: 'warning',
                 showCancelButton: true,
                 confirmButtonColor: '#d33',
-                confirmButtonText: 'Hapus!',
-                cancelButtonText: 'TIDAK',
+                confirmButtonText: 'Delete!',
+                cancelButtonText: 'NO',
             }).then((result) => {
                 if (result.isConfirmed) {
                     $.ajax({
@@ -436,18 +677,21 @@
                     })
                     .done(function(data) {
                         if (data.status == 'success') {
-                            Swal.fire("Terhapus!", data.message, "success");
-                            if (modal) {
-                                $(modal).modal('hide');
-                            }
-                            if (table) {
-                                $(table).DataTable().ajax.reload(null, false);
-                            }
-                            if (reload) {
-                                window.location.replace(reload);
-                            }
+                            Swal.fire("Deleted!", data.message, "success").then(() => {
+                                if (modal) {
+                                    $(modal).modal('hide');
+                                }
+                                if (table) {
+                                    $(table).DataTable().ajax.reload(null, false);
+                                }
+                                if (reload) {
+                                    window.location.replace(reload);
+                                } else {
+                                    getUserCompanies();
+                                }
+                            });
                         } else {
-                            Swal.fire("Gagal", data.message, "error");
+                            Swal.fire("Failed", data.message, "error");
                         }
                     })
                     .fail(function(data) {
@@ -461,7 +705,7 @@
 
         function showFailedAlert(msg) {
             Swal.fire({
-                title: "Gagal",
+                title: "Failed",
                 html: msg,
                 showConfirmButton: true,
                 confirmButtonColor: '#0760ef',
@@ -469,6 +713,4 @@
             });
         }
     </script>
-</body>
-
-</html>
+@endsection

@@ -245,9 +245,9 @@ class PointOfSalesController extends Controller
             $downsizing = 13;
 
             if ($paper == 58) {
-                $width = 31;
+                $width = 30;
                 $col_qty = 5;
-                $col_unit = 6;
+                $col_unit = 5;
                 $col_price = 6;
                 $col_disc = 6;
                 $col_total = 10;
@@ -260,9 +260,9 @@ class PointOfSalesController extends Controller
                 $col_total = 15;
                 $downsizing = 14;
             } else {
-                $width = 47;
+                $width = 48;
                 $col_qty = 7;
-                $col_unit = 8;
+                $col_unit = 7;
                 $col_price = 10;
                 $col_disc = 7;
                 $col_total = 17;

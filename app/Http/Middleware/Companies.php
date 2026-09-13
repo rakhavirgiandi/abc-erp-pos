@@ -278,6 +278,11 @@ class Companies
                 GlobalHelper::pushLog('info', config('request'), config('response'));
             }
 
+            if (config('services.is_onpremise')) {
+                $exists = Products::count();
+                $request->session()->put('_is_first', $exists > 0 ? 0 : 1);
+            }
+
             DB::disconnect('pgsql_companies');
 
             return $res;

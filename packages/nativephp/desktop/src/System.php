@@ -44,7 +44,7 @@ class System
     }
 
     /**
-     * @return array<\Native\Desktop\DataObjects\Printer>
+     * @return array<Printer>
      */
     public function printers(): array
     {
@@ -70,6 +70,18 @@ class System
             'printer' => $printer->name ?? '',
             'settings' => $settings,
         ]);
+    }
+
+    /**
+     * Print an on-disk PDF natively via Chromium's PDF viewer.
+     */
+    public function printFile(string $path, Printer|string|null $printer = null, ?array $settings = []): bool
+    {
+        return $this->client->post('system/print-file', [
+            'path' => $path,
+            'printer' => $printer instanceof Printer ? $printer->name : ($printer ?? ''),
+            'settings' => $settings,
+        ])->successful();
     }
 
     /**

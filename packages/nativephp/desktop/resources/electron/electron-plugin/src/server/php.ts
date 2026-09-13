@@ -32,7 +32,7 @@ function runningSecureBuild() {
 }
 
 function shouldMigrateDatabase(store) {
-    return false;
+    return store.get('migrated_version') !== app.getVersion() && process.env.NODE_ENV !== 'development';
 }
 
 function shouldOptimize() {
