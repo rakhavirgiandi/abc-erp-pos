@@ -306,7 +306,7 @@
                     if (result.isConfirmed) {
 
                         $.post(
-                            BASE_URL + '/native/update/install'
+                            BASE_URL + '/native/updater/install'
                         ).fail(function (request) {
 
                             Swal.fire({
