@@ -17,16 +17,25 @@ export async function notifyLaravel(endpoint: string, payload = {}) {
         broadcastToWindows('native-event', payload);
     }
 
+    if (!state.phpPort) {
+        console.log(`[notifyLaravel] phpPort not ready yet for '${endpoint}', waiting...`);
+        let waited = 0;
+        while (!state.phpPort && waited < 15000) {
+            await new Promise((r) => setTimeout(r, 200));
+            waited += 200;
+        }
+        console.log(`[notifyLaravel] after waiting ${waited}ms, phpPort=${state.phpPort}`);
+    }
+
     try {
         await axios.post(`http://127.0.0.1:${state.phpPort}/_native/api/${endpoint}`, payload, {
             headers: {
                 'X-NativePHP-Secret': state.randomSecret,
             },
         });
+        console.log(`[notifyLaravel] SUCCESS: ${endpoint}`);
     } catch (e) {
-        if (parseInt(process.env.SHELL_VERBOSITY) > 0) {
-            console.error(`notifyLaravel('${endpoint}') failed:`, e instanceof Error ? e.message : e);
-        }
+        console.error(`[notifyLaravel] FAILED (${endpoint}):`, e instanceof Error ? e.message : e);
     }
 }
 

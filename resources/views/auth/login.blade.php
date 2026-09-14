@@ -122,7 +122,13 @@
             processData: false,
             dataType: 'json',
             beforeSend: function() {
-                showLoading('Harap Menunggu!', 'Sedang memverifikasi kredensial Anda');
+                Swal.fire({
+                    title: 'Harap Menunggu!',
+                    html: 'Sedang memverifikasi kredensial Anda',
+                    allowOutsideClick: false,
+                    allowEscapeKey: false,
+                    didOpen: () => Swal.showLoading(),
+                });
             },
             success: function(res) {
                 if (res.access_token) {
@@ -189,7 +195,7 @@
             });
     });
 
-    function pollUpdateStatus(maxAttempts = 30) {
+    function pollUpdateStatus(maxAttempts = 15) {
         let attempts = 0;
 
         const interval = setInterval(function () {
