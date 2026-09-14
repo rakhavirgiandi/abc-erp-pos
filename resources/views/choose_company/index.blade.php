@@ -362,6 +362,7 @@
 	            headers: { 'Authorization': TOKEN },
 	            dataType: 'JSON',
 	            success: function(res, textStatus, jqXHR){
+                    window.userCompanies = res;
 	                $('#refresh-btn i').removeClass('fa-spin');
 	                let html = '';
 
@@ -412,7 +413,7 @@
                         html += '    </td>';
                         html += '    <td class="py-3 align-middle text-end px-3">';
                         html += '        <div class="d-flex justify-content-end align-items-center gap-2">';
-                        html += '            <button type="button" class="btn btn-sm px-3" id="open-data" data-company_id="'+val.company_id+'" style="background-color: #23C560; color: white; border-radius: 4px; font-weight: 500; border: none;">';
+                        html += '            <button type="button" class="btn btn-sm px-3" id="open-data" data-company_id="'+val.company_id+'" data-index="'+key+'" style="background-color: #23C560; color: white; border-radius: 4px; font-weight: 500; border: none;">';
                         html += '                Open Company';
                         html += '            </button>';
                         html += '            <div class="dropdown">';
@@ -522,9 +523,17 @@
 			  }
 			});
 			let companyId = $(this).data('company_id');
+            let index = $(this).data('index');
+			let company = window.userCompanies[index];
+            let userCompanies = window.userCompanies[index];
 
             let data = {};
             data.company_id = companyId;
+            data.user_id = userCompanies.user_id;
+            data.company_id = userCompanies.company_id;
+            data.company = userCompanies.company;
+            data.subscription = userCompanies.subscription;
+            data.slug = userCompanies.slug;
 
             $.ajax({
                 type: 'post',

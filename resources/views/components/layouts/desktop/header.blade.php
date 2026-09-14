@@ -1,7 +1,7 @@
-<div id="app-header" class="app-header">
-    <div class="app-header-drag">
+<div id="app-header-win" class="app-header-win">
+    <div class="app-header-win-drag">
         <img src="{{ asset('assets/images/logo-box.ico') }}" class="app-logo" alt="logo">
-        <div class="app-header-menu">
+        <div class="app-header-win-menu">
             <div class="win-menu" data-menu="file">
                 <button type="button" class="btn-win-menu">File</button>
                 <div class="win-menu-dropdown">
@@ -34,7 +34,7 @@
         </div>
     </div>
 
-    <div class="app-header-controls">
+    <div class="app-header-win-controls">
         <button type="button" class="win-btn" title="Minimize" id="win-minimize">
             <svg width="10" height="10" viewBox="0 0 10 10"><rect width="10" height="1" y="5" fill="currentColor"/></svg>
         </button>
@@ -98,7 +98,7 @@
                 $.post(BASE_URL+'/native/window/close', { window_id: window.Native?.app?.id ?? 'main' });
             });
 
-            $(document).on('dblclick', '#app-header-drag', function () {
+            $(document).on('dblclick', '#app-header-win-drag', function () {
                 $.post(BASE_URL+'/native/window/maximize', { window_id: window.Native?.app?.id ?? 'main' });
             });
 
@@ -170,132 +170,5 @@
                 alert('{{ config('app.name') }}\nVersion {{ config('nativephp.version', '1.0.0') }}');
             });
         </script>
-    @endpush
-@endonce
-@once
-    @push('script')
-        <style>
-            .app-header {
-                position: fixed;
-                top: 0;
-                left: 0;
-                right: 0;
-                z-index: 9999;
-                display: flex;
-                align-items: center;
-                justify-content: space-between;
-                height: 38px;
-                background: var(--bs-primary);
-                color: #fff;
-                user-select: none;
-                -webkit-app-region: drag;
-            }
-
-            .app-header-drag {
-                display: flex;
-                align-items: center;
-                gap: 8px;
-                padding-left: 10px;
-                flex: 1;
-            }
-
-            .app-logo { width: 19px; height: 19px; }
-            .app-title { font-size: 12px; font-weight: 500; }
-
-            .app-header-controls {
-                display: flex;
-                height: 100%;
-                -webkit-app-region: no-drag;
-            }
-
-            .win-btn {
-                width: 44px;
-                height: 38px;
-                border: none;
-                background: transparent;
-                color: #ccc;
-                display: flex;
-                align-items: center;
-                justify-content: center;
-                cursor: pointer;
-            }
-
-            .app-header-menu {
-                display: flex;
-                height: 100%;
-                -webkit-app-region: no-drag;
-            }
-
-            .win-menu {
-                position: relative;
-                height: 100%;
-            }
-
-            .btn-win-menu {
-                width: auto;
-                height: 25.5px;
-                padding: 0 10px;
-                border: none;
-                background: transparent;
-                color: #ccc;
-                font-size: 12px;
-                display: flex;
-                align-items: center;
-                justify-content: center;
-                cursor: pointer;
-                border-radius: 5px;
-            }
-
-            .win-menu.open .btn-win-menu,
-            .btn-win-menu:hover {
-                background: rgba(255,255,255,0.1);
-                color: #fff;
-            }
-
-            .win-menu-dropdown {
-                display: none;
-                position: absolute;
-                top: 100%;
-                left: 0;
-                min-width: 180px;
-                background: var(--bs-primary);
-                border: 1px solid rgba(255,255,255,0.1);
-                border-radius: 4px;
-                box-shadow: 0 4px 12px rgba(0,0,0,0.3);
-                padding: 4px 0;
-                z-index: 10000;
-                -webkit-app-region: no-drag;
-            }
-
-            .win-menu.open .win-menu-dropdown {
-                display: block;
-            }
-
-            .win-menu-item {
-                display: block;
-                width: 100%;
-                text-align: left;
-                padding: 6px 14px;
-                border: none;
-                background: transparent;
-                color: #eee;
-                font-size: 12.5px;
-                cursor: pointer;
-            }
-
-            .win-menu-item:hover {
-                background: var(--bs-primary);
-                color: #fff;
-            }
-
-            .win-menu-divider {
-                height: 1px;
-                margin: 4px 0;
-                background: rgba(255,255,255,0.1);
-            }
-
-            .win-btn:hover { background: rgba(255,255,255,0.1); }
-            #win-close:hover { background: #e81123; color: #fff; }
-        </style>
     @endpush
 @endonce

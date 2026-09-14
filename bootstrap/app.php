@@ -58,109 +58,109 @@ return Application::configure(basePath: dirname(__DIR__))
         });
 
         // Reportable (logging) handler
-        $exceptions->report(function (Throwable $e) {
-            if (app()->bound('log')) {
-                $request = config('request') ? config('request') : [];
+        // $exceptions->report(function (Throwable $e) {
+        //     if (app()->bound('log')) {
+        //         $request = config('request') ? config('request') : [];
 
-                if (!$request) {
-                    $req = request();
-                    Config::set('request.app_code', 'ABCPOS');
-                    Config::set('request.url', $req->fullUrl());
-                    parse_str($req->getQueryString(), $query_string);
-                    Config::set('request.host', $req->getSchemeAndHttpHost());
-                    Config::set('request.method', $req->method());
-                    $header = $req->header();
-                    if (isset($header['company-id']) && $header['company-id']) {
-                        $header = ['company-id' => $header['company-id']];
-                    }
-                    Config::set('request.header', $header);
-                    Config::set('request.param', $query_string);
-                    $content = $req->getContent();
-                    if (!$content) {
-                        $content = $req->all();
-                        if ($content) {
-                            Config::set('request.body_request', $content);
-                        }
-                    } else {
-                        Config::set('request.body_request', json_decode($content, true));
-                    }
-                    Config::set('request.ip_address', GlobalHelper::getClientIP());
-                    Config::set('request.request_at', DateHelper::getCurrentDate('Y-m-d H:i:s', 'Asia/Jakarta'));
-                    $path = explode('/', $req->path());
-                    Config::set('request.path', $path);
-                    Config::set('request.company_id', '');
-                    Config::set('request.user.email', '');
-                    $request = config('request');
-                }
+        //         if (!$request) {
+        //             $req = request();
+        //             Config::set('request.app_code', 'ABCPOS');
+        //             Config::set('request.url', $req->fullUrl());
+        //             parse_str($req->getQueryString(), $query_string);
+        //             Config::set('request.host', $req->getSchemeAndHttpHost());
+        //             Config::set('request.method', $req->method());
+        //             $header = $req->header();
+        //             if (isset($header['company-id']) && $header['company-id']) {
+        //                 $header = ['company-id' => $header['company-id']];
+        //             }
+        //             Config::set('request.header', $header);
+        //             Config::set('request.param', $query_string);
+        //             $content = $req->getContent();
+        //             if (!$content) {
+        //                 $content = $req->all();
+        //                 if ($content) {
+        //                     Config::set('request.body_request', $content);
+        //                 }
+        //             } else {
+        //                 Config::set('request.body_request', json_decode($content, true));
+        //             }
+        //             Config::set('request.ip_address', GlobalHelper::getClientIP());
+        //             Config::set('request.request_at', DateHelper::getCurrentDate('Y-m-d H:i:s', 'Asia/Jakarta'));
+        //             $path = explode('/', $req->path());
+        //             Config::set('request.path', $path);
+        //             Config::set('request.company_id', '');
+        //             Config::set('request.user.email', '');
+        //             $request = config('request');
+        //         }
 
-                if (!isset($request['app_code'])) {
-                    $request = array_merge(['app_code' => 'ABCPOS'], $request);
-                }
+        //         if (!isset($request['app_code'])) {
+        //             $request = array_merge(['app_code' => 'ABCPOS'], $request);
+        //         }
 
-                $status_code = (method_exists($e, 'getStatusCode') && $e->getStatusCode() >= 200 && $e->getStatusCode() <= 599) ? $e->getStatusCode() : 500;
-                $error_code = (method_exists($e, 'getErrorCode') && $e->getErrorCode() >= 200 && $e->getErrorCode() <= 599) ? $e->getErrorCode() : $status_code;
-                $error_message = method_exists($e, 'getMessage') ? preg_replace('/(\t|\r\n|\n)+/', '', $e->getMessage()) : null;
+        //         $status_code = (method_exists($e, 'getStatusCode') && $e->getStatusCode() >= 200 && $e->getStatusCode() <= 599) ? $e->getStatusCode() : 500;
+        //         $error_code = (method_exists($e, 'getErrorCode') && $e->getErrorCode() >= 200 && $e->getErrorCode() <= 599) ? $e->getErrorCode() : $status_code;
+        //         $error_message = method_exists($e, 'getMessage') ? preg_replace('/(\t|\r\n|\n)+/', '', $e->getMessage()) : null;
 
-                $err = [
-                    'error' => [
-                        'code' => $error_code,
-                        'message' => $error_message,
-                    ],
-                ];
+        //         $err = [
+        //             'error' => [
+        //                 'code' => $error_code,
+        //                 'message' => $error_message,
+        //             ],
+        //         ];
 
-                if (isset($e->details[0])) {
-                    $detail = [];
-                    foreach ($e->details as $d) {
-                        $detail = array_merge($detail, $d);
-                    }
-                    $err['error']['detail'] = $detail;
-                    $msg = collect($e->details)->flatten()->first(fn($value) => is_string($value));
-                    $err['error']['message'] = (!empty($msg)) ? $msg : $err['error']['message'];
-                }
+        //         if (isset($e->details[0])) {
+        //             $detail = [];
+        //             foreach ($e->details as $d) {
+        //                 $detail = array_merge($detail, $d);
+        //             }
+        //             $err['error']['detail'] = $detail;
+        //             $msg = collect($e->details)->flatten()->first(fn($value) => is_string($value));
+        //             $err['error']['message'] = (!empty($msg)) ? $msg : $err['error']['message'];
+        //         }
 
-                $response = [
-                    'response_at'  => DateHelper::getCurrentDate(),
-                    'http_status'  => $error_code,
-                    'error_message' => $err,
-                ];
+        //         $response = [
+        //             'response_at'  => DateHelper::getCurrentDate(),
+        //             'http_status'  => $error_code,
+        //             'error_message' => $err,
+        //         ];
 
-                $trace_temp = [];
-                if (method_exists($e, 'getFinalTrace')) {
-                    $trace_temp = $e->getFinalTrace();
-                } elseif (method_exists($e, 'getTrace')) {
-                    $trace_temp = $e->getTrace();
-                }
+        //         $trace_temp = [];
+        //         if (method_exists($e, 'getFinalTrace')) {
+        //             $trace_temp = $e->getFinalTrace();
+        //         } elseif (method_exists($e, 'getTrace')) {
+        //             $trace_temp = $e->getTrace();
+        //         }
 
-                $trace = [];
-                foreach ($trace_temp as $i => $t) {
-                    $file = $t['file'] ?? '';
-                    $line = $t['line'] ?? '';
-                    $class = $t['class'] ?? '';
-                    $type = $t['type'] ?? '';
-                    $function = $t['function'] ?? '';
-                    $args = null;
-                    if (isset($t['args'])) {
-                        foreach ($t['args'] as $j => $a) {
-                            $args = ($j == 0) ? gettype($a) : $args . ',' . gettype($a);
-                        }
-                    }
-                    $trace_key = ((int) $i >= 10) ? '#' . $i : '#0' . $i;
-                    $trace[$trace_key] = $file . '(' . $line . '): ' . $class . $type . $function . '(' . $args . ')';
-                }
+        //         $trace = [];
+        //         foreach ($trace_temp as $i => $t) {
+        //             $file = $t['file'] ?? '';
+        //             $line = $t['line'] ?? '';
+        //             $class = $t['class'] ?? '';
+        //             $type = $t['type'] ?? '';
+        //             $function = $t['function'] ?? '';
+        //             $args = null;
+        //             if (isset($t['args'])) {
+        //                 foreach ($t['args'] as $j => $a) {
+        //                     $args = ($j == 0) ? gettype($a) : $args . ',' . gettype($a);
+        //                 }
+        //             }
+        //             $trace_key = ((int) $i >= 10) ? '#' . $i : '#0' . $i;
+        //             $trace[$trace_key] = $file . '(' . $line . '): ' . $class . $type . $function . '(' . $args . ')';
+        //         }
 
-                if (isset($request['header']) && $request['header']) {
-                    $request['header'] = [
-                        'company-id' => $request['header']['company-id'] ?? '',
-                        'user-agent' => $request['header']['user-agent'] ?? '',
-                    ];
-                }
+        //         if (isset($request['header']) && $request['header']) {
+        //             $request['header'] = [
+        //                 'company-id' => $request['header']['company-id'] ?? '',
+        //                 'user-agent' => $request['header']['user-agent'] ?? '',
+        //             ];
+        //         }
 
-                unset($request['client_id'], $request['client_name']);
+        //         unset($request['client_id'], $request['client_name']);
 
-                GlobalHelper::pushLog('error', $request, $response, $trace);
-            }
+        //         GlobalHelper::pushLog('error', $request, $response, $trace);
+        //     }
 
-            return false;
-        });
+        //     return false;
+        // });
 
     })->create();

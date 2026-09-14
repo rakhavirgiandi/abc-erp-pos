@@ -62,68 +62,84 @@ class NativeAppServiceProvider implements ProvidesPhpIni
         Event::listen(
             CheckingForUpdate::class,
             function () {
+
                 logger('Checking for updates...');
-                Cache::put('nativephp.updater.status', ['state' => 'checking'], 300);
             }
         );
-        
+
         Event::listen(
             UpdateAvailable::class,
             function ($event) {
-                logger('Update available.', ['version' => $event->version ?? null]);
         
-                Cache::put('nativephp.updater.status', [
-                    'state' => 'available',
-                    'version' => $event->version,
-                    'releaseNotes' => is_array($event->releaseNotes)
-                        ? implode("\n", $event->releaseNotes)
-                        : $event->releaseNotes,
-                    'releaseDate' => $event->releaseDate,
-                ], 300);
+                logger('Update available.', [
+                    'version' => $event->version ?? null,
+                ]);
+        
+                $choice = Alert::new()
+                    ->title('Update Tersedia')
+                    ->buttons(['Update Sekarang', 'Nanti'])
+                    ->defaultId(0)
+                    ->type('info')
+                    ->show(
+                        'Versi ' .
+                        ($event->version ?? '') .
+                        ' tersedia. Download sekarang?'
+                    );
+        
+                if ($choice === 0) {
+                    AutoUpdater::downloadUpdate();
+                }
             }
         );
-        
+
         Event::listen(
             UpdateNotAvailable::class,
-            function ($event) {
+            function () {
+
                 logger('No update available. Application is up to date.');
-                Cache::put('nativephp.updater.status', [
-                    'state' => 'not-available',
-                    'version' => $event->version ?? null,
-                ], 300);
             }
         );
-        
+
         Event::listen(
             DownloadProgress::class,
             function ($event) {
-                logger('Downloading update...', ['percent' => $event->percent ?? 0]);
-                Cache::put('nativephp.updater.status', [
-                    'state' => 'downloading',
-                    'percent' => round($event->percent ?? 0),
-                ], 300);
+
+                logger('Downloading update...', [
+                    'percent' => $event->percent ?? 0,
+                    'transferred' => $event->transferred ?? 0,
+                    'total' => $event->total ?? 0,
+                ]);
             }
         );
-        
+
         Event::listen(
             UpdateDownloaded::class,
             function ($event) {
                 logger('Update downloaded successfully.', ['version' => $event->version ?? null]);
-                Cache::put('nativephp.updater.status', [
-                    'state' => 'downloaded',
-                    'version' => $event->version ?? null,
-                ], 300);
+
+                $choice = Alert::new()
+                    ->title('Update Siap Dipasang')
+                    ->buttons(['Restart Now', 'Nanti'])
+                    ->defaultId(0)
+                    ->type('info')
+                    ->show('Restart sekarang untuk memasang update versi ' . ($event->version ?? '') . '?');
+
+
+                if ($choice === 0) {
+                    AutoUpdater::quitAndInstall();
+                }
             }
         );
-        
+
         Event::listen(
             Error::class,
             function ($event) {
                 logger('Auto updater error.', ['error' => $event->error ?? null]);
-                Cache::put('nativephp.updater.status', [
-                    'state' => 'error',
-                    'message' => $event->error ?? 'Terjadi kesalahan saat memeriksa update.',
-                ], 300);
+
+                Notification::new()
+                    ->title('Gagal Memeriksa Update')
+                    ->message($event->error ?? 'Terjadi kesalahan saat memeriksa update.')
+                    ->show();
             }
         );
 
