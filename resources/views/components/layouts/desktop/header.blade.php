@@ -26,9 +26,6 @@
                 <button type="button" class="btn-win-menu">Help</button>
                 <div class="win-menu-dropdown">
                     <button type="button" class="win-menu-item" id="menu-about">About</button>
-                    @if (request()->routeIs('web.login'))
-                        <button type="button" class="win-menu-item" id="menu-check-update">Check For Update</button>
-                    @endif
                 </div>
             </div>
         </div>
