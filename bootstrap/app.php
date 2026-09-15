@@ -7,6 +7,7 @@ use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
 use Illuminate\Support\Facades\Config;
+use Symfony\Component\HttpKernel\Exception\HttpExceptionInterface;
 
 return Application::configure(basePath: dirname(__DIR__))
     ->withRouting(
@@ -54,7 +55,48 @@ return Application::configure(basePath: dirname(__DIR__))
                     'data' => null,
                 ], 401);
             }
+
             return redirect()->guest('login');
+        });
+
+        $exceptions->render(function (Exception $e, $request) {
+
+            if ($request->expectsJson()) {
+                $status = $e instanceof HttpExceptionInterface
+                    ? $e->getStatusCode()
+                    : 500;
+
+                return response()->json([
+                    'status' => 'error',
+                    'message' => $status === 500
+                        ? 'Terjadi kesalahan pada server.'
+                        : $e->getMessage(),
+                    'data' => null,
+                ], $status);
+            }
+
+            $status = $e instanceof HttpExceptionInterface
+                ? $e->getStatusCode()
+                : 500;
+
+            $view = "errors.{$status}";
+
+            if (! view()->exists($view)) {
+                $view = 'errors.500';
+                $status = 500;
+            }
+
+            $back_url = url()->previous();
+            
+            if ($back_url === $request->fullUrl()) {
+                $back_url = url('/');
+            }
+
+            return response()->view($view, [
+                'status' => $status,
+                'exception' => $e,
+                'back_url' => $back_url
+            ], $status);
         });
 
         // Reportable (logging) handler
