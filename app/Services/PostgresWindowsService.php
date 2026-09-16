@@ -18,15 +18,25 @@ class PostgresWindowsService
     public function __construct()
     {
         $this->serviceName = config('services.pgsql.service_name', 'ABC POS PostgreSQL');
-        $this->pgPort      = (int) config('services.pgsql.port', 1933);
         $this->pgUser      = config('services.pgsql.superuser', 'abc_pos_postgres');
         $this->pgPassword  = config('services.pgsql.password', 'root');
         $this->pgDatabase  = config('services.pgsql.database', 'abc_pos_db');
-        $this->pgBinPath   = $this->resolvePgsqlBinPath();
-        $this->pgDataPath  = $this->resolvePgsqlDataPath();
 
-        Log::info('[PgService] pgBinPath: ' . $this->pgBinPath);
-        Log::info('[PgService] pgDataPath: ' . $this->pgDataPath);
+        // Baca port dari registry (ditulis installer) sebagai prioritas
+        $this->pgPort = $this->resolvePortFromRegistry()
+            ?? (int) config('services.pgsql.port', 1933);
+
+        $this->pgBinPath  = $this->resolvePgsqlBinPath();
+        $this->pgDataPath = $this->resolvePgsqlDataPath();
+    }
+
+    protected function resolvePortFromRegistry(): ?int
+    {
+        $regValue = shell_exec('reg query "HKLM\Software\ABCPOS" /v PgPort 2>&1');
+        if ($regValue && preg_match('/PgPort\s+REG_SZ\s+(\d+)/i', $regValue, $m)) {
+            return (int) $m[1];
+        }
+        return null;
     }
 
     // =========================================================================
@@ -121,9 +131,17 @@ class PostgresWindowsService
 
     protected function resolvePgsqlBinPath(): string
     {
-        // __DIR__ = .../resources/build/app/app/Services
-        // dirname x3  = .../resources/build
-        // + pgsql/bin = .../resources/build/pgsql/bin  ← lokasi production
+        // Prioritas 1: registry (ditulis oleh installer)
+        $regValue = shell_exec('reg query "HKLM\Software\ABCPOS" /v PgBinPath 2>&1');
+        if ($regValue && preg_match('/PgBinPath\s+REG_SZ\s+(.+)/i', $regValue, $m)) {
+            $path = trim($m[1]);
+            if (file_exists($path . DIRECTORY_SEPARATOR . 'pg_ctl.exe')) {
+                Log::info("[PgService] pg binary from registry: {$path}");
+                return $path;
+            }
+        }
+
+        // Prioritas 2: __DIR__ relatif (production NativePHP)
         $candidates = [
             dirname(dirname(dirname(__DIR__))) . DIRECTORY_SEPARATOR . 'pgsql' . DIRECTORY_SEPARATOR . 'bin',
             base_path('pgsql' . DIRECTORY_SEPARATOR . 'bin'),
@@ -138,14 +156,20 @@ class PostgresWindowsService
             }
         }
 
-        // Fallback — akan error di bin() kalau tidak ketemu
         return str_replace('/', DIRECTORY_SEPARATOR, base_path('pgsql/bin'));
     }
 
     protected function resolvePgsqlDataPath(): string
     {
-        // Data directory selalu di AppData\Roaming agar writable oleh user
-        // (tidak di Program Files yang butuh Admin untuk write)
+        // Baca dari registry (ditulis oleh installer)
+        $regValue = shell_exec('reg query "HKLM\Software\ABCPOS" /v DataPath 2>&1');
+        if ($regValue && preg_match('/DataPath\s+REG_SZ\s+(.+)/i', $regValue, $m)) {
+            $path = trim($m[1]);
+            Log::info("[PgService] data path from registry: {$path}");
+            return $path;
+        }
+
+        // Fallback
         $appData = getenv('APPDATA') ?: (getenv('PROGRAMDATA') ?: 'C:\\ProgramData');
         return $appData
             . DIRECTORY_SEPARATOR . 'ABCPOS'
