@@ -7,6 +7,9 @@
                 <div class="win-menu-dropdown">
                     <button type="button" class="win-menu-item" id="menu-print">Print</button>
                     <button type="button" class="win-menu-item" id="menu-reload">Reload</button>
+                    @if (config('database.connection_mode') == 'service')
+                    <button type="button" class="win-menu-item" id="menu-reload-db">Reload Database</button>
+                    @endif
                     <div class="win-menu-divider"></div>
                     <button type="button" class="win-menu-item" id="menu-exit">Exit</button>
                 </div>
@@ -166,6 +169,24 @@
             $(document).on('click', '#menu-about', function () {
                 alert('{{ config('app.name') }}\nVersion {{ config('nativephp.version', '1.0.0') }}');
             });
+
+            $(document).on('click', '#menu-reload-db', function () {
+                $.post({
+                    url:  BASE_URL+'/api/startup/retry',
+                    type: 'POST',
+                    beforeSend: () => {
+                        Swal.fire({
+                            title: 'Harap Menunggu!',
+                            html: 'Sedang reload database',
+                            allowOutsideClick: false,
+                            allowEscapeKey: false,
+                            didOpen: () => Swal.showLoading(),
+                        });
+                    }
+                }).then(() => {
+                    Swal.close();
+                });
+            })
         </script>
     @endpush
 @endonce

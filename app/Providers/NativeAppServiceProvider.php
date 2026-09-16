@@ -166,7 +166,7 @@ class NativeAppServiceProvider implements ProvidesPhpIni
             ->titleBarHidden()
             ->resizable(true);
 
-        if (app()->isProduction()) {
+        if (config('database.connection_mode') == 'service') {
             $window->url(route('startup'));
         }
     }
