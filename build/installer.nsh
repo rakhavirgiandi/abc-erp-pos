@@ -1,3 +1,5 @@
+!define PG_PORT_START "1933"
+
 !macro customInstall
     DetailPrint "Menyiapkan database PostgreSQL..."
 
