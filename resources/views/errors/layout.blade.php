@@ -1,11 +1,6 @@
-<!DOCTYPE html>
-<html lang="id">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
-    <title>@yield('title', 'Terjadi Kesalahan') | {{ config('app.name', 'ABC POS') }}</title>
-    <link href="{{ asset('assets/css/bootstrap.css') }}" id="bootstrap-style" rel="stylesheet" type="text/css">
-    <link href="{{ asset('assets/css/app.min.css') }}" id="app-style" rel="stylesheet" type="text/css">
+@extends('layouts.main')
+
+@section('main-style')
     <style>
         html, body {
             height: 100%;
@@ -54,10 +49,15 @@
         .countdown {
             font-weight: 600;
         }
+
+        #main-content {
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+        }
     </style>
-</head>
-<body>
-    <x-desktop-header />
+@endsection
+@section('main-content')
     <div class="error-wrap">
         <div class="error-code">@yield('code')</div>
         <div class="error-title">@yield('title-text')</div>
@@ -69,10 +69,4 @@
             </a>
         </div>
     </div>
-    <script src="{{ asset('assets/libs/jquery/jquery.min.js') }}"></script>
-    <script>
-        let BASE_URL = '{{ env('APP_URL') }}';
-    </script>
-    @stack('script')
-</body>
-</html>
+@endsection

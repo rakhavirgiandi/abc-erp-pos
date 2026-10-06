@@ -720,4 +720,29 @@ class GlobalHelper
 
         return $data;
     }
+
+    public static function setEnvValue(string $key, string $value): void
+    {
+        $path = base_path('.env');
+                
+        if (preg_match('/[\s#"\']/', $value)) {
+            $value = '"' . str_replace('"', '\"', $value) . '"';
+        }
+
+        $content = file_exists($path)
+            ? file_get_contents($path)
+            : '';
+
+        if (preg_match("/^" . preg_quote($key, '/') . "=.*/m", $content)) {
+            $content = preg_replace(
+                "/^" . preg_quote($key, '/') . "=.*/m",
+                "{$key}={$value}",
+                $content
+            );
+        } else {
+            $content .= PHP_EOL . "{$key}={$value}";
+        }
+
+        file_put_contents($path, $content);
+    }
 }

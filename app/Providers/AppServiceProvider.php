@@ -6,6 +6,7 @@ use App\Services\PostgresWindowsService;
 use Illuminate\Support\ServiceProvider;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
+use App\Support\LocalSettings;
 
 class AppServiceProvider extends ServiceProvider
 {
@@ -20,6 +21,8 @@ class AppServiceProvider extends ServiceProvider
         $this->app->singleton(PostgresWindowsService::class, function () {
             return new PostgresWindowsService();
         });
+
+        $this->app->instance(LocalSettings::class, LocalSettings::instance());
     }
 
     /**

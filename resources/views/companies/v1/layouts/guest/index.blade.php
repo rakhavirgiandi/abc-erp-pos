@@ -1,46 +1,45 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
+@extends('layouts.main')
 
-    <meta charset="utf-8">
-    <title>Login - {{config('app.name')}}</title>
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="title" content="ABC ERP">
-    <meta name="description" content="ABC ERP adalah solusi ERP terintegrasi untuk membantu bisnis mengelola operasional, keuangan, stok, dan laporan dalam satu platform.">
-    <meta name="keywords" content="ERP, sistem ERP, manajemen bisnis, software akuntansi, stok, inventory">
-    <meta name="author" content="ABC ERP">
+@section('main-style')
 
-    <link rel="shortcut icon" href="{{ asset('assets/images/logo-sm-new.ico')}}">
-    <link rel="apple-touch-icon" sizes="180x180" href="{{ asset('assets/images/favicon/apple-touch-icon.png') }}">
-    <link rel="icon" type="image/png" sizes="32x32" href="{{ asset('assets/images/logo-sm-new.png')}}">
-    <link rel="icon" type="image/png" sizes="16x16" href="{{ asset('assets/images/logo-sm-new.png')}}">
+<style>
+    body {
+        background: url('{{ asset("assets/images/authentication_bg.png") }}') no-repeat center center;
+        background-size: cover;
+    }
 
-    <link href="{{ asset('assets/css/bootstrap.min.css')}}" rel="stylesheet">
-    <link href="{{ asset('assets/css/icons.min.css')}}" rel="stylesheet">
-    <link href="{{ asset('assets/css/app.min.css')}}" rel="stylesheet">
-    <link rel="stylesheet" href="{{ asset('assets/libs/sweetalert2/sweetalert2.min.css')}}">
-    <style>
-        body {
-            background: url('{{ asset("assets/images/auth/cover_bg.png") }}') no-repeat center center;
-            background-size: cover;
-            min-height: 100vh;
-        }
-    </style>
-    @yield('style')
-    @stack('style')
-</head>
-<script type="text/javascript">
-    let BASE_URL = '{{ url('/') }}';
-</script>
-<body>
-<x-desktop-header />
-<meta name="csrf-token" content="{{ csrf_token() }}">
+    .authentication-overlay {
+        min-height: calc(100vh - 38px);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 20px;
+    }
 
-<div id="main-content">
-    @yield('content')
-</div>
-<script src="{{ asset('assets/libs/jquery/jquery.min.js') }}"></script>
+    .authentication-card {
+        width: 100%;
+        max-width: 420px;
+        border-radius: 16px;
+        padding: 32px;
+        background: #fff;
+        box-shadow: 0 20px 40px rgba(0,0,0,.15);
+    }
+
+    .authentication-logo {
+        width: 200px;
+    }
+</style>
+
+@yield('style')
+
+@endsection
+@section('main-content')
+
+@yield('content')
+
+@endsection
+@section('main-script')
+
 @yield('script')
-@stack('script')
-</body>
-</html>
+
+@endsection

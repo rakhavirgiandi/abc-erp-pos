@@ -160,7 +160,7 @@
         background: white;
         padding: calc(var(--bs-modal-padding) - var(--bs-modal-footer-gap) * .5);
     }
-
+    
     .reward-point-product-item {
         width: 100%;
         border-radius: var(--bs-border-radius) !important;
@@ -4474,7 +4474,7 @@
                                 processData: false,
                                 dataType: 'json',
                                 beforeSend: function () {
-                                    showLoading();
+                                    showLoadingAlert();
                                 },
                                 success: function (res) {
                                     Swal.close();
@@ -4905,7 +4905,7 @@
                 processData: false,
                 dataType: 'json',
                 beforeSend: function () {
-                    showLoading();
+                    showLoadingAlert();
                 },
                 success: function (res) {
                     Swal.close();
@@ -5060,7 +5060,7 @@
             const reqParams = $.param(req);
 
             $.ajax({
-                url: BASE_URL + '/api/v1/sales_invoices?'+reqParams+'&order[id]=asc',
+                url: BASE_URL + '/api/v1/sales_invoices?'+reqParams+'&order[id]=desc',
                 type: "GET",
                 dataType: "json",
                 headers: {
@@ -5090,72 +5090,76 @@
                     let html = '';
 
                     if (res?.data?.length > 0) {
-                        
-                        let labelDate = null;
+
+                        const $container = $(`#histories-${activeTab}-tab-content.histories-container`);
+                        let prevDay = $container.find('[data-day]').last().attr('data-day'); // undefined di halaman pertama
+
+                        const badgeClass = {
+                            pending: 'badge-danger',
+                            done: 'badge-success',
+                            hold: 'badge-warning'
+                        };
+
+                        function toSentenceCase(str) {
+                            if (!str) return "";
+                            return str.charAt(0).toUpperCase() + str.slice(1).toLowerCase();
+                        }
 
                         $(res?.data).each((i, item) => {
-                            const dateMoment = moment.utc(item.date);
-                            if (labelDate != item.date) {
-                                html += '<div class="bg-body fw-bold text-body-secondary" style="width: 100%; padding: .5rem 1.5rem; font-family: \'Lexend\', sans-serif;">'
+                            const dateMoment = moment(item.date);
+                            const dayKey = dateMoment.format('YYYY-MM-DD');
+
+                            if (prevDay !== dayKey) {
+                                html += '<div data-day="'+dayKey+'" class="bg-body fw-bold text-body-secondary" style="width: 100%; padding: .5rem 1.5rem; font-family: \'Lexend\', sans-serif;">';
                                 if (dateMoment.isSame(moment(), 'day')) {
                                     html += 'Today';
-                                } else if (dateMoment.utc().isSame(moment().utc().subtract(1, 'day'), 'day')) {
+                                } else if (dateMoment.isSame(moment().subtract(1, 'day'), 'day')) {
                                     html += 'Yesterday';
                                 } else {
                                     html += dateMoment.format('DD MMM YYYY');
                                 }
-                                html += '</div>'
-                            }
-
-                            function toSentenceCase(str) {
-                                if (!str) return "";
-                                return str.charAt(0).toUpperCase() + str.slice(1).toLowerCase();
-                            }
-
-                            let badgeClass = {
-                                pending: 'badge-danger',
-                                done: 'badge-success',
-                                hold: 'badge-warning'
+                                html += '</div>';
+                                prevDay = dayKey;
                             }
 
                             let dropdownButtonsHtml = '';
 
-                            dropdownButtonsHtml += '<li><a href="#" id="histories-edit-transaction-toggle-'+i+'" data-ref_number="'+item?.ref_number+'" data-id="'+item.id+'" id="call-back-sales-invoice-'+item.id+'" class="dropdown-item">Ubah Transaksi</a></li>' 
+                            dropdownButtonsHtml += '<li><a href="#" id="histories-edit-transaction-toggle-'+i+'" data-ref_number="'+item?.ref_number+'" data-id="'+item.id+'" class="dropdown-item">Ubah Transaksi</a></li>';
                             dropdownButtonsHtml += '<li><a href="#" id="histories-print-toggle-'+i+'" data-ref_number="'+item?.ref_number+'" class="dropdown-item">Print</a></li>';
 
                             if (activeTab == 'hold') {
                                 dropdownButtonsHtml += '<li><button class="dropdown-item" id="call-back-sales-invoice-'+item.id+'" data-id="'+item.id+'" type="button">Call Back</button></li>';
-                            }                            
+                            }
+                            
+                            if (activeTab == 'pending') {
+                                dropdownButtonsHtml += '<li><button class="dropdown-item" id="sync-sales-invoice-'+item.id+'" data-id="'+item.id+'" type="button">Sinkron</button></li>';
+                            }
 
-                            html += '<div class="d-flex border-bottom">'
-                            html +=     '<div class="d-flex flex-fill justify-content-between h-100" style="padding: 1rem 0 1rem 1.25rem">'
-                            html +=         '<div>'
-                            html +=             '<h6 class="mb-1 text-secondary">'+item?.customer_name+'</h6>'
-                            html +=             '<p class="mb-2 text-body-secondary small">'+item?.ref_number+'</p>'
-                            html +=             '<p class="mb-0 text-body-secondary" style="font-size: 0.7rem;">'+dateMoment.format('DD MMM YYYY')+'</p>'
-                            html +=         '</div>'
-                            html +=         '<div class="text-end">'
-                            html +=             '<h5 style="font-size: .95rem;">'+parseFloat(item?.total).toLocaleString('en')+'</h5>'
-                            html +=             '<span class="badge '+(badgeClass[activeTab] ? badgeClass[activeTab] : '' )+'">'+toSentenceCase(activeTab)+'</span>'
-                            html +=         '</div>'
-                            html +=     '</div>'
-                            html +=     '<div class="d-flex align-items-center" style="padding: 0 .5rem;">'
-                                if ($(dropdownButtonsHtml).length > 0) {
-                                    html +=         '<div class="dropdown">'
-                                    html +=             '<button type="button" class="btn btn-text-light btn-icon align-self-center" data-bs-toggle="dropdown" aria-expanded="false"><span class="mdi mdi-dots-horizontal"></span></button>'
-                                    html +=             '<ul class="dropdown-menu dropdown-menu-end">'
-                                    html += dropdownButtonsHtml;
-                                    html +=             '</ul>'
-                                    html +=         '</div>'
-                                }
-                            html +=     '</div>'
-                            html += '</div>'
-
-                            labelDate = item.date;
+                            html += '<div class="d-flex border-bottom">';
+                            html +=     '<div class="d-flex flex-fill justify-content-between h-100" style="padding: 1rem 0 1rem 1.25rem">';
+                            html +=         '<div>';
+                            html +=             '<h6 class="mb-1 text-secondary">'+item?.customer_name+'</h6>';
+                            html +=             '<p class="mb-2 text-body-secondary small">'+item?.ref_number+'</p>';
+                            html +=             '<p class="mb-0 text-body-secondary" style="font-size: 0.7rem;">'+dateMoment.format('DD MMM YYYY')+'</p>';
+                            html +=         '</div>';
+                            html +=         '<div class="text-end">';
+                            html +=             '<h5 style="font-size: .95rem;">'+parseFloat(item?.total).toLocaleString('en')+'</h5>';
+                            html +=             '<span class="badge '+(badgeClass[activeTab] ? badgeClass[activeTab] : '')+'">'+toSentenceCase(activeTab)+'</span>';
+                            html +=         '</div>';
+                            html +=     '</div>';
+                            html +=     '<div class="d-flex align-items-center" style="padding: 0 .5rem;">';
+                            html +=         '<div class="dropdown">';
+                            html +=             '<button type="button" class="btn btn-text-light btn-icon align-self-center" data-bs-toggle="dropdown" aria-expanded="false"><span class="mdi mdi-dots-horizontal"></span></button>';
+                            html +=             '<ul class="dropdown-menu dropdown-menu-end">';
+                            html +=                 dropdownButtonsHtml;
+                            html +=             '</ul>';
+                            html +=         '</div>';
+                            html +=     '</div>';
+                            html += '</div>';
                         });
-                        
-                        $(`#histories-${activeTab}-tab-content.histories-container`).append(html);
-                        
+
+                        $container.append(html);
+
                         historiesPages[activeTab]++;
                     }
 
@@ -5169,7 +5173,7 @@
                     if (props?.callback && typeof props?.callback === 'function') {
                         props.callback(res);
                     }
-                },
+                }
             });
         }
 
@@ -5245,7 +5249,7 @@
                         'company-id': COMPANY_ID
                     },
                     beforeSend: function() {
-                        showLoading();
+                        showLoadingAlert();
                     },
                     success: function(res) {
                         Swal.close();
@@ -5656,6 +5660,8 @@
                             'company-id': COMPANY_ID
                         },
                     });
+
+            
         }
 
         const accountingMastersSync = () => {
@@ -6188,9 +6194,9 @@
         })
 
         $(document).on('click', '#reload-toggler', function () {
-            showLoading()
+            showLoadingAlert()
             window.location.reload();
-        })
+        });
     });
 </script>
 @endsection

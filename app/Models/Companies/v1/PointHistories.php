@@ -8,6 +8,8 @@ use App\Helpers\ModelHelper;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use Illuminate\Database\Eloquent\Attributes\ObservedBy;
+use App\Observers\PointHistoriesObserver;
 
 /**
  * @property string model
@@ -21,6 +23,8 @@ use Illuminate\Database\Eloquent\SoftDeletes;
  * @property int    updated_at
  * @property int    deleted_at
  */
+
+#[ObservedBy([PointHistoriesObserver::class])]
 class PointHistories extends Model
 {
     use SoftDeletes;

@@ -1,5 +1,7 @@
 <?php
 
+use App\Support\LocalSettings;
+
 if (!function_exists('isAscii')) {
     function isAscii($str) {
         return mb_check_encoding($str, 'ASCII');
@@ -38,3 +40,20 @@ if (! function_exists('utf8ize')) {
     }
 }
 
+if (! function_exists('localSettings')) {
+    function localSettings(string|array|null $key = null, mixed $default = null): mixed
+    {
+        $settings = LocalSettings::instance();
+
+        if ($key === null) {
+            return $settings;
+        }
+
+        if (is_array($key)) {
+            $settings->set($key);
+            return null;
+        }
+
+        return $settings->get($key, $default);
+    }
+}

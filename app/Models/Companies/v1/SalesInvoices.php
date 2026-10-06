@@ -12,6 +12,9 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Validation\Rule;
+use Illuminate\Support\Facades\Log;
+use Illuminate\Database\Eloquent\Concerns\HasUuids;
+
 
 /**
  * @property string number
@@ -74,7 +77,12 @@ use Illuminate\Validation\Rule;
  */
 class SalesInvoices extends Model
 {
-    use SoftDeletes;
+    use SoftDeletes, HasUuids;
+
+    public function uniqueIds(): array
+    {
+        return ['uuid'];
+    }
 
     protected $connection = 'pgsql_companies';
 
@@ -646,286 +654,351 @@ class SalesInvoices extends Model
         return true;
     }
 
-    public static function createPOSTransaction($params)
+    public static function createPOSTransaction($params, $request)
     {   
         $validate = self::validate($params);
         if ($validate !== true) {
+
+            Log::channel('activity')->warning('POS transaction validation failed', [
+                'type'       => 'pos_transaction',
+                'ref_number' => $params['ref_number'] ?? null,
+                'user_id'    => auth()->id(),
+            ]);
+
             return $validate;
         }
 
         DB::connection('pgsql_companies')->beginTransaction();
 
-        $filename = null;
-        $sales_invoice_details = null;
-        $reward_point_applied_ids = [];
-        $total_point_applied = 0;
-        $params['is_need_sync'] = 1;
-        
-        if (isset($params['reward_point_applied_ids']) && $params['reward_point_applied_ids']) {
-            $reward_point_applied_ids = $params['reward_point_applied_ids'];
-            unset($params['reward_point_applied_ids']);
-        }
-
-        if (isset($params['source_type']) && $params['source_type']) {
-            unset($params['source_type']);
-        }
-
-        if (isset($params['total_point_applied'])) {
-            $total_point_applied = $params['total_point_applied']; 
-            unset($params['total_point_applied']);
-        }
-
-        if (isset($params['_token']) && $params['_token']) {
-            unset($params['_token']);
-        }
-
-        if (isset($params['sales_invoice_details']) && $params['sales_invoice_details']) {
-            $sales_invoice_details = $params['sales_invoice_details'];
-            unset($params['sales_invoice_details']);
-        }
-
-        if (isset($params['exchange_rate']) && GlobalHelper::convertSeparator($params['exchange_rate'], ',') > 0) {
-            $params['exchange_rate'] = GlobalHelper::convertSeparator($params['exchange_rate'], ',');
-        }
-
-        if (isset($params['total_payment']) && GlobalHelper::convertSeparator($params['total_payment'], ',') > 0) {
-            $params['total_payment'] = GlobalHelper::convertSeparator($params['total_payment'], ',');
-        }
-
-        if (isset($params['total_change']) && GlobalHelper::convertSeparator($params['total_change'], ',') > 0) {
-            $params['total_change'] = GlobalHelper::convertSeparator($params['total_change'], ',');
-        }
-
-        if (isset($params['total']) && GlobalHelper::convertSeparator($params['total'], ',') > 0) {
-            $params['total'] = GlobalHelper::convertSeparator($params['total'], ',');
-        }
-
-        if (isset($params['discount_amount']) && GlobalHelper::convertSeparator($params['discount_amount'], ',') > 0) {
-            $params['discount_amount'] = GlobalHelper::convertSeparator($params['discount_amount'], ',');
-
-            if (!isset($params['discount_coa']) || !$params['discount_coa']) {
-                $params['discount_coa'] = config('default_accounts.sales_discount');
+        try {
+            //code...
+            $filename = null;
+            $sales_invoice_details = null;
+            $reward_point_applied_ids = [];
+            $total_point_applied = 0;
+            $params['is_need_sync'] = 1;
+            
+            if (isset($params['reward_point_applied_ids']) && $params['reward_point_applied_ids']) {
+                $reward_point_applied_ids = $params['reward_point_applied_ids'];
+                unset($params['reward_point_applied_ids']);
             }
-        }
-
-        if (isset($params['other_cost']) && GlobalHelper::convertSeparator($params['other_cost'], ',') > 0) {
-            $params['other_cost'] = GlobalHelper::convertSeparator($params['other_cost'], ',');
-
-            if (!isset($params['other_coa']) || !$params['other_coa']) {
-                // $params['other_coa'] = config('default_accounts.other_costs');
-
-                // SEMENTARA SEBELUM INPUTAN OTHER INCOME DI BUAT
-                $params['other_coa'] = config('default_accounts.other_income');
+    
+            if (isset($params['source_type']) && $params['source_type']) {
+                unset($params['source_type']);
             }
-        }
-
-        if (isset($params['other_income']) && GlobalHelper::convertSeparator($params['other_income']) > 0) {
-            $params['other_income'] = GlobalHelper::convertSeparator($params['other_income']);
-
-            if (!isset($params['other_income_coa']) || !$params['other_income_coa']) {
-                $params['other_income_coa'] = config('default_accounts.other_income');
+    
+            if (isset($params['total_point_applied'])) {
+                $total_point_applied = $params['total_point_applied']; 
+                unset($params['total_point_applied']);
             }
-        }
-
-        if (isset($params['tax_amount']) && GlobalHelper::convertSeparator($params['tax_amount'], ',') > 0) {
-            $params['tax_amount'] = GlobalHelper::convertSeparator($params['tax_amount'], ',');
-        }
-
-        if (isset($params['down_payment_amount']) && $params['down_payment_amount'] > 0) {
-            $params['down_payment_amount'] = GlobalHelper::convertSeparator($params['down_payment_amount'], ',');
-            $down_payment_coa = $params['down_payment_coa'] ?? config('default_accounts.sales_advance');
-        }
-
-        if (isset($params['total']) && GlobalHelper::convertSeparator($params['total']) > 0) {
-            $params['total'] = GlobalHelper::convertSeparator($params['total']);
-            if (!isset($params['total_coa']) || (!$params['total_coa'])) {
-                $params['total_coa'] = config('default_accounts.account_receivable');
+    
+            if (isset($params['_token']) && $params['_token']) {
+                unset($params['_token']);
             }
-        }
+    
+            if (isset($params['sales_invoice_details']) && $params['sales_invoice_details']) {
+                $sales_invoice_details = $params['sales_invoice_details'];
+                unset($params['sales_invoice_details']);
+            }
+    
+            if (isset($params['exchange_rate']) && GlobalHelper::convertSeparator($params['exchange_rate'], ',') > 0) {
+                $params['exchange_rate'] = GlobalHelper::convertSeparator($params['exchange_rate'], ',');
+            }
+    
+            if (isset($params['total_payment']) && GlobalHelper::convertSeparator($params['total_payment'], ',') > 0) {
+                $params['total_payment'] = GlobalHelper::convertSeparator($params['total_payment'], ',');
+            }
+    
+            if (isset($params['total_change']) && GlobalHelper::convertSeparator($params['total_change'], ',') > 0) {
+                $params['total_change'] = GlobalHelper::convertSeparator($params['total_change'], ',');
+            }
+    
+            if (isset($params['total']) && GlobalHelper::convertSeparator($params['total'], ',') > 0) {
+                $params['total'] = GlobalHelper::convertSeparator($params['total'], ',');
+            }
+    
+            if (isset($params['discount_amount']) && GlobalHelper::convertSeparator($params['discount_amount'], ',') > 0) {
+                $params['discount_amount'] = GlobalHelper::convertSeparator($params['discount_amount'], ',');
+    
+                if (!isset($params['discount_coa']) || !$params['discount_coa']) {
+                    $params['discount_coa'] = config('default_accounts.sales_discount');
+                }
+            }
+    
+            if (isset($params['other_cost']) && GlobalHelper::convertSeparator($params['other_cost'], ',') > 0) {
+                $params['other_cost'] = GlobalHelper::convertSeparator($params['other_cost'], ',');
+    
+                if (!isset($params['other_coa']) || !$params['other_coa']) {
+                    // $params['other_coa'] = config('default_accounts.other_costs');
+    
+                    // SEMENTARA SEBELUM INPUTAN OTHER INCOME DI BUAT
+                    $params['other_coa'] = config('default_accounts.other_income');
+                }
+            }
+    
+            if (isset($params['other_income']) && GlobalHelper::convertSeparator($params['other_income']) > 0) {
+                $params['other_income'] = GlobalHelper::convertSeparator($params['other_income']);
+    
+                if (!isset($params['other_income_coa']) || !$params['other_income_coa']) {
+                    $params['other_income_coa'] = config('default_accounts.other_income');
+                }
+            }
+    
+            if (isset($params['tax_amount']) && GlobalHelper::convertSeparator($params['tax_amount'], ',') > 0) {
+                $params['tax_amount'] = GlobalHelper::convertSeparator($params['tax_amount'], ',');
+            }
+    
+            if (isset($params['down_payment_amount']) && $params['down_payment_amount'] > 0) {
+                $params['down_payment_amount'] = GlobalHelper::convertSeparator($params['down_payment_amount'], ',');
+                $down_payment_coa = $params['down_payment_coa'] ?? config('default_accounts.sales_advance');
+            }
+    
+            if (isset($params['total']) && GlobalHelper::convertSeparator($params['total']) > 0) {
+                $params['total'] = GlobalHelper::convertSeparator($params['total']);
+                if (!isset($params['total_coa']) || (!$params['total_coa'])) {
+                    $params['total_coa'] = config('default_accounts.account_receivable');
+                }
+            }
+    
+            if (isset($params['subtotal']) && GlobalHelper::convertSeparator($params['subtotal'], ',') > 0) {
+                $params['subtotal'] = GlobalHelper::convertSeparator($params['subtotal'], ',');
+            }
+    
+            // if (isset($params['payment_type'])) {
+            //     if ($params['payment_type'] == 'cash') {
+            //         $params['status'] = 'paid';
+            //     } else {
+            //         $params['status'] = 'open';
+            //     }
+            // }
+    
+            $params['payment_type'] = 'cash';
+    
+            if (empty($params['status'])) {
+                $params['status'] = 'draft';
+            }
+    
+            $generate_reward_point_items = []; 
+    
+            // UPDATE
+            if (isset($params['id']) && $params['id']) {
+                $old = self::getById($params['id'])->original;
 
-        if (isset($params['subtotal']) && GlobalHelper::convertSeparator($params['subtotal'], ',') > 0) {
-            $params['subtotal'] = GlobalHelper::convertSeparator($params['subtotal'], ',');
-        }
+                $old_data = $old instanceof \Illuminate\Contracts\Support\Arrayable ? $old->toArray() : (array) $old;
+    
+                $update = self::where('id', $params['id'])->update($params);
+    
+                if ($update) {
+                    SalesInvoiceDetails::where('sales_invoice_id', $params['id'])->delete();
+    
+                    foreach ($sales_invoice_details as $key => &$sales_invoice_detail) {
+                        $sales_invoice_detail['sales_invoice_id'] = $params['id'];
+                        $sales_invoice_detail['ref_number'] = $params['ref_number'];
+                        $sales_invoice_detail['unit_price'] = GlobalHelper::convertSeparator($sales_invoice_detail['unit_price'] ?? 0, ',');
+                        $sales_invoice_detail['qty'] = GlobalHelper::convertSeparator($sales_invoice_detail['qty'] ?? 0, ',');
+                        $sales_invoice_detail['discount_amount'] = GlobalHelper::convertSeparator($sales_invoice_detail['discount_amount'] ?? 0, ',');
+                        $sales_invoice_detail['tax_amount'] = GlobalHelper::convertSeparator($sales_invoice_detail['tax_amount'] ?? 0, ',');
+    
+                        if (isset($sales_invoice_detail['id']) && $sales_invoice_detail['id']) {
+                            $sales_invoice_detail['deleted_at'] = null;
+                            unset($sales_invoice_detail['created_at']);
+                            SalesInvoiceDetails::onlyTrashed()->where('id', $sales_invoice_detail['id'])->update($sales_invoice_detail);
+                            unset($sales_invoice_details[$key]);   
+                        }
+    
+                        $generate_reward_point_items[] = [
+                            "price" => GlobalHelper::convertSeparator($sales_invoice_detail['unit_price'] ?? 0, ','),
+                            "unit_id" => $sales_invoice_detail["unit_id"],
+                            "product_id" => $sales_invoice_detail["product_id"],
+                            "qty" => GlobalHelper::convertSeparator($sales_invoice_detail['qty'] ?? 0, ',')
+                        ];
+    
+                        unset($sales_invoice_detail['id']);
+                    }
+                    
+                    SalesInvoiceDetails::insert($sales_invoice_details);
+    
+                    $customer = Contacts::where('id', $params['customer_id'])->withTrashed()->first();
+    
+                    if (empty($params['is_draft'])) {
+                        $bonus_points = ContactGroups::generateRewardPoints($customer->contact_group_id, [
+                            'total_purchase' => $params['total'],
+                            'chart_items' => $generate_reward_point_items,
+                        ]);
+    
+                        PointHistories::where('model', '=', 'SalesInvoices')->where('model_id', '=', $params['id'])->get()->each->forceDelete();
+            
+                        if ($bonus_points > 0) {
+                            $point_in = PointHistories::create([
+                                'model' => 'SalesInvoices',
+                                'model_id' => $params['id'],
+                                'contact_id' => $customer->id,
+                                'point' => $bonus_points,
+                                'note' => '',
+                                'date' => now(),
+                                'type' => 'in'
+                            ]);
+                        }
+    
+                        if ($total_point_applied > 0) {
+                            PointHistories::create([
+                                'model' => 'SalesInvoices',
+                                'model_id' => $params['id'],
+                                'contact_id' => $customer->id,
+                                'point' => $total_point_applied,
+                                'note' => '',
+                                'date' => now(),
+                                'type' => 'out'
+                            ]);
+                        }
+                    }
+    
+                    $invoice = self::with('sales_invoice_details')->find($params['id']);
+            
+                }
 
-        // if (isset($params['payment_type'])) {
-        //     if ($params['payment_type'] == 'cash') {
-        //         $params['status'] = 'paid';
-        //     } else {
-        //         $params['status'] = 'open';
-        //     }
-        // }
+                $data = self::getById($params['id'])->original;
+                $data = $data->toArray();
 
-        $params['payment_type'] = 'cash';
-
-        if (empty($params['status'])) {
-            $params['status'] = 'draft';
-        }
-
-        $generate_reward_point_items = []; 
-
-        // UPDATE
-        if (isset($params['id']) && $params['id']) {
-            $old = self::getById($params['id'])->original;
-
-            $update = self::where('id', $params['id'])->update($params);
-
-            if ($update) {
-                SalesInvoiceDetails::where('sales_invoice_id', $params['id'])->delete();
-
-                foreach ($sales_invoice_details as $key => &$sales_invoice_detail) {
-                    $sales_invoice_detail['sales_invoice_id'] = $params['id'];
+                Log::channel('activity')->info('Sales Invoice #'. $data['ref_number'].' updated', [
+                    'type' => 'sales_invoice',
+                    'action' => 'update',
+                    'invoice_id' => $params['id'],
+                    'ref_number' => $params['ref_number'] ?? null,
+                    'total' => $params['total'] ?? null,
+                    'status' => $params['status'],
+                    'data' => [
+                        'old' => $old_data,
+                        'new' => $data
+                    ],
+                    'items' => count($generate_reward_point_items),
+                    'bonus_points' => $bonus_points ?? 0,
+                    'points_used' => $total_point_applied,
+                    'user' => [
+                        'auth' => auth()->user()->toArray(),
+                        'companies' => config('user_companies.details')
+                    ],
+                ]);
+    
+                DB::connection('pgsql_companies')->commit();
+                
+                return response()->json([
+                    'status' => 'success',
+                    'message' => 'Succesfully Updated Data',
+                    'data' => $data
+                ]);
+            }
+    
+            // CREATE
+            $params['is_from_pos'] = 1;
+    
+            $save = self::create($params);
+            
+            if ($save) {
+                foreach ($sales_invoice_details as &$sales_invoice_detail) {
+                    $sales_invoice_detail['sales_invoice_id'] = $save->id;
                     $sales_invoice_detail['ref_number'] = $params['ref_number'];
-                    $sales_invoice_detail['unit_price'] = GlobalHelper::convertSeparator($sales_invoice_detail['unit_price'] ?? 0, ',');
                     $sales_invoice_detail['qty'] = GlobalHelper::convertSeparator($sales_invoice_detail['qty'] ?? 0, ',');
+                    $sales_invoice_detail['unit_price'] = GlobalHelper::convertSeparator($sales_invoice_detail['unit_price'] ?? 0, ',');
                     $sales_invoice_detail['discount_amount'] = GlobalHelper::convertSeparator($sales_invoice_detail['discount_amount'] ?? 0, ',');
                     $sales_invoice_detail['tax_amount'] = GlobalHelper::convertSeparator($sales_invoice_detail['tax_amount'] ?? 0, ',');
-
-                    if (isset($sales_invoice_detail['id']) && $sales_invoice_detail['id']) {
-                        $sales_invoice_detail['deleted_at'] = null;
-                        unset($sales_invoice_detail['created_at']);
-                        SalesInvoiceDetails::onlyTrashed()->where('id', $sales_invoice_detail['id'])->update($sales_invoice_detail);
-                        unset($sales_invoice_details[$key]);   
-                    }
-
+    
                     $generate_reward_point_items[] = [
                         "price" => GlobalHelper::convertSeparator($sales_invoice_detail['unit_price'] ?? 0, ','),
                         "unit_id" => $sales_invoice_detail["unit_id"],
                         "product_id" => $sales_invoice_detail["product_id"],
                         "qty" => GlobalHelper::convertSeparator($sales_invoice_detail['qty'] ?? 0, ',')
                     ];
-
-                    unset($sales_invoice_detail['id']);
                 }
-                
+    
                 SalesInvoiceDetails::insert($sales_invoice_details);
-
-                $customer = Contacts::where('id', $params['customer_id'])->withTrashed()->first();
-
-                if (empty($params['is_draft'])) {
-                    $bonus_points = ContactGroups::generateRewardPoints($customer->contact_group_id, [
-                        'total_purchase' => $params['total'],
-                        'chart_items' => $generate_reward_point_items,
-                    ]);
-
-                    PointHistories::where('model', '=', 'SalesInvoices')->where('model_id', '=', $params['id'])->where('contact_id', '=', $customer->id)->delete();
-        
-                    if ($bonus_points > 0) {
-                        PointHistories::create([
-                            'model' => 'SalesInvoices',
-                            'model_id' => $params['id'],
-                            'contact_id' => $customer->id,
-                            'point' => $bonus_points,
-                            'note' => '',
-                            'date' => now(),
-                            'type' => 'in'
+    
+                if ($params['status'] != 'draft') {
+                    $customer = Contacts::where('id', $params['customer_id'])->withTrashed()->first();
+    
+                    if (empty($params['is_draft'])) {
+                        $bonus_points = ContactGroups::generateRewardPoints($customer->contact_group_id, [
+                            'total_purchase' => $params['total'],
+                            'chart_items' => $generate_reward_point_items,
                         ]);
-                    }
-
-                    if ($total_point_applied > 0) {
-                        PointHistories::create([
-                            'model' => 'SalesInvoices',
-                            'model_id' => $params['id'],
-                            'contact_id' => $customer->id,
-                            'point' => $total_point_applied,
-                            'note' => '',
-                            'date' => now(),
-                            'type' => 'out'
-                        ]);
+            
+                        if ($bonus_points > 0) {
+                            $point_in = PointHistories::create([
+                                'model' => 'SalesInvoices',
+                                'model_id' => $save->id,
+                                'contact_id' => $customer->id,
+                                'point' => $bonus_points,
+                                'note' => '',
+                                'date' => now(),
+                                'type' => 'in'
+                            ]);
+                        }
+    
+                        // $reward_points = RewardPoints::get();
+                        // $reward_points_by_id = [];
+                        // $point_histories_out_count = 0;
+    
+                        // foreach ($reward_points as $key => $value) {
+                        //     $reward_points_by_id[$value['id']] = $value;
+                        // }
+    
+                        // if (count($reward_point_applied_ids) > 0) {
+                        //     foreach ($reward_point_applied_ids as $key => $rpa_id) {
+                        //         if (isset($reward_points_by_id[$rpa_id])) {
+                        //             $data = $reward_points_by_id[$rpa_id];
+                        //             $point_histories_out_count += floatval($data['total_point']);
+                        //         }
+                        //     }
+                        // }
+    
+                        if ($total_point_applied > 0) {
+                            $point_out = PointHistories::create([
+                                'model' => 'SalesInvoices',
+                                'model_id' => $save->id,
+                                'contact_id' => $customer->id,
+                                'point' => $total_point_applied,
+                                'note' => '',
+                                'date' => now(),
+                                'type' => 'out'
+                            ]);
+                        }
                     }
                 }
-            }
 
+                $data = self::getById($save->id)->original;
+                $data = $data->toArray();
+
+                Log::channel('activity')->info('Sales Invoice #'. $data['ref_number'].' created', [
+                    'type' => 'sales_invoice',
+                    'action' => 'update',
+                    'invoice_id' => $data['id'],
+                    'ref_number' => $data['ref_number'] ?? null,
+                    'total' => $data['total'] ?? null,
+                    'status' => $data['status'],
+                    'data' => $data,
+                    'items' => count($generate_reward_point_items),
+                    'bonus_points' => $bonus_points ?? 0,
+                    'points_used' => $total_point_applied,
+                    'user' => [
+                        'auth' => auth()->user()->toArray(),
+                        'companies' => config('user_companies.details')
+                    ],
+                ]);
+    
+                $save->load('sales_invoice_details');
+            }
+    
             DB::connection('pgsql_companies')->commit();
-            
+
             return response()->json([
                 'status' => 'success',
-                'message' => 'Succesfully Updated Data',
-                'data' => self::getById($params['id'])->original
-            ]);
+                'message' => 'Succesfully Added Data',
+                'data' => self::getById($save->id)->original->toArray()
+            ], 200);
+
+        } catch (\Throwable $th) {
+            DB::connection('pgsql_companies')->rollBack();
+            throw $th;
         }
-
-        // CREATE
-        $params['is_from_pos'] = 1;
-
-        $save = self::create($params);
-        
-        if ($save) {
-            foreach ($sales_invoice_details as &$sales_invoice_detail) {
-                $sales_invoice_detail['sales_invoice_id'] = $save->id;
-                $sales_invoice_detail['ref_number'] = $params['ref_number'];
-                $sales_invoice_detail['qty'] = GlobalHelper::convertSeparator($sales_invoice_detail['qty'] ?? 0, ',');
-                $sales_invoice_detail['unit_price'] = GlobalHelper::convertSeparator($sales_invoice_detail['unit_price'] ?? 0, ',');
-                $sales_invoice_detail['discount_amount'] = GlobalHelper::convertSeparator($sales_invoice_detail['discount_amount'] ?? 0, ',');
-                $sales_invoice_detail['tax_amount'] = GlobalHelper::convertSeparator($sales_invoice_detail['tax_amount'] ?? 0, ',');
-
-                $generate_reward_point_items[] = [
-                    "price" => GlobalHelper::convertSeparator($sales_invoice_detail['unit_price'] ?? 0, ','),
-                    "unit_id" => $sales_invoice_detail["unit_id"],
-                    "product_id" => $sales_invoice_detail["product_id"],
-                    "qty" => GlobalHelper::convertSeparator($sales_invoice_detail['qty'] ?? 0, ',')
-                ];
-            }
-
-            SalesInvoiceDetails::insert($sales_invoice_details);
-
-            if ($params['status'] != 'draft') {
-                $customer = Contacts::where('id', $params['customer_id'])->withTrashed()->first();
-
-                if (empty($params['is_draft'])) {
-                    $bonus_points = ContactGroups::generateRewardPoints($customer->contact_group_id, [
-                        'total_purchase' => $params['total'],
-                        'chart_items' => $generate_reward_point_items,
-                    ]);
-        
-                    if ($bonus_points > 0) {
-                        PointHistories::create([
-                            'model' => 'SalesInvoices',
-                            'model_id' => $save->id,
-                            'contact_id' => $customer->id,
-                            'point' => $bonus_points,
-                            'note' => '',
-                            'date' => now(),
-                            'type' => 'in'
-                        ]);
-                    }
-
-                    // $reward_points = RewardPoints::get();
-                    // $reward_points_by_id = [];
-                    // $point_histories_out_count = 0;
-
-                    // foreach ($reward_points as $key => $value) {
-                    //     $reward_points_by_id[$value['id']] = $value;
-                    // }
-
-                    // if (count($reward_point_applied_ids) > 0) {
-                    //     foreach ($reward_point_applied_ids as $key => $rpa_id) {
-                    //         if (isset($reward_points_by_id[$rpa_id])) {
-                    //             $data = $reward_points_by_id[$rpa_id];
-                    //             $point_histories_out_count += floatval($data['total_point']);
-                    //         }
-                    //     }
-                    // }
-
-                    if ($total_point_applied > 0) {
-                        PointHistories::create([
-                            'model' => 'SalesInvoices',
-                            'model_id' => $save->id,
-                            'contact_id' => $customer->id,
-                            'point' => $total_point_applied,
-                            'note' => '',
-                            'date' => now(),
-                            'type' => 'out'
-                        ]);
-                    }
-                }
-            }
-        }
-
-        DB::connection('pgsql_companies')->commit();
-        return response()->json([
-            'status' => 'success',
-            'message' => 'Succesfully Added Data',
-            'data' => self::getById($save->id)->original
-        ], 200);
-    }
+    }    
 }

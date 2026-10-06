@@ -114,6 +114,9 @@ class PostgresWindowsService
     public function getUsername(): string { return $this->pgUser; }
     public function getPassword(): string { return $this->pgPassword; }
 
+    public function getDataPath(): string { return $this->pgDataPath; }
+    public function getBinPath(): string  { return $this->pgBinPath; }
+
     public function getConnectionInfo(): array
     {
         return [
@@ -128,6 +131,11 @@ class PostgresWindowsService
     // =========================================================================
     // Path Resolution
     // =========================================================================
+
+    protected function grantServiceAccountAccess(): void
+    {
+        $this->runCommand('icacls "' . $this->pgDataPath . '" /grant "NT AUTHORITY\\NetworkService:(OI)(CI)F" /T /Q');
+    }
 
     protected function resolvePgsqlBinPath(): string
     {
@@ -161,21 +169,12 @@ class PostgresWindowsService
 
     protected function resolvePgsqlDataPath(): string
     {
-        // Baca dari registry (ditulis oleh installer)
         $regValue = shell_exec('reg query "HKLM\Software\ABCPOS" /v DataPath 2>&1');
         if ($regValue && preg_match('/DataPath\s+REG_SZ\s+(.+)/i', $regValue, $m)) {
-            $path = trim($m[1]);
-            Log::info("[PgService] data path from registry: {$path}");
-            return $path;
+            return trim($m[1]);
         }
-
-        // Fallback
-        $appData = getenv('APPDATA') ?: (getenv('PROGRAMDATA') ?: 'C:\\ProgramData');
-        return $appData
-            . DIRECTORY_SEPARATOR . 'ABCPOS'
-            . DIRECTORY_SEPARATOR . 'storage'
-            . DIRECTORY_SEPARATOR . 'pgsql'
-            . DIRECTORY_SEPARATOR . 'data';
+    
+        return storage_path('pgsql' . DIRECTORY_SEPARATOR . 'data');
     }
 
     // =========================================================================
@@ -200,8 +199,21 @@ class PostgresWindowsService
         $this->pgPort = $newPort;
         $this->updatePostgresPort($newPort);
         $this->updateEnvPort($newPort);
-        config(['database.connections.pgsql.port'           => $newPort]);
-        config(['database.connections.pgsql_companies.port' => $newPort]);
+
+        localSettings()->set('database.port', $newPort);
+
+        config([
+            'services.pgsql.port' => $newPort,
+            'database.connections.pgsql.port' => $newPort,
+            'database.connections.pgsql_companies.port' => $newPort,
+        ]);
+
+        try {
+            app('db')->purge('pgsql');
+            app('db')->purge('pgsql_companies');
+        } catch (\Throwable $e) {
+            Log::warning('[PgService] Gagal purge koneksi lama: ' . $e->getMessage());
+        }
 
         return [$newPort, true, $originalPort];
     }
@@ -232,6 +244,11 @@ class PostgresWindowsService
 
     protected function updatePostgresPort(int $newPort): void
     {
+        if (! is_dir($this->pgDataPath)) {
+            Log::info("[PgService] Data directory belum ada, skip update auto.conf.");
+            return;
+        }
+
         $autoConf = $this->pgDataPath . DIRECTORY_SEPARATOR . 'postgresql.auto.conf';
         $content  = file_exists($autoConf) ? file_get_contents($autoConf) : '';
         $content  = preg_match('/^port\s*=/m', $content)
@@ -305,6 +322,7 @@ class PostgresWindowsService
             throw new RuntimeException("initdb failed:\n" . implode("\n", $output));
         }
 
+        $this->grantServiceAccountAccess();
         $this->patchPostgresConf();
         $this->createAppDatabase();
 
@@ -464,6 +482,19 @@ class PostgresWindowsService
         $out = [];
         $this->runCommand("\"{$this->bin('pg_ctl')}\" stop -D \"{$this->pgDataPath}\" -m fast", $out);
         Log::info('[PgService] PostgreSQL stopped.');
+    }
+
+    public function resetData(): array
+    {
+        $this->removeService();
+
+        if (is_dir($this->pgDataPath)) {
+            Log::warning("[PgService] Menghapus data directory: {$this->pgDataPath}");
+            exec('cmd /c rd /s /q "' . $this->pgDataPath . '"');
+            sleep(1);
+        }
+
+        return $this->ensureRunning();
     }
 
     // =========================================================================

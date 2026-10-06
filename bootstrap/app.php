@@ -34,6 +34,7 @@ return Application::configure(basePath: dirname(__DIR__))
             'api.companies' => \App\Http\Middleware\APICompanies::class,
             'auth.guest' => \App\Http\Middleware\GuestAuth::class,
             'native.only' => \App\Http\Middleware\EnsureNativeContext::class,
+            'activity-log' => \App\Http\Middleware\LogActivity::class,
         ]);
 
         $middleware->validateCsrfTokens([
@@ -48,6 +49,7 @@ return Application::configure(basePath: dirname(__DIR__))
     ->withExceptions(function (Exceptions $exceptions) {
         // Unauthenticated handler
         $exceptions->render(function (AuthenticationException $e, $request) {
+
             if ($request->expectsJson()) {
                 return response()->json([
                     'status' => 'error',
@@ -69,7 +71,7 @@ return Application::configure(basePath: dirname(__DIR__))
                 return response()->json([
                     'status' => 'error',
                     'message' => $status === 500
-                        ? 'Terjadi kesalahan pada server.'
+                        ? config('app.debug') ? $e->getMessage() : 'Terjadi kesalahan pada server.' 
                         : $e->getMessage(),
                     'data' => null,
                 ], $status);
@@ -97,6 +99,37 @@ return Application::configure(basePath: dirname(__DIR__))
                 'exception' => $e,
                 'back_url' => $back_url
             ], $status);
+        });
+
+        $exceptions->reportable(function (Throwable $e) {
+            $request = app()->runningInConsole() ? null : request();
+
+            $status = $e instanceof HttpExceptionInterface
+                ? $e->getStatusCode()
+                : 500;
+
+            $context = [
+                'type'      => 'exception',
+                'status'    => $status,
+                'file'      => $e->getFile(),
+                'line'      => $e->getLine(),
+                'exception' => $e, // stacktrace otomatis ditulis oleh JsonFormatter
+            ];
+
+            if ($request) {
+                $context += [
+                    'method'         => $request->method(),
+                    'url'            => $request->fullUrl(),
+                    'user_id'        => $request->user()?->getAuthIdentifier(),
+                    'user_companies' => collect(config('user_companies.details'))
+                        ->only(['id', 'name', 'role_id', 'branch_id'])
+                        ->all(),
+                    'ip'             => $request->ip(),
+                    'input'          => $request->except(['_token', '_method', 'password', 'password_confirmation']),
+                ];
+            }
+            
+            Log::channel('activity')->error($e->getMessage(), $context);
         });
 
         // Reportable (logging) handler

@@ -221,6 +221,7 @@ class Companies
                 'pos.logout',
                 'pos.print-receipts',
                 'pos.settings',
+                'admin.dashboard',
             ];
 
             $route_name = $request->route()->getName();

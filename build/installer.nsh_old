@@ -6,24 +6,29 @@
 
 !include "LogicLib.nsh"
 
-!define PG_PORT_START "1933"   ; Port awal pencarian
-!define NATIVE_APP_ID "abc-pos"   ; !!! WAJIB cek dulu ke .env: NATIVEPHP_APP_ID !!!
+!define PG_PORT_START "5433"   ; Port awal pencarian
 
 ; Macro ini dipanggil SETELAH semua file ter-copy ke destination
 !macro customInstall
     DetailPrint "Menyiapkan database PostgreSQL..."
 
+    ; --- Tentukan path ---
     StrCpy $0 "$INSTDIR\resources\pgsql\bin\pg_ctl.exe"
     StrCpy $1 "$APPDATA\ABCPOS\storage\pgsql\data"
     StrCpy $2 "ABCPOSPostgreSQL"
 
+    ; --- Buat folder storage jika belum ada ---
     CreateDirectory "$APPDATA\ABCPOS"
     CreateDirectory "$APPDATA\ABCPOS\storage"
     CreateDirectory "$APPDATA\ABCPOS\storage\pgsql"
 
+    ; =========================================================
+    ; Deteksi port kosong mulai dari PG_PORT_START
+    ; =========================================================
     StrCpy $7 "${PG_PORT_START}"
 
     find_port:
+        ; netstat findstr: exit 0 = port dipakai, exit 1 = port kosong
         nsExec::ExecToStack 'cmd /c netstat -an | findstr /C:":$7 "'
         Pop $R0
         Pop $R1
@@ -39,8 +44,13 @@
         ${EndIf}
 
     DetailPrint "Menggunakan port: $7"
+
+    ; Simpan port ke registry — dibaca oleh PostgresWindowsService saat app buka
     WriteRegStr HKLM "Software\ABCPOS" "PgPort" "$7"
 
+    ; =========================================================
+    ; Cek apakah service sudah terdaftar
+    ; =========================================================
     nsExec::ExecToLog 'sc query "$2"'
     Pop $R0
     ${If} $R0 == 0
@@ -48,6 +58,7 @@
         Goto done_register
     ${EndIf}
 
+    ; --- Register PostgreSQL sebagai Windows Service ---
     DetailPrint "Mendaftarkan service $2..."
     nsExec::ExecToLog '"$0" register -N "$2" -D "$1" -S auto -w'
     Pop $R0
@@ -60,44 +71,6 @@
 
     done_register:
     DetailPrint "Setup database selesai. Port: $7"
-
-    SetShellVarContext current
-
-    StrCpy $3 "$APPDATA\${NATIVE_APP_ID}\storage\activity_log.sqlite"
-    CreateDirectory "$APPDATA\${NATIVE_APP_ID}"
-    CreateDirectory "$APPDATA\${NATIVE_APP_ID}\storage"
-
-    IfFileExists "$3" activity_log_exists activity_log_create
-
-    activity_log_create:
-        DetailPrint "Membuat activity_log.sqlite..."
-        FileOpen $9 "$3" w
-        FileClose $9
-        DetailPrint "activity_log.sqlite berhasil dibuat."
-        Goto activity_log_reset_context
-
-    activity_log_exists:
-        DetailPrint "activity_log.sqlite sudah ada, lanjut migrate untuk jaga-jaga ada migration baru."
-
-    activity_log_reset_context:
-    SetShellVarContext all
-
-    StrCpy $8 "$INSTDIR\resources\build\php\php.exe"
-    StrCpy $6 "$INSTDIR\resources\build\app\artisan"
-
-    IfFileExists "$8" 0 skip_migrate
-        DetailPrint "Menjalankan migration activity_log..."
-        nsExec::ExecToLog 'cmd /c cd /d "$INSTDIR\resources\build\app" && set "DB_ACTIVITY_LOG_DATABASE=$3" && "$8" "$6" migrate --database=log_sqlite --path=database/migration_activity_log --force'
-        Pop $R0
-        ${If} $R0 != 0
-            DetailPrint "PERINGATAN: Migration activity_log gagal (exit code $R0)."
-        ${Else}
-            DetailPrint "Migration activity_log berhasil."
-        ${EndIf}
-        Goto migrate_done
-    skip_migrate:
-        DetailPrint "PERINGATAN: php.exe tidak ditemukan di $8, migration dilewati."
-    migrate_done:
 !macroend
 
 

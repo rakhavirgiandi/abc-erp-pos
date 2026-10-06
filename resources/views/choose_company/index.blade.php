@@ -8,49 +8,9 @@
 @section('style')
 <link href="{{ asset('assets/libs/select2/css/select2.min.css')}}" rel="stylesheet" type="text/css">
    <style>
-    	body {
-            background: url('{{ asset("assets/images/auth/cover_bg.png") }}') no-repeat center center;
-            background-size: cover;
-            min-height: 100vh;
-        }
-
-        .login-overlay {
-            /* background: rgba(0, 0, 0, 0.45); */
-            min-height: 100vh;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            padding: 20px;
-        }
-
-        .login-card {
-            width: 100%;
-            max-width: 420px;
-            border-radius: 16px;
-            padding: 32px;
-            background: #fff;
-            box-shadow: 0 20px 40px rgba(0,0,0,.15);
-        }
-
-        .login-logo {
-            width: 180px;
-            height: 40px;
-        }
-
-        .btn-primary {
-            background: #1F2933;
-            border-color: #1F2933;
-        }
-
-        .btn-primary:hover {
-            background: #1F2933;
-            border-color: #1F2933;
-        }
 
         .custom-card {
-        box-shadow: 
-            0 10px 25px rgba(0, 0, 0, 0.1),
-            0 20px 60px rgba(0, 0, 0, 0.15);
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1), 0 20px 60px rgba(0, 0, 0, 0.15);
         }
 
         /* .select2-container--default .select2-selection--single .select2-selection__clear {
@@ -103,9 +63,6 @@
 	let NAME = '{{Session::get('_name')}}';
 	let PHONE = '{{Session::get('_phone')}}';
 </script>
-<meta name="csrf-token" content="{{ csrf_token() }}">
-
-	<meta name="csrf-token" content="{{ csrf_token() }}" />
     <div class="container d-flex align-items-center justify-content-center" style="min-height: 100vh;">
     
         <div class="w-100" style="max-width: 1100px;">
@@ -113,7 +70,7 @@
     
                 <!-- LOGO -->
                 <div class="text-center">
-                    <img src="{{ asset('assets/images/logo2.png') }}" class="login-logo">
+                    <img src="{{ asset('assets/images/logo.png') }}" class="authentication-logo">
                 </div>
     
                 <hr>
@@ -268,10 +225,6 @@
 @endsection
 
 @section('script')
-
-  <script src="{{ asset('assets/libs/bootstrap/js/bootstrap.bundle.min.js') }}"></script>
-
-  <!-- Layouts main js -->
   <script src="{{ asset('assets/libs/jquery/jquery.min.js') }}"></script>
 
   <!-- Metimenu js -->

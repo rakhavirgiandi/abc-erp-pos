@@ -425,10 +425,10 @@ class Users extends Model
             CompanyCredentials::create([
                 'id' => Str::orderedUuid()->toString(),
                 'company_id' => $company_id,
-                'db_driver' => config('default_db_driver'),
-                'db_host' => config('default_db_host'),
-                'db_username' => config('default_db_user'),
-                'db_password' => config('default_db_password'),
+                'db_driver' => config('service'),
+                'db_host' => config('service'),
+                'db_username' => config('service'),
+                'db_password' => config('service'),
                 'db_database' => $slug,
                 'db_port' => config('default_db_port')
             ]);
@@ -514,124 +514,225 @@ class Users extends Model
     }
 
     public static function generateToken($params, $method, $request, $type = 'member')
-    {   
-        // dd(config('services.admin_credentials.server_url'));
+    {
         if (config('services.is_onpremise')) {
+
             if (NetworkHelper::isConnected()) {
 
-                $response = null;
-
                 try {
-                    $response = NetworkHelper::loginToServer($params);
 
-                    if (isset($response['status']) && $response['status'] == 'error') {
+                        $response = NetworkHelper::loginToServer($params);
+
+                    if (
+                        isset($response['status']) &&
+                        $response['status'] === 'error'
+                    ) { 
                         return response()->json([
                             'status' => 'error',
-                            'message' => '[SERVER <a href="https://app.abcerp.id">https://app.abcerp.id</a>] : '.$response['message'],
-                            'data' => null  
+                            'message' =>
+                                '[SERVER <a href="https://app.abcerp.id">https://app.abcerp.id</a>] : '
+                                . $response['message'],
+                            'data' => null
                         ], 401);
                     }
+
                 } catch (\Throwable $e) {
-                    \Log::warning('Login server gagal: ' . $e->getMessage());
-                
                     return response()->json([
                         'status' => 'error',
-                        'message' => 'Username dan Password Pada <a href="https://app.abcerp.id">https://app.abcerp.id</a> Tidak Sesuai',
-                        'data' => null  
+                        'message' =>
+                            'Username dan Password Pada <a href="https://app.abcerp.id">https://app.abcerp.id</a> Tidak Sesuai',
+                        'data' => null
                     ], 401);
                 }
 
-                // CREATE DB Hanya ketika login nya sukses, kalo gagal jangan create db di local
                 if ($response) {
+
                     $db = config('database.connections.pgsql.database');
-        
-                    $exists = DB::connection('pgsql')->select("SELECT 1 FROM pg_database WHERE datname = ?", [$db]);
-        
+
+                    $database_created = false;
+
+                    $exists = DB::connection('pgsql')
+                        ->select(
+                            "SELECT 1 FROM pg_database WHERE datname = ?",
+                            [$db]
+                        );
+
                     if (empty($exists)) {
-                        DB::connection('pgsql')->statement("CREATE DATABASE \"{$db}\"");
+
+                        DB::connection('pgsql')
+                            ->statement(
+                                'CREATE DATABASE "' . str_replace('"', '""', $db) . '"'
+                            );
+                        
+                        $database_created = true;
                     }
-        
+
                     DB::purge('pgsql');
                     DB::reconnect('pgsql');
-        
-                    Artisan::call('migrate', [ '--database' => 'pgsql', '--force' => true ]);
 
-                    $client_exists = DB::connection('pgsql')->table('oauth_clients')->where('personal_access_client', true)->exists();
-
-                    if (!$client_exists) {
-                        $clientId = Str::uuid()->toString();
-                        $clientSecret = Str::random(40);
-
-                        DB::connection('pgsql')->table('oauth_clients')->insert([
-                            'id' => $clientId,
-                            'user_id' => null,
-                            'name' => 'Personal Access Client',
-                            'secret' => hash('sha256', $clientSecret),
-                            'provider' => 'users',
-                            'redirect' => 'http://localhost',
-                            'personal_access_client' => true,
-                            'password_client' => false,
-                            'revoked' => false,
-                            'created_at' => now(),
-                            'updated_at' => now(),
-                        ]);
-
-                        DB::connection('pgsql')->table('oauth_personal_access_clients')->insert([
-                            'client_id' => $clientId,
-                            'created_at' => now(),
-                            'updated_at' => now(),
+                    if ($database_created) {
+                        Artisan::call('migrate', [
+                            '--database' => 'pgsql',
+                            '--force' => true
                         ]);
                     }
 
-                    $data = $response['data'];
+                    try {
 
-                    $user = self::where('email', $data['email'])->first();
+                        $result = DB::connection('pgsql')->transaction(
+                            function () use ($params, $response) {
 
-                    if ($user) {
-                        $user->update([
-                            'id' => $data['id'],
-                            'name' => $data['name'],
-                            'phone' => $data['phone'],
-                            'type' => $data['type'],
-                            'password' => bcrypt($params['password']),
-                            'email_verified_at' => $data['email_verified_at'],
-                            'remember_token' => $data['remember_token'],
-                            'deleted_at' => $data['deleted_at'],
-                            'association_id' => $data['association_id'],
-                            'is_hold' => $data['is_hold'],
-                            'created_at' => $data['created_at'],
-                            'updated_at' => $data['updated_at'],
+                                $data = $response['data'];
+
+                                $user = self::on('pgsql')
+                                    ->where('email', $data['email'])
+                                    ->first();
+
+                                if ($user) {
+
+                                    $user->update([
+                                        'id' => $data['id'],
+                                        'name' => $data['name'],
+                                        'phone' => $data['phone'],
+                                        'type' => $data['type'],
+                                        'password' => bcrypt($params['password']),
+                                        'email_verified_at' => $data['email_verified_at'],
+                                        'remember_token' => $data['remember_token'],
+                                        'deleted_at' => $data['deleted_at'],
+                                        'association_id' => $data['association_id'],
+                                        'is_hold' => $data['is_hold'],
+                                        'created_at' => $data['created_at'],
+                                        'updated_at' => $data['updated_at'],
+                                    ]);
+
+                                } else {
+
+                                    $user = self::on('pgsql')->create([
+                                        'id' => $data['id'],
+                                        'name' => $data['name'],
+                                        'email' => $data['email'],
+                                        'phone' => $data['phone'],
+                                        'type' => $data['type'],
+                                        'password' => bcrypt($params['password']),
+                                        'email_verified_at' => $data['email_verified_at'],
+                                        'remember_token' => $data['remember_token'],
+                                        'deleted_at' => $data['deleted_at'],
+                                        'association_id' => $data['association_id'],
+                                        'is_hold' => $data['is_hold'],
+                                        'created_at' => $data['created_at'],
+                                        'updated_at' => $data['updated_at'],
+                                    ]);
+                                }
+
+                                DeviceTokens::on('pgsql')->updateOrCreate(
+                                    [
+                                        'user_id' => $user->id
+                                    ],
+                                    [
+                                        'token' => $response['access_token'],
+                                        'token_type' => $response['token_type'],
+                                        'expires_at' => $response['expires_at'],
+                                    ]
+                                );
+
+                                $client_exists = Client::on('pgsql')
+                                    ->where('personal_access_client', true)
+                                    ->where('revoked', false)
+                                    ->exists();
+
+
+                                if (!$client_exists) {
+
+                                    $clientId = (string) Str::uuid();
+
+                                    $client_secret = Str::random(40);
+
+
+                                    Client::on('pgsql')->forceCreate([
+                                        'id' => $clientId,
+                                        'user_id' => null,
+                                        'name' => config('app.name')
+                                            . ' Personal Access Client',
+                                        'secret' => hash(
+                                            'sha256',
+                                            $client_secret
+                                        ),
+                                        'provider' => 'users',
+                                        'redirect' => '',
+                                        'personal_access_client' => true,
+                                        'password_client' => false,
+                                        'revoked' => false,
+                                    ]);
+
+
+                                    \Laravel\Passport\PersonalAccessClient::on('pgsql')
+                                        ->forceCreate([
+                                            'client_id' => $clientId,
+                                        ]);
+                                }
+
+                                $tokenResult = User::find($user['id'])->createToken(
+                                    'login_member_' . $data['email']
+                                );
+
+                                $token = $tokenResult->token;
+
+                                $token->save();
+
+                                return [
+                                    'user' => $user,
+                                    'tokenResult' => $tokenResult,
+                                ];
+                            }
+                        );
+
+                        $user = $result['user'];
+                        $tokenResult = $result['tokenResult'];
+
+
+                        $get_user_detail = self::getById(
+                            $user->id,
+                            [],
+                            null,
+                            $type
+                        );
+
+                        $get_user_detail = $get_user_detail->getData();
+
+
+                        if (!isset($get_user_detail->id)) {
+                            $get_user_detail = null;
+                        }
+
+
+                        return response()->json([
+                            'access_token' => $tokenResult->accessToken,
+                            'token_type' => 'Bearer',
+                            'expires_at' => Carbon::parse(
+                                $tokenResult->token->expires_at
+                            )->toDateTimeString(),
+                            'data' => $get_user_detail,
                         ]);
-                    } else {
-                        $user = self::create([
-                            'id' => $data['id'],
-                            'name' => $data['name'],
-                            'email' => $data['email'],
-                            'phone' => $data['phone'],
-                            'type' => $data['type'],
-                            'password' => bcrypt($params['password']),
-                            'email_verified_at' => $data['email_verified_at'],
-                            'remember_token' => $data['remember_token'],
-                            'deleted_at' => $data['deleted_at'],
-                            'association_id' => $data['association_id'],
-                            'is_hold' => $data['is_hold'],
-                            'created_at' => $data['created_at'],
-                            'updated_at' => $data['updated_at'],
-                        ]);
+
+                    } catch (\Throwable $e) {
+
+                        return response()->json([
+                            'status' => 'error',
+                            'message' => 'Gagal menyimpan data ke database lokal.',
+                            'data' => null,
+                        ], 500);
                     }
-
-                    DeviceTokens::updateOrCreate(
-                        ['user_id' => $user->id],
-                        [
-                            'token' => $response['access_token'],
-                            'token_type' => $response['token_type'],
-                            'expires_at' => $response['expires_at']
-                        ]
-                    );
                 }
             }
         }
-        
+
+
+        /*
+        |--------------------------------------------------------------------------
+        | NORMAL LOGIN
+        |--------------------------------------------------------------------------
+        */
+
         $user_key = 'email';
         $user_value = '';
 
@@ -640,9 +741,14 @@ class Users extends Model
             $user_value = $params['email'];
         }
 
-        $credentials = request([$user_key, 'password']);
+        $credentials = request([
+            $user_key,
+            'password'
+        ]);
 
-        if(!Auth::attempt($credentials)) {
+
+        if (!Auth::attempt($credentials)) {
+
             return response()->json([
                 'status' => 'error',
                 'message' => 'Username dan Password Tidak Sesuai',
@@ -650,54 +756,66 @@ class Users extends Model
             ], 401);
         }
 
+
         $user = $request->user();
 
-        $get_user_detail = self::getById($user->id, [], null, $type);
+        $get_user_detail = self::getById(
+            $user->id,
+            [],
+            null,
+            $type
+        );
+
         $get_user_detail = $get_user_detail->getData();
+
 
         if (!isset($get_user_detail->id)) {
             $get_user_detail = null;
-        } else {
-            // if (isset($params['fcm_token'])) {
-            //     self::where('id', $get_user_detail->id)->update([
-            //         'fcm_token' => $params['fcm_token']
-            //     ]); 
-            // }
         }
-        
+
+
         $exists = Client::where('personal_access_client', true)
             ->where('revoked', false)
             ->exists();
 
+
         if (!$exists) {
-            $client = \Laravel\Passport\Client::forceCreate([
-                'id'                     => (string) \Illuminate\Support\Str::uuid(),
-                'user_id'                => null,
-                'name'                   => config('app.name') . ' Personal Access Client',
-                'secret'                 => \Illuminate\Support\Str::random(40),
-                'provider'               => 'users',
-                'redirect'               => '',
+
+            $client = Client::forceCreate([
+                'id' => (string) Str::uuid(),
+                'user_id' => null,
+                'name' => config('app.name')
+                    . ' Personal Access Client',
+                'secret' => Str::random(40),
+                'provider' => 'users',
+                'redirect' => '',
                 'personal_access_client' => true,
-                'password_client'        => false,
-                'revoked'                => false,
+                'password_client' => false,
+                'revoked' => false,
             ]);
 
             \Laravel\Passport\PersonalAccessClient::forceCreate([
                 'client_id' => $client->id,
             ]);
         }
-        
-        $tokenResult = $user->createToken('login_member_'.$user_value);
+
+        $tokenResult = $user->createToken(
+            'login_member_' . $user_value
+        );
 
         $token = $tokenResult->token;
 
         $token->save();
 
+        Artisan::call('migrate', ['--path' => 'database/migration_company', '--database' => 'pgsql_companies']);
+
         return response()->json([
             'access_token' => $tokenResult->accessToken,
             'token_type' => 'Bearer',
-            'expires_at' => Carbon::parse($tokenResult->token->expires_at)->toDateTimeString(),
-            'data' => $get_user_detail
+            'expires_at' => Carbon::parse(
+                $tokenResult->token->expires_at
+            )->toDateTimeString(),
+            'data' => $get_user_detail,
         ]);
     }
 

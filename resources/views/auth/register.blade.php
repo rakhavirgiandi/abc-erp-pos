@@ -84,7 +84,7 @@
     <div class="col-md-7">
         <div class="register-card">
             <div class="text-center mb-4">
-                <img src="{{ asset('assets/images/logo2.png') }}" class="register-logo">
+                <img src="{{ asset('assets/images/logo.png') }}" class="register-logo">
                 <p class="text-muted mb-0">Silahkan <b>Daftar</b> Untuk Bisa Masuk ke ABC ERP</p>
             </div>
             <form id="main-form">

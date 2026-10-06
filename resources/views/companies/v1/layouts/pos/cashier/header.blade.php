@@ -13,7 +13,7 @@
         <div class="w-50 gap-4 d-flex justify-content-end align-items-center">
             <h5 class="mb-0 text-uppercase">Kasir : <span>{{Session::get('_name')}}</span></h5>
             <div class="d-flex gap-1 bg-white bg-opacity-10 p-1 rounded border border-white border-opacity-10 navbar-action-group">
-                <a href="{{ url('/home') }}" class="btn btn-navbar-action btn-lg btn-icon">
+                <a href="{{ url('/admin/dashboard') }}" class="btn btn-navbar-action btn-lg btn-icon">
                     <i class="mdi mdi-view-dashboard-outline"></i>
                 </a>
                 <button type="button" class="btn btn-navbar-action btn-lg btn-icon" id="fullscreen-toggler">

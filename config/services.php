@@ -51,11 +51,11 @@ return [
         'service_name' => env('PGSQL_SERVICE_NAME', 'ABC POS PostgreSQL'),
         'bin_path' => env('PGSQL_BIN_PATH'),
         'data_path' => env('PGSQL_DATA_PATH', storage_path('pgsql/data')),
-        'host' => env('DB_HOST', '127.0.0.1'),
-        'port' => env('DB_PORT', 5433),
-        'superuser' => env('DB_USERNAME', 'abc_pos_postgres'),
-        'password'  => env('DB_PASSWORD', 'root'),
-        'database' => env('DB_DATABASE', 'abc_pos_db'),
+        'host' => localSettings('database.host', env('DB_HOST', '127.0.0.1')),
+        'port' => localSettings('database.port', env('DB_PORT', 1933)),
+        'superuser' => localSettings('database.username', env('DB_USERNAME', 'abc_pos_postgres')),
+        'password'  => localSettings('database.password', env('DB_PASSWORD', 'root')),
+        'database' => localSettings('database.database', env('DB_DATABASE', 'abc_pos_db')),
     ]
 
     // 'on_premise_db_central_cred' => [

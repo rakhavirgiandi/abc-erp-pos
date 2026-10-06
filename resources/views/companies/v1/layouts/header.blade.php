@@ -214,7 +214,7 @@
                             <div class="card-body p-0">
                                 <ul class="list-group list-group-flush">
                                     @if (
-                                        config('user_request')->can('default_accounts') 
+                                        config('user_companies.details')->can('default_accounts') 
                                         )
                                     <a href="{{ url('/default-accounts') }}" class="list-group-item list-group-item-action d-flex align-items-center fw-semibold">
                                         <i class="mdi mdi-account-circle-outline me-2 fs-16"></i>
@@ -222,7 +222,7 @@
                                     </a>
                                     @endif
                                     @if (
-                                        config('user_request')->can('general_settings') 
+                                        config('user_companies.details')->can('general_settings') 
                                         )
                                     <a href="{{ url('general-settings') }}" class="list-group-item list-group-item-action d-flex align-items-center fw-semibold">
                                         <i class="mdi mdi-cog-outline me-2 fs-16"></i>
@@ -256,15 +256,15 @@
                                     </li>
 
                                     @if (
-                                        config('user_request')->can('users') ||
-                                        config('user_request')->can('roles') ||
-                                        config('user_request')->can('permissions') 
+                                        config('user_companies.details')->can('users') ||
+                                        config('user_companies.details')->can('roles') ||
+                                        config('user_companies.details')->can('permissions') 
                                         )
 
                                     
                                     <div class="collapse" id="userManagement">
                                         @if (
-                                        config('user_request')->can('users')  
+                                        config('user_companies.details')->can('users')  
                                         )
                                         <a href="{{ url('/user-managements/users') }}" class="list-group-item list-group-item-action ps-4 d-flex align-items-center">
                                             <i class="mdi mdi-account-outline me-2 fs-15"></i>
@@ -272,7 +272,7 @@
                                         </a>
                                         @endif
                                         @if (
-                                            config('user_request')->can('roles')  
+                                            config('user_companies.details')->can('roles')  
                                             )
                                         <a href="{{ url('/user-managements/roles') }}" class="list-group-item list-group-item-action ps-4 d-flex align-items-center">
                                             <i class="mdi mdi-shield-account-outline me-2 fs-15"></i>
@@ -280,7 +280,7 @@
                                         </a>
                                         @endif
                                         @if (
-                                            config('user_request')->can('permissions')  
+                                            config('user_companies.details')->can('permissions')  
                                             )
                                         <a href="{{ url('/user-managements/permissions') }}" class="list-group-item list-group-item-action ps-4 d-flex align-items-center">
                                             <i class="mdi mdi-lock-outline me-2 fs-15"></i>

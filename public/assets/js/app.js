@@ -37,11 +37,11 @@
     });
     var n = {
         defaultConfig: {
-            layout: "horizontal",
-            contentWidth: "boxed",
-            theme: "dark",
+            layout: "vertical",
+            contentWidth: "default",
+            theme: "light",
             sidebarSize: "default",
-            sidebarColor: "light",
+            sidebarColor: "dark",
             topbarColor: "light",
             themeColors: "pastel-blue",
             dir: "ltr",

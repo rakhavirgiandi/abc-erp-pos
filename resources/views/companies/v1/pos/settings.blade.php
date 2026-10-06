@@ -17,22 +17,22 @@
                             @if (config('services.is_onpremise'))
                                 <div class="d-flex gap-3">
                                     <div class="flex-fill">
-                                        <select name="pos_printer_selected_printer" class="form-select form-select-lg form-select2" id="input-selected_printer"></select>
+                                        <select name="printer[name]" class="form-select form-select-lg form-select2" id="input-selected_printer"></select>
                                     </div>
                                     <button type="button" id="get-printer-toggle" class="btn btn-icon btn-secondary"><i class="fas fa-sync-alt"></i></button>
                                 </div>
                                 <div class="form-text" id="printer-text-status">Try to get all printer devices...</div>
                             @else
-                                <input type="text" name="pos_printer_selected_printer" class="form-control" value="{{ config('local_user_settings.pos_printer_selected_printer') }}">
+                                <input type="text" name="pos_printer_selected_printer" class="form-control" value="{{ localSettings()->get('printer.name') }}">
                             @endif
                         </div>
                         <div class="mb-3">
                             <label class="form-label">Ukuran Kertas Printer</label>
-                            <select name="pos_printer_paper_size" class="form-select form-select-lg form-select2" id="input-printer_size">
+                            <select name="printer[paper_size]" class="form-select form-select-lg form-select2" id="input-printer_size">
                                 <option value="">Pilih Ukuran</option>
-                                <option value="58" {{ config('local_user_settings.pos_printer_paper_size') == '58' ? 'selected' : '' }}>58mm</option>
-                                <option value="75" {{ config('local_user_settings.pos_printer_paper_size') == '75' ? 'selected' : '' }}>75mm</option>
-                                <option value="80" {{ config('local_user_settings.pos_printer_paper_size') == '80' ? 'selected' : '' }}>80mm</option>
+                                <option value="58" {{ localSettings()->get('printer.paper_size') == '58' ? 'selected' : '' }}>58mm</option>
+                                <option value="75" {{ localSettings()->get('printer.paper_size') == '75' ? 'selected' : '' }}>75mm</option>
+                                <option value="80" {{ localSettings()->get('printer.paper_size') == '80' ? 'selected' : '' }}>80mm</option>
                             </select>
                         </div>
                     </div>
@@ -55,10 +55,7 @@
 
     $('.form-select2').select2();
 
-    let  selectedPrinter = '{{ config('local_user_settings.pos_printer_selected_printer') }}';
-
-    console.log('{{ config('database.connections.pgsql_companies.database') }}');
-    
+    const selectedPrinter = '{{ localSettings()->get('printer.name') }}'
 
     const getAllPrinterDevices = () => {
 
@@ -131,7 +128,7 @@
 
         $.ajax({
             type: 'POST',
-            url: BASE_URL + '/api/v1/local_user_settings',
+            url: BASE_URL + '/api/config/post',
             headers: { 
                 'Authorization': TOKEN,
                 'company-id': COMPANY_ID
@@ -142,7 +139,7 @@
             processData: false,
             dataType: 'json',
             beforeSend: function() {
-                showLoading('Harap Menunggu!', 'Sedang mengirim data');
+                showLoadingAlert();
             },
             success: function(res) {
                 Swal.close();

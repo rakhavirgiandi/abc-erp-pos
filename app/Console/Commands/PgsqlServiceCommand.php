@@ -8,7 +8,7 @@ use Illuminate\Console\Command;
 class PgsqlServiceCommand extends Command
 {
     protected $signature = 'pgsql:service
-                            {action : Aksi yang dijalankan: status|start|stop|restart|install|uninstall|init}';
+                            {action : Aksi yang dijalankan: status|start|stop|restart|install|uninstall|reset}';
 
     protected $description = 'Kelola PostgreSQL Windows Service yang di-bundle dalam app';
 
@@ -28,6 +28,7 @@ class PgsqlServiceCommand extends Command
             'restart'   => $this->actionRestart(),
             'install'   => $this->actionInstall(),
             'uninstall' => $this->actionUninstall(),
+            'reset'     => $this->actionReset(),
             default     => $this->error("Action tidak dikenal: {$action}") ?? self::FAILURE,
         };
     }
@@ -40,12 +41,13 @@ class PgsqlServiceCommand extends Command
         $this->table(
             ['Property', 'Value'],
             [
-                ['Service Name', config('services.pgsql.service_name')],
-                ['Registered',   $registered ? '<info>YES</info>' : '<comment>NO</comment>'],
-                ['Running',      $running    ? '<info>YES</info>' : '<comment>NO</comment>'],
-                ['Port',         config('services.pgsql.port')],
-                ['Data Path',    config('services.pgsql.data_path')],
-                ['Bin Path',     config('services.pgsql.bin_path')],
+                ['Service Name',   config('services.pgsql.service_name')],
+                ['Manage Service', config('services.pgsql.manage_service', false) ? '<info>ON</info>' : '<comment>OFF (dev mode)</comment>'],
+                ['Registered',     $registered ? '<info>YES</info>' : '<comment>NO</comment>'],
+                ['Running',        $running    ? '<info>YES</info>' : '<comment>NO</comment>'],
+                ['Port',           $this->pg->getPort()],
+                ['Data Path',      $this->pg->getDataPath()],
+                ['Bin Path',       $this->pg->getBinPath()],
             ]
         );
 
@@ -107,7 +109,7 @@ class PgsqlServiceCommand extends Command
     protected function actionUninstall(): int
     {
         $this->warn('Ini akan menghentikan dan menghapus Windows Service PostgreSQL.');
-        $this->warn('DATA di storage/pgsql/data TIDAK akan dihapus.');
+        $this->warn('DATA di ' . $this->pg->getDataPath() . ' TIDAK akan dihapus.');
 
         if (! $this->confirm('Lanjutkan uninstall service?')) {
             return self::SUCCESS;
@@ -119,6 +121,34 @@ class PgsqlServiceCommand extends Command
             return self::SUCCESS;
         } catch (\Throwable $e) {
             $this->error($e->getMessage());
+            return self::FAILURE;
+        }
+    }
+
+    protected function actionReset(): int
+    {
+        $dataPath = $this->pg->getDataPath();
+
+        $this->error("PERHATIAN: Ini akan MENGHAPUS SELURUH DATA di:\n{$dataPath}");
+        $this->warn('Semua database (termasuk data POS/ERP) akan hilang dan dibuat ulang kosong.');
+
+        if (! $this->confirm('Yakin ingin melanjutkan?')) {
+            return self::SUCCESS;
+        }
+
+        if (! $this->confirm('Sekali lagi untuk memastikan — lanjutkan hapus dan buat ulang?', false)) {
+            return self::SUCCESS;
+        }
+
+        $this->info('Menghentikan service dan menghapus data lama...');
+
+        try {
+            $result = $this->pg->resetData();
+            $this->info('✅ ' . $result['message']);
+            $this->comment('Database masih kosong — jalankan: php artisan migrate');
+            return self::SUCCESS;
+        } catch (\Throwable $e) {
+            $this->error('❌ Failed: ' . $e->getMessage());
             return self::FAILURE;
         }
     }

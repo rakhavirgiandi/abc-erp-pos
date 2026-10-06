@@ -1,48 +1,25 @@
-@php
-    $layout_mode = 'default';
-    
-    if (Request::segment(1) === 'pos') {
-        $layout_mode = 'pos';
-        if (Request::segment(2) === 'settings') {
-            $layout_mode = 'pos-settings';
-        }
-    }
-@endphp
+@extends('layouts.main')
 
-<!DOCTYPE html>
-<html lang="en" data-layout="horizontal" data-content-width="boxed" data-bs-theme="light" data-sidebar-color="light" data-topbar-color="light" data-theme-colors="default" dir="ltr" data-mode="{{ $layout_mode }}">
-<head>
-
-    <meta charset="utf-8">
-    <title>@yield('title') - {{ env('APP_NAME') }}</title>
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-    <meta content="SIMRS & SIMKLINIK" name="description">
-    <meta content="ABC Grup Teknologi" name="author">
-    <meta name="csrf-token" content="{{ csrf_token() }}" />
-    
-    <!-- layout setup -->
-    <!-- <script type="module" src="assets/js/layout-setup.js"></script> -->
-    
+@section('main-style')
     <!-- App favicon -->
     <link rel="shortcut icon" href="{{ asset('assets/images/logo-sm-new.ico')}}">
     <!-- slick-carousel css -->
     <link rel="stylesheet" href="{{ asset('assets/libs/slick-carousel/slick/slick.css') }}">
     <!-- Bootstrap Datepicker -->
     <link href="{{ asset('assets/libs/bootstrap-datepicker/css/bootstrap-datepicker.min.css') }}" rel="stylesheet">
-    <!-- Sweet Alert-->
-    <link rel="stylesheet" href="{{ asset('assets/libs/sweetalert2/sweetalert2.min.css')}}">
-    <!-- select2 -->
-    <link href="{{ asset('assets/libs/select2/css/select2.min.css')}}" rel="stylesheet" type="text/css">
-    <!-- Simplebar Css -->
-    <link rel="stylesheet" href="{{ asset('assets/libs/simplebar/simplebar.min.css') }}">
-    <!-- Bootstrap Css -->
-    <link href="{{ asset('assets/css/bootstrap.css') }}" id="bootstrap-style" rel="stylesheet" type="text/css">
-    <!--icons css-->
-    <link href="{{ asset('assets/css/icons.min.css') }}" rel="stylesheet" type="text/css">
-    <!-- App Css-->
-    <link href="{{ asset('assets/css/app.min.css') }}" id="app-style" rel="stylesheet" type="text/css">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/dist/tabler-icons.min.css" />
     <link rel="stylesheet" href="{{ asset('assets/libs/flatpickr/flatpickr.min.css') }}">
+    
+    <style>
+        :root {
+          --bs-sidebar-width: 4.3rem;
+        }
+
+        .page-content {
+            padding: 1rem;
+        }
+    </style>
+
     @if (Request::segment(1) == 'pos')
         <link href="{{ asset('assets/css/pos.css') }}" id="pos-style" rel="stylesheet" type="text/css">
     @endif
@@ -53,25 +30,7 @@
           content:" *";
           color: red;
         }
-
-        @media (min-width: 992px) {
-            [data-layout=horizontal]
-            .sidebar-left.horizontal-sidebar
-            .sidebar-slide
-            #sidebar-menu > ul li ul.sub-menu li ul.sub-menu:after {
-                border-right-color: var(--bs-sidebar-bg-color); !important;
-            }
-        }
-
-        @media (min-width: 992px) {
-            [data-layout=horizontal]
-            .sidebar-left.horizontal-sidebar
-            .sidebar-slide
-            #sidebar-menu > ul li ul.sub-menu li ul.sub-menu:after {
-                border-right-color: var(--bs-sidebar-bg-color); !important;
-            }
-        }
-
+        
         .table tbody tr td {
             padding: 15px 5px !important;
         }
@@ -85,126 +44,124 @@
         }
 
         .select2-container--default .select2-selection--single .select2-selection__clear {
-            height: 0px !important;
+            /* height: 0px !important;
             margin-right: 35px !important;
             padding-right: 0px !important;
-            margin-top: -6px !important;
+            margin-top: -6px !important; */
+            position: relative;
         }
 
         input[readonly] {
             background-color: #e9ecef !important;
             cursor: not-allowed;
         }
+
+        .sidebar-left {
+            top: 38px;
+        }
+
+        .sidebar-header {
+            position: relative;
+            padding: .75rem 1rem;
+            width: var(--bs-sidebar-width);
+            background: var(--bs-primary-bg);
+        }
+
+        [data-sidebar-color=dark] .sidebar-left, [data-topbar-color=dark] #page-topbar {
+            background: var(--bs-sidebar-bg-color);
+        }
+
     </style>
     @yield('style')
-    @stack('style')
-</head>
+@endsection
 
-<script type="text/javascript">
-    let BASE_URL = '{{ env('APP_URL') }}';
-    let TOKEN = 'Bearer {{Session::get('_access_token')}}';
-    let USER_ID = '{{ Session::get('_id') }}';
-    let ROLE_ID = '{{Session::get('_role_id')}}';
-    let NAME = '{{Session::get('_name')}}';
-    let USERNAME = '{{Session::get('_username')}}';
-    let EMAIL = '{{Session::get('_email')}}';
-    let PHONE = '{{Session::get('_phone')}}';
-    let IS_ACCESS_TO_POS = '{{config('user_companies.is_access_to_pos')}}';
-    let DEFAULT_BRANCH_ID = '{{Session::get('general_settings.default_branch')}}';
-    let DEFAULT_BRANCH_NAME = '{{Session::get('general_settings.branch_name')}}';
-    let DEFAULT_WAREHOUSE_ID = '{{Session::get('general_settings.default_warehouse')}}';
-    let DEFAULT_WAREHOUSE_NAME = '{{Session::get('general_settings.warehouse_name')}}';
-    let DEFAULT_PROJECT_ID = '{{Session::get('general_settings.default_project')}}';
-    let DEFAULT_PROJECT_NAME = '{{Session::get('general_settings.project_name')}}';
-    let DEFAULT_CURRENCY_ID = '{{Session::get('general_settings.default_currency')}}';
-    let DEFAULT_CURRENCY_NAME = '{{Session::get('general_settings.currency_name')}}';
-    let COMPANY_ID = '{{Session::get('_company_id')}}';
-</script>
+@section('main-content')
+    <script>
+        let TOKEN = 'Bearer {{Session::get('_access_token')}}';
+        let USER_ID = '{{ Session::get('_id') }}';
+        let ROLE_ID = '{{Session::get('_role_id')}}';
+        let NAME = '{{Session::get('_name')}}';
+        let USERNAME = '{{Session::get('_username')}}';
+        let EMAIL = '{{Session::get('_email')}}';
+        let PHONE = '{{Session::get('_phone')}}';
+        let IS_ACCESS_TO_POS = '{{config('user_companies.is_access_to_pos')}}';
+        let DEFAULT_BRANCH_ID = '{{Session::get('general_settings.default_branch')}}';
+        let DEFAULT_BRANCH_NAME = '{{Session::get('general_settings.branch_name')}}';
+        let DEFAULT_WAREHOUSE_ID = '{{Session::get('general_settings.default_warehouse')}}';
+        let DEFAULT_WAREHOUSE_NAME = '{{Session::get('general_settings.warehouse_name')}}';
+        let DEFAULT_PROJECT_ID = '{{Session::get('general_settings.default_project')}}';
+        let DEFAULT_PROJECT_NAME = '{{Session::get('general_settings.project_name')}}';
+        let DEFAULT_CURRENCY_ID = '{{Session::get('general_settings.default_currency')}}';
+        let DEFAULT_CURRENCY_NAME = '{{Session::get('general_settings.currency_name')}}';
+        let COMPANY_ID = '{{Session::get('_company_id')}}';
+    </script>
 
-<body class="horizontal-layout">
-    <!-- Begin page -->
-    <x-desktop-header />
-    <div id="main-content">
-
-        <div id="layout-wrapper">
-            <!-- Start topbar -->
-            @if (Request::segment(1) == 'pos' && Request::segment(2) == 'cashier')
-                @include('companies.v1.layouts.pos.cashier.header')
-            @elseif (Request::segment(1) == 'pos' && Request::segment(2) == 'settings')
-                @include('companies.v1.layouts.pos.settings.header')
-            @else
-                @include('companies.v1.layouts.header')
-            @endif
-            <!-- End topbar -->
-            <!-- ========== Left Sidebar Start ========== -->
-            <!-- Left Sidebar End -->
-            <div class="sidebar-backdrop" id="sidebar-backdrop"></div>
-            <!-- ========== Left Sidebar Start ========== -->
-           
-            @if (Request::segment(1) == 'pos' && Request::segment(2) == 'cashier')
-            @elseif (Request::segment(1) == 'pos' && Request::segment(2) == 'settings')
-                @include('companies.v1.layouts.pos.settings.navbar')
-            @elseif (Request::segment(1) == 'hrm')
-                @include('companies.v1.layouts.navbar_hrm')
-            @else
-                @include('companies.v1.layouts.navbar')
-            @endif
-            <!-- Left Sidebar End -->
-            <!-- ============================================================== -->
-            <!-- Start right Content here -->
-            <!-- ============================================================== -->
-            <div class="main-content">
-                <div class="page-content">
-                    @if (Request::segment(1) == 'pos' && Request::segment(2) == 'cashier')
-                        @yield('content')
-                        @yield('modal')
-                    @elseif (Request::segment(1) == 'pos' && Request::segment(2) == 'settings')
-                        @yield('content')
-                        @yield('modal')
-                    @elseif(Request::segment(1) == 'hrm')
-                        @include('companies.v1.layouts.navbar_hrm')
-                        <div class="container-fluid">
-                            @yield('content')
-        
-                            @yield('modal')
-                        </div><!-- container-fluid -->
-                    @else
-                        @include('companies.v1.layouts.navbar')
-                        <div class="container-fluid">
-                            @yield('content')
-        
-                            @yield('modal')
-                        </div><!-- container-fluid -->
-                    @endif
-                </div><!-- End Page-content -->
-    
-                <!-- Begin Footer -->
+    <div id="layout-wrapper">
+        <!-- Start topbar -->
+        @if (Request::segment(1) == 'pos' && Request::segment(2) == 'cashier')
+            @include('companies.v1.layouts.pos.cashier.header')
+        @elseif (Request::segment(1) == 'pos' && Request::segment(2) == 'settings')
+            @include('companies.v1.layouts.pos.settings.header')
+        @elseif (Request::segment(1) == 'admin')
+        @else
+            @include('companies.v1.layouts.header')
+        @endif
+        <!-- End topbar -->
+        <!-- ========== Left Sidebar Start ========== -->
+        <!-- Left Sidebar End -->
+        <div class="sidebar-backdrop" id="sidebar-backdrop"></div>
+        <!-- ========== Left Sidebar Start ========== -->
+       
+        @if (Request::segment(1) == 'pos' && Request::segment(2) == 'cashier')
+        @elseif (Request::segment(1) == 'pos' && Request::segment(2) == 'settings')
+            @include('companies.v1.layouts.pos.settings.navbar')
+        @elseif (Request::segment(1) == 'admin')
+            @include('companies.v1.layouts.admin.navbar')
+        @else
+            @include('companies.v1.layouts.navbar')
+        @endif
+        <!-- Left Sidebar End -->
+        <!-- ============================================================== -->
+        <!-- Start right Content here -->
+        <!-- ============================================================== -->
+        <div class="main-content">
+            <div class="page-content">
                 @if (Request::segment(1) == 'pos' && Request::segment(2) == 'cashier')
-                @include('companies.v1.layouts.pos.cashier.footer')
+                    @yield('content')
+                    @yield('modal')
                 @elseif (Request::segment(1) == 'pos' && Request::segment(2) == 'settings')
+                    @yield('content')
+                    @yield('modal')
                 @else
-                    @include('companies.v1.layouts.footer')
-                @endif
-                <!-- END Footer -->
-                <!-- Begin scroll top -->
-                <div class="progress-wrap" id="progress-scroll">
-                    <svg class="progress-circle" width="100%" height="100%" viewBox="-1 -1 102 102">
-                        <path d="M50,1 a49,49 0 0,1 0,98 a49,49 0 0,1 0,-98" />
-                    </svg>
-                </div>
-                <!-- END scroll top -->
-            </div>
-            <!-- end main content-->
+                    {{-- @include('companies.v1.layouts.navbar') --}}
+                    <div class="container-fluid">
+                        @yield('content')
     
-        </div><!-- END layout-wrapper -->
+                        @yield('modal')
+                    </div><!-- container-fluid -->
+                @endif
+            </div><!-- End Page-content -->
+
+            <!-- Begin Footer -->
+            @if (Request::segment(1) == 'pos' && Request::segment(2) == 'cashier')
+            @include('companies.v1.layouts.pos.cashier.footer')
+            @endif
+            <!-- END Footer -->
+            <!-- Begin scroll top -->
+            <div class="progress-wrap" id="progress-scroll">
+                <svg class="progress-circle" width="100%" height="100%" viewBox="-1 -1 102 102">
+                    <path d="M50,1 a49,49 0 0,1 0,98 a49,49 0 0,1 0,-98" />
+                </svg>
+            </div>
+            <!-- END scroll top -->
+        </div>
+        <!-- end main content-->
+
     </div>
+@endsection
+    
 
-    <!-- Bootstrap bundle js -->
-    <script src="{{ asset('assets/libs/bootstrap/js/bootstrap.bundle.min.js') }}"></script>
-
-    <!-- Layouts main js -->
-    <script src="{{ asset('assets/libs/jquery/jquery.min.js') }}"></script>
-
+@section('main-script')
     <!-- Metimenu js -->
     <script src="{{ asset('assets/libs/metismenu/metisMenu.min.js') }}"></script>
 
@@ -227,6 +184,9 @@
     <script src="{{ asset('assets/libs/moment/dist/moment.min.js')}}"></script>
     <script src="{{ asset('assets/libs/accounting.min.js') }}"></script>
     <script src="{{ asset('assets/js/numeric-input/numeric-input.js') }}"></script>
+    @if (Request::segment(1) == 'admin')
+    {{-- <script src="{{ asset('assets/js/app.js') }}"></script> --}}
+    @endif
     <!-- App js -->
     {{-- <script src="{{ asset('assets/js/app.js') }}"></script> --}}
     
@@ -257,8 +217,6 @@
         let FixedAssetCategories = [];
         let FixedAssets = [];
         let fixedAssetSources = [];
-
-        window.i18n = @json(__('language'));
 
         (function() {
             'use strict';
@@ -799,15 +757,90 @@
             });
         }
 
-        function showLoading(title = i18n?.alert?.info?.processing?.title, message = i18n?.alert?.info?.processing?.text, timer = 0) {
-            Swal.fire({
-                title: title,
-                html: message,
-                didOpen: () => {
-                    Swal.showLoading();
-                },
-                timer: timer
+        function generateMonthOptions(selector, opt = {}) {
+
+            let { value:defaultValue = null, placeholder = 'Pilih Bulan' } = opt
+
+            if (defaultValue == 'current') {
+                defaultValue = new Date().getMonth() + 1;
+                
+            }
+
+            const months = [
+                'Januari',
+                'Februari',
+                'Maret',
+                'April',
+                'Mei',
+                'Juni',
+                'Juli',
+                'Agustus',
+                'September',
+                'Oktober',
+                'November',
+                'Desember'
+            ];
+
+            const $select = $(selector);
+
+            $select.empty();
+
+            $select.append(
+                new Option(
+                    placeholder,
+                    '',
+                    false,
+                    false
+                )
+            );
+
+            months.forEach((month, index) => {
+                const value = index + 1;
+                $select.append(
+                    new Option(
+                        month,
+                        value,
+                        false,
+                        value === defaultValue
+                    )
+                );
             });
+        }
+
+        function generateYearOptions(selector, opt = {}) {
+            const currentYear = new Date().getFullYear();
+            const $select = $(selector);
+
+            let { value:defaultValue = null, totalYears = 10, placeholder = 'Pilih Tahun' } = opt;
+
+            if (defaultValue == 'current') {
+                defaultValue = new Date().getFullYear();
+                
+            }
+
+            $select.empty();
+
+            $select.append(
+                new Option(
+                    placeholder,
+                    '',
+                    false,
+                    false
+                )
+            );
+
+            for (let i = 0; i < totalYears; i++) {
+                const year = currentYear - i;
+            
+                $select.append(
+                    new Option(
+                        year,
+                        year,
+                        false,
+                        year === defaultValue
+                    )
+                );
+            }
         }
 
         function findIndonesianMonthByNumber(numberMonth) {
@@ -938,7 +971,7 @@
                         data: data,
                         type: method,
                         beforeSend: function() {
-                            showLoading(i18n?.alert?.info?.processing?.title, i18n?.alert?.info?.processing?.text);
+                            showLoadingAlert(i18n?.alert?.info?.processing?.title, i18n?.alert?.info?.processing?.text);
                         },
                     })
                     .done(function(data) {
@@ -977,86 +1010,7 @@
                 }
             });
         }
-
-        function generalAjaxErrorHandler(xhr, status, error) {
-            Swal.close(); // Close any loading Swal
-            let title = i18n?.errors?.title?.error;
-            let message = i18n?.errors?.message?.general;
-            let icon = 'error';
-
-            if (status === 'timeout') {
-                message = i18n?.errors?.message?.timeout;
-            } else if (xhr.readyState === 0) {
-                message = i18n?.errors?.message?.no_connection;
-            } else {
-                switch (xhr.status) {
-                    case 0:
-                        message = i18n?.errors?.message?.no_connection;
-                        break;
-                    case 400:
-                        message = xhr.responseJSON?.message || i18n?.errors?.message?.bad_request;
-                        break;
-                    case 401:
-                        title = i18n?.errors?.title?.unauthorized;
-                        message = xhr.responseJSON?.message || i18n?.errors?.message?.unauthorized;
-                        break;
-                    case 403:
-                        title = i18n?.errors?.title?.forbidden;
-                        message = xhr.responseJSON?.message || i18n?.errors?.message?.forbidden;
-                        break;
-                    case 404:
-                        title = i18n?.errors?.title?.not_found;
-                        message = xhr.responseJSON?.message || i18n?.errors?.message?.not_found;
-                        break;
-                    case 419:
-                        title = i18n?.errors?.title?.session_expired;
-                        message = i18n?.errors?.message?.session_expired;
-                        break;
-                    case 422:
-                        title = i18n?.errors?.title?.validation;
-                        // Validation errors
-                        const errors = xhr.responseJSON?.errors;
-                        if (errors) {
-                            message = Object.values(errors)
-                                .flat()
-                                .join('\n');
-                        } else {
-                            message = xhr.responseJSON?.message || i18n?.errors?.message?.validation;
-                        }
-                        break;
-                    case 429:
-                        message = i18n?.errors?.message?.too_many;
-                        break;
-                    case 500:
-                        message = xhr.responseJSON?.message || i18n?.errors?.message?.server;
-                        break;
-                    case 503:
-                        message = i18n?.errors?.message?.service_down;
-                        break;
-                    default:
-                        message = xhr.responseJSON?.message || i18n?.errors?.message?.unexpected?.replace(':code', xhr.status);;
-                }
-            }
-
-            if (xhr.status == 401) {
-                Swal.fire({
-                    title: title,
-                    html: message,
-                    icon: icon,
-                    showCancelButton: false,
-                    confirmButtonColor: 'var(--bs-info)',
-                    allowOutsideClick: false
-                }).then((result) => {
-                    if (result.isConfirmed) {
-                        window.location.href = BASE_URL + '/logout'   
-                    }
-                });
-            } else {
-                showFailedAlert(message, icon, title);
-            }
-
-        }
-
+        
         function getUsers(params, callback = null) {
             
             let element = params['element'],
@@ -5117,7 +5071,7 @@
                             'Authorization': TOKEN
                         },
                         beforeSend: function () {
-                            showLoading()
+                            showLoadingAlert()
                         },
                         success: function(res) {
                             Swal.close();
@@ -5131,9 +5085,16 @@
             });
         });
 
+        $(document).on('mouseenter', '.admin-sidebar' , function() {
+            $(this).attr('data-size', 'large')
+        });
+        
+        $(document).on('mouseleave', '.admin-sidebar' , function() {
+            $(this).attr('data-size', 'default')
+        });
+
+        
+
     </script>
  @yield('script')
- @stack('script')
-</body>
-
-</html>
+ @endsection

@@ -6,54 +6,14 @@
 @section('title', $title)
 
 @section('style')
-    <style>
-        body {
-            background: url('{{ asset("assets/images/auth/cover_bg.png") }}') no-repeat center center;
-            background-size: cover;
-        }
-
-        .login-overlay {
-            min-height: calc(100vh - 38px);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            padding: 20px;
-        }
-
-        .login-card {
-            width: 100%;
-            max-width: 420px;
-            border-radius: 16px;
-            padding: 32px;
-            background: #fff;
-            box-shadow: 0 20px 40px rgba(0,0,0,.15);
-        }
-
-        .login-logo {
-            width: 200px;
-            /* height: 70px; */
-        }
-
-        .btn-primary {
-            background: #1F2933;
-            border-color: #1F2933;
-        }
-
-        .btn-primary:hover {
-            background: #1F2933;
-            border-color: #1F2933;
-        }
-    </style>
 @endsection
 
 @section('content')
-<meta name="csrf-token" content="{{ csrf_token() }}">
-
-<div class="login-overlay">
-    <div class="login-card">
+<div class="authentication-overlay">
+    <div class="authentication-card">
 
         <div class="text-center mb-4">
-            <img src="{{ asset('assets/images/logo2.png') }}" class="login-logo">
+            <img src="{{ asset('assets/images/logo.png') }}" class="authentication-logo">
             <p class="text-muted mb-0">Silakan login untuk melanjutkan</p>
         </div>
 

@@ -1,10 +1,12 @@
 <?php
 
+use App\Http\Controllers\Web\AdminController;
 use App\Http\Controllers\Web\AuthController;
 use App\Http\Controllers\Web\ChooseCompanyController;
 use App\Http\Controllers\Web\StartupController;
 use App\Http\Controllers\Web\SubscriptionController;
 use App\Http\Controllers\Web\TransactionController;
+use App\Http\Controllers\Web\ConfigController;
 use App\Http\Controllers\Web\Companies\v1\PointOfSalesController;
 use Illuminate\Support\Facades\Route;
 
@@ -16,6 +18,12 @@ Route::get('/forgot-password', [AuthController::class, 'forgotPassword']);
 Route::get('/new-password/{code}', [AuthController::class, 'newPassword']);
 Route::get('/logout', [AuthController::class, 'logout']);
 Route::get('/delete-request', [AuthController::class, 'deleteRequest']);
+
+Route::prefix('config')->group(function () {
+    Route::get('/', [ConfigController::class, 'index']);
+    Route::get('/database', [ConfigController::class, 'database']);
+    Route::get('/activity-log', [ConfigController::class, 'activityLog']);
+});
 
 Route::group(['middleware' => ['auth.primary']], function () {
     Route::get('/', [ChooseCompanyController::class, 'index']);
@@ -31,6 +39,10 @@ Route::group(['middleware' => ['auth.primary']], function () {
     Route::group([
         'middleware' => ['companies']
     ], function () {
+        Route::prefix('admin')->group(function () {
+            Route::get('/dashboard', [AdminController::class, 'dashboard'])->name('admin.dashboard');
+        });
+
         Route::prefix('pos')->group(function () {
             Route::get('/cashier', [PointOfSalesController::class, 'cashier'])->name('pos');
             Route::get('/print-receipts/{number}', [PointOfSalesController::class, 'printReceipt'])->name('pos.print-receipts');

@@ -82,7 +82,7 @@ class PointOfSalesController extends Controller
             $params['status'] = 'paid';
         }
 
-        return SalesInvoices::createPOSTransaction($params);
+        return SalesInvoices::createPOSTransaction($params, $request);
     }
 
     public function login (Request $request)
@@ -118,6 +118,8 @@ class PointOfSalesController extends Controller
                 'message' => 'Your account is not linked to an active branch.'
             ], 404);
         }
+
+        // POS{branch_code:first'-'}{user_id,3}{year,last:2}{month:2}{date:2}{next}
 
         $month = $now->month;
         $year = $now->year;
@@ -243,6 +245,7 @@ class PointOfSalesController extends Controller
 
             $paper = $paper_size;
             $downsizing = 13;
+            $paper_width = 14;
 
             if ($paper == 58) {
                 $width = 30;
@@ -252,13 +255,13 @@ class PointOfSalesController extends Controller
                 $col_disc = 6;
                 $col_total = 10;
             } else if ($paper == 75) {
-                $width = 39;
+                $width = 40;
                 $col_qty = 4;
-                $col_unit = 7;
-                $col_price = 8;
-                $col_disc = 7;
-                $col_total = 15;
-                $downsizing = 14;
+                $col_unit = 11;
+                $col_price = 10;
+                $col_disc = 4;
+                $col_total = 11;
+                $downsizing = 15;
             } else {
                 $width = 48;
                 $col_qty = 7;
@@ -266,15 +269,16 @@ class PointOfSalesController extends Controller
                 $col_price = 10;
                 $col_disc = 7;
                 $col_total = 17;
+                $paper_width = 12;
             }
 
             $line = str_repeat('-', $width);
 
-            if (!config('local_user_settings.pos_printer_selected_printer')) {
+            if (!localSettings()->get('printer.name')) {
                 return response()->json(['status' => 'error', 'message' => 'Printer Not found'], 404);
             }
 
-            $connector = new WindowsPrintConnector(config('local_user_settings.pos_printer_selected_printer'));
+            $connector = new WindowsPrintConnector(localSettings()->get('printer.paper_size'));
 
             if (!$connector) {
                 return response()->json(['status' => 'error', 'message' => 'Printer Not found'], 404);
@@ -309,7 +313,7 @@ class PointOfSalesController extends Controller
             $printer->text(
                 col("Qty", $col_qty) .
                 col("Unit", $col_unit) .
-                col("Harga", $col_price, 'right') .
+                col("Harga", $col_price) .
                 col("Disc", $col_disc, 'right') .
                 col("Total", $col_total, 'right') . "\n"
             );
@@ -392,15 +396,15 @@ class PointOfSalesController extends Controller
             $printer->text($line . "\n");
 
             // ================= SUMMARY =================
-            $printer->text(sprintf("%-".($width-$downsizing)."s %12s\n", "Subtotal", format_amount($data['subtotal'])));
-            $printer->text(sprintf("%-".($width-$downsizing)."s %12s\n", "Diskon", "-" . format_amount($data['discount_amount'])));
+            $printer->text(sprintf("%-".($width-$downsizing)."s %".($paper_width)."s\n", "Subtotal", format_amount($data['subtotal'])));
+            $printer->text(sprintf("%-".($width-$downsizing)."s %".($paper_width)."s\n", "Diskon", "-" . format_amount($data['discount_amount'])));
 
             $printer->setEmphasis(true);
-            $printer->text(sprintf("%-".($width-$downsizing)."s %12s\n", "Total", format_amount($data['total'])));
+            $printer->text(sprintf("%-".($width-$downsizing)."s %".($paper_width)."s\n", "Total", format_amount($data['total'])));
             $printer->setEmphasis(false);
 
-            $printer->text(sprintf("%-".($width-$downsizing)."s %12s\n", "Bayar", format_amount($data['total_payment'])));
-            $printer->text(sprintf("%-".($width-$downsizing)."s %12s\n", "Kembali", format_amount($data['total_change'])));
+            $printer->text(sprintf("%-".($width-$downsizing)."s %".($paper_width)."s\n", "Bayar", format_amount($data['total_payment'])));
+            $printer->text(sprintf("%-".($width-$downsizing)."s %".($paper_width)."s\n", "Kembali", format_amount($data['total_change'])));
 
             $printer->text($line . "\n");
 

@@ -1,4 +1,8 @@
-[data-layout=horizontal] #page-topbar {
+:root {
+  --bs-sidebar-width: 0;
+}
+
+#page-topbar {
     font-family: "Lexend", sans-serif;
     /* color: #E5E7EB !important; */
     --bs-body-color: #E5E7EB;
@@ -26,26 +30,26 @@
     margin: 0 8px;
 }
 
-[data-content-width=boxed][data-layout=horizontal] #page-topbar .navbar-header {
+ #page-topbar .navbar-header {
     --bs-boxed-layout-sm-width: 0px;
     padding: 0 12px;
 }
 
-[data-content-width=boxed][data-layout=horizontal] #page-topbar .navbar-header .btn.btn-navbar-action {
+ #page-topbar .navbar-header .btn.btn-navbar-action {
     font-size: 1.5rem !important;
 }
 
-[data-content-width=boxed][data-layout=horizontal] #page-topbar .navbar-header .btn.btn-navbar-action:disabled {
+ #page-topbar .navbar-header .btn.btn-navbar-action:disabled {
     color: var(--bs-btn-color);
     border-color: var(--bs-btn-border-color);
 }
 
-[data-content-width=boxed][data-layout=horizontal] #page-topbar .navbar-header .btn.btn-navbar-action:hover {
+ #page-topbar .navbar-header .btn.btn-navbar-action:hover {
     background-color: rgb(255 255 255 / 0.2);
     color: var(--bs-btn-color);
 }
 
-[data-content-width=boxed][data-layout=horizontal] #page-topbar .navbar-header .navbar-action-group .vr {
+ #page-topbar .navbar-header .navbar-action-group .vr {
     align-self: center;
     height: 1.5rem;
     background-color: var(--bs-body-color);
@@ -54,6 +58,10 @@
  #layout-wrapper, [data-mode="pos-settings"] #layout-wrapper {
     min-width: var(--pos-layout-min-width);
     height: 100vh;
+}
+
+ [data-mode="pos-settings"] #layout-wrapper {
+    --bs-sidebar-width: 16.5rem;
 }
 
  footer.footer {
@@ -112,7 +120,7 @@
     background-color: var(--bs-secondary-bg);
 }
 
-[data-layout=horizontal] .main-content .page-content {
+ .main-content .page-content {
     padding: calc(var(--bs-app-header-height) + 16px) .9rem calc(var(--bs-app-header-height) + 16px) 16px;
 }
 

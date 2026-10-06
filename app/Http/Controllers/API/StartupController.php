@@ -25,6 +25,7 @@ class StartupController extends Controller
                     'redirect'     => route('web.login'),
                 ]);
             }
+            
 
             if (Cache::has($cacheKey . '_running')) {
                 return response()->json([
@@ -81,8 +82,8 @@ class StartupController extends Controller
      * Ditandai dengan flag file agar tidak jalan berulang.
      */
     protected function runPostInstallIfNeeded(): void
-    {
-        if (!app()->isProduction()) {
+    {   
+        if (config('database.connection_mode') != 'service') {
             Log::info('[Startup] Development mode — skip post-install commands.');
             return;
         }
@@ -93,7 +94,7 @@ class StartupController extends Controller
             Log::info('[Startup] Post-install sudah pernah dijalankan, skip.');
             return;
         }
-
+        
         Log::info('[Startup] Menjalankan post-install commands...');
 
         $flagDir = dirname($flagFile);

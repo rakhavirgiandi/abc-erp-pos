@@ -6640,4 +6640,168 @@ s .rich-list-append {
 }
 
 .win-btn:hover { background: rgba(255,255,255,0.1); }
+
 #win-close:hover { background: #e81123; color: #fff; }
+
+.modal {
+    margin-top: 38px;
+    height: calc(100% - 38px);
+}
+
+.pattern-blue {
+    background-image: url('/assets/images/patern_card/pattern_blue.png');
+}
+
+.pattern-olive {
+    background-image: url('/assets/images/patern_card/pattern_olive.png');
+}
+
+.pattern-green {
+    background-image: url('/assets/images/patern_card/pattern_green.png');
+}
+
+.pattern-red {
+    background-image: url('/assets/images/patern_card/pattern_red.png');
+}
+
+.pattern-pink {
+    background-image: url('/assets/images/patern_card/pattern_pink.png');
+}
+
+.pattern-yellow {
+    background-image: url('/assets/images/patern_card/pattern_yellow.png');
+}
+
+.pattern-purple {
+    background-image: url('/assets/images/patern_card/pattern_purple.png');
+}
+
+.pattern-black {
+    background-image: url('/assets/images/patern_card/pattern_black.png');
+}
+
+.admin-sidebar[data-size=large] .sidebar-logo {
+    display: none;
+}
+
+.admin-sidebar[data-size=large] .sidebar-logo-large {
+    display: block;
+}
+
+.admin-sidebar[data-size=default] .sidebar-logo {
+    display: block;
+}
+
+.admin-sidebar[data-size=default] .sidebar-logo-large {
+    display: none;
+}
+
+.admin-sidebar[data-size=default] {
+    --bs-sidebar-width: 4.3rem;
+}
+
+.admin-sidebar[data-size=large] {
+    --bs-sidebar-width: 16.5rem;
+}
+
+.admin-sidebar {
+    transition: width .3s;
+}
+
+.admin-sidebar ul.sidebar-menu, .admin-sidebar ul.sidebar-submenu {
+    list-style-type: none;
+    margin: 0;
+    padding: 0;
+}
+
+.admin-sidebar ul.sidebar-menu {
+    padding: .75rem;
+}
+
+
+.admin-sidebar .sidebar-item .sidebar-item-icon {
+    font-size: 1.9rem;
+}
+
+.admin-sidebar[data-size=large] .sidebar-item .sidebar-item-icon {
+    font-size: 1.5rem;
+}
+
+.admin-sidebar[data-size=default] .sidebar-item .sidebar-item-label {
+    display: none;
+}
+
+.admin-sidebar .sidebar-item {
+    width: 100%;
+    display: block;
+    aspect-ratio: 1/1;
+    vertical-align: middle;
+    position: relative;
+    font-size: 13.3px;
+    transition: all .4s;
+    font-family: "Lexend", sans-serif;
+    border-radius: var(--bs-border-radius);
+    font-weight: 400;
+    margin-bottom: .3125rem;
+    white-space: nowrap;
+    color: rgb(126.4594594595, 139, 151.5405405405);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.admin-sidebar[data-size=large] .sidebar-item {
+    justify-content: start;
+    aspect-ratio: unset;
+    padding: .5625rem .75rem;
+    align-items: center;
+    gap: 8px;
+}
+
+
+.admin-sidebar .sidebar-item:hover {
+    background-color: rgba(var(--bs-secondary-rgb), 0.1);
+    color: rgba(var(--bs-secondary-rgb));
+}
+
+.sidebar-submenu  .sidebar-item {
+    padding-left: 2rem;
+}
+
+.admin-sidebar .sidebar-slide {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    overflow: hidden;
+}
+
+.admin-sidebar .sidebar-header {
+    flex-shrink: 0;
+}
+
+.admin-sidebar .sidebar-body {
+    flex: 1;
+    min-height: 0;
+    overflow-y: auto;
+    overflow-x: hidden;
+}
+
+.admin-sidebar .sidebar-footer {
+    flex-shrink: 0;
+    margin-top: auto;
+    padding: 12px;
+}
+
+/* Opsional: mempercantik scrollbar */
+.admin-sidebar .sidebar-body::-webkit-scrollbar {
+    width: 4px;
+}
+
+.admin-sidebar .sidebar-body::-webkit-scrollbar-thumb {
+    background: #cbd5e1;
+    border-radius: 10px;
+}
+
+.admin-sidebar .sidebar-body::-webkit-scrollbar-track {
+    background: transparent;
+}
