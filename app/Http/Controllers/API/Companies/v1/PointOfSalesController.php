@@ -278,7 +278,7 @@ class PointOfSalesController extends Controller
                 return response()->json(['status' => 'error', 'message' => 'Printer Not found'], 404);
             }
 
-            $connector = new WindowsPrintConnector(localSettings()->get('printer.paper_size'));
+            $connector = new WindowsPrintConnector(localSettings()->get('printer.name'));
 
             if (!$connector) {
                 return response()->json(['status' => 'error', 'message' => 'Printer Not found'], 404);

@@ -5212,7 +5212,7 @@
                         'company-id': COMPANY_ID
                     },
                     "data": {
-                        "paper_size": '{{ config('local_user_settings.pos_printer_paper_size') }}'
+                        "paper_size": '{{ localSettings('printer.paper_size') }}'
                     },
                     error: generalAjaxErrorHandler,
                 });

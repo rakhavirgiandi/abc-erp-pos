@@ -51,6 +51,13 @@ class NativeAppServiceProvider implements ProvidesPhpIni
                 'database.connections.pgsql.username' => $connectionInfo['username'],
                 'database.connections.pgsql.password' => $connectionInfo['password'],
             ]);
+
+            config([
+                'database.connections.pgsql_companies.host' => $connectionInfo['host'],
+                'database.connections.pgsql_companies.port' => $connectionInfo['port'],
+                'database.connections.pgsql_companies.username' => $connectionInfo['username'],
+                'database.connections.pgsql_companies.password' => $connectionInfo['password'],
+            ]);
         }
 
         /*
