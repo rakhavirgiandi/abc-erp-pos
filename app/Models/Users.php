@@ -570,12 +570,10 @@ class Users extends Model
                     DB::purge('pgsql');
                     DB::reconnect('pgsql');
 
-                    if ($database_created) {
-                        Artisan::call('migrate', [
-                            '--database' => 'pgsql',
-                            '--force' => true
-                        ]);
-                    }
+                    Artisan::call('migrate', [
+                        '--database' => 'pgsql',
+                        '--force' => true
+                    ]);
 
                     try {
 
@@ -807,7 +805,7 @@ class Users extends Model
 
         $token->save();
 
-        Artisan::call('migrate', ['--path' => 'database/migration_company', '--database' => 'pgsql_companies']);
+        // Artisan::call('migrate', ['--path' => 'database/migration_company', '--database' => 'pgsql_companies']);
 
         return response()->json([
             'access_token' => $tokenResult->accessToken,

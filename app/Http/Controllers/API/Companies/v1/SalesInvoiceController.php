@@ -8,6 +8,7 @@ use Illuminate\Support\Facades\DB;
 use App\Http\Controllers\Controller;
 use App\Models\Companies\v1\SalesInvoices;
 use Illuminate\Http\Request;
+use Throwable;
 
 class SalesInvoiceController extends Controller
 {
@@ -176,8 +177,10 @@ class SalesInvoiceController extends Controller
                     }
                 });
         } finally {
-            $lock->release();
+
         }
+
+        $lock->release();
 
         return response()->json([
             'status' => empty($failed) ? 'success' : 'partial',

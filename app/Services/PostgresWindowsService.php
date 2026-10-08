@@ -202,12 +202,6 @@ class PostgresWindowsService
 
         localSettings()->set('database.port', $newPort);
 
-        config([
-            'services.pgsql.port' => $newPort,
-            'database.connections.pgsql.port' => $newPort,
-            'database.connections.pgsql_companies.port' => $newPort,
-        ]);
-
         try {
             app('db')->purge('pgsql');
             app('db')->purge('pgsql_companies');

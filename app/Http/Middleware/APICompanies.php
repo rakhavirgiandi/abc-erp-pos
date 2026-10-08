@@ -96,19 +96,7 @@ class APICompanies {
             //     'sslmode' => 'prefer',
             // ]]);
 
-            config(['database.connections.pgsql_companies' => [
-                'driver' => 'pgsql',
-                'host' => $company['db_host'],
-                'port' => $company['db_port'],
-                'database' => $company['db_database'],
-                'username' => $company['db_username'],
-                'password' => $company['db_password'],
-                'charset' => 'utf8',
-                'prefix' => '',
-                'prefix_indexes' => true,
-                'schema' => 'public',
-                'sslmode' => 'prefer',
-            ]]);
+            config(['database.connections.pgsql_companies.database' => $company['db_database']]);
 
             $user = Users::select('users.*', 'roles.name as role_name')->where('email', $user_central->email)->join('roles', 'roles.id', '=', 'users.role_id')->first();
 

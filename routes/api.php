@@ -61,6 +61,7 @@ use App\Http\Controllers\API\UserSettingController;
 use App\Models\Companies;
 use App\Models\Users;
 use App\Models\CompanyCredentials;
+use App\Services\PostgresWindowsService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\API\Companies\v1\ProductCatalogController;
@@ -71,6 +72,10 @@ Route::get('/activity_logs', [ActivityLogController::class, 'index'])->name('act
 Route::get('/activity_logs/{id}', [ActivityLogController::class, 'show'])->name('activity-logs.show');
 
 Route::middleware('activity-log')->group(function () {
+
+    $pgService = app(PostgresWindowsService::class);
+
+    $connectionInfo = $pgService->getConnectionInfo();
 
     Route::middleware('auth:api')->get('/me', function (Request $request) {
         return $request->user();

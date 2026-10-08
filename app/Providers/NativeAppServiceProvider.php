@@ -39,27 +39,6 @@ class NativeAppServiceProvider implements ProvidesPhpIni
         |--------------------------------------------------------------------------
         */
 
-        if (config('database.connection_mode') === 'service') {
-
-            $pgService = app(PostgresWindowsService::class);
-
-            $connectionInfo = $pgService->getConnectionInfo();
-
-            config([
-                'database.connections.pgsql.host' => $connectionInfo['host'],
-                'database.connections.pgsql.port' => $connectionInfo['port'],
-                'database.connections.pgsql.username' => $connectionInfo['username'],
-                'database.connections.pgsql.password' => $connectionInfo['password'],
-            ]);
-
-            config([
-                'database.connections.pgsql_companies.host' => $connectionInfo['host'],
-                'database.connections.pgsql_companies.port' => $connectionInfo['port'],
-                'database.connections.pgsql_companies.username' => $connectionInfo['username'],
-                'database.connections.pgsql_companies.password' => $connectionInfo['password'],
-            ]);
-        }
-
         /*
         |--------------------------------------------------------------------------
         | Check For Updates Menu Event
@@ -128,6 +107,7 @@ class NativeAppServiceProvider implements ProvidesPhpIni
                     ->title('Update Siap Dipasang')
                     ->buttons(['Restart Now', 'Nanti'])
                     ->defaultId(0)
+                    ->cancelId(1)
                     ->type('info')
                     ->show('Restart sekarang untuk memasang update versi ' . ($event->version ?? '') . '?');
 

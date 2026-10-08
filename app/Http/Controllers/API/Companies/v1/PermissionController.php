@@ -124,8 +124,8 @@ class PermissionController extends Controller
     {
         if (!NetworkHelper::isConnected()) {
             $params = $request->all();
-            $res = Roles::getPaginatedResult($params, $request);
-
+            $res = Permissions::getPaginatedResult($params, $request);
+    
             return response()->json([
                 'status' => 'offline',
                 'message' => 'Tidak ada koneksi, menggunakan data lokal',
@@ -133,67 +133,92 @@ class PermissionController extends Controller
             ]);
         }
     
+        $db = DB::connection('pgsql_companies');
+        $localRoleIds = $db->table('roles')->pluck('id')->flip();
+    
         $page = 1;
         $perPage = 500;
-        $serverRows = [];
-
+        $allRoleHasPermissions = [];
+        $allServerIds = [];
+    
         do {
-            $url = config('services.admin_credentials.server_url') . "/api/v1/roles?page={$page}&per_page={$perPage}&is_simple=true&order[id]=asc";
+            $url = config('services.admin_credentials.server_url') . "/api/v1/permissions?page={$page}&per_page={$perPage}&is_simple=true&order[id]=asc";
             $result = NetworkHelper::curlWithToken($url);
-
+    
             $rows = $result['data'] ?? [];
+    
             if (empty($rows)) break;
-
-            $serverRows = array_merge($serverRows, $rows);
-            $page++;
-        } while ($page <= ($result['nav']['totalPage'] ?? 1));
-
-        if (empty($serverRows)) {
-            return response()->json([
-                'status' => 'error',
-                'message' => 'Gagal sync role',
-                'error' => 'Data role dari server kosong, sync dibatalkan'
-            ], 500);
-        }
-
-        $now = now();
-        $payload = array_map(fn($row) => [
-            'id' => $row['id'],
-            'name' => $row['name'],
-            'guard_name' => $row['guard_name'] ?? 'web',
-            'created_at' => $row['created_at'] ?? $now,
-            'updated_at' => $now,
-        ], $serverRows);
-
-        $serverIds = array_column($payload, 'id');
-
-        $conn = DB::connection('pgsql_companies');
-        $conn->beginTransaction();
-
-        try {
-            Roles::whereNotIn('id', $serverIds)->delete();
-
-            foreach (array_chunk($payload, 500) as $chunk) {
-                Roles::upsert($chunk, ['id'], ['name', 'guard_name', 'updated_at']);
+    
+            $db->beginTransaction();
+    
+            try {
+                Permissions::upsert(
+                    collect($rows)->map(fn($row) => [
+                        'id'         => $row['id'],
+                        'name'       => $row['name'],
+                        'guard_name' => $row['guard_name'] ?? 'web',
+                        'updated_at' => now(),
+                    ])->toArray(),
+                    ['id'],
+                    ['name', 'guard_name', 'updated_at']
+                );
+    
+                foreach ($rows as $row) {
+                    $allServerIds[] = $row['id'];
+    
+                    foreach ($row['roles'] ?? [] as $roleId) {
+                        if ($roleId == 1 || !isset($localRoleIds[$roleId])) continue;
+                        $allRoleHasPermissions[] = [
+                            'role_id'       => $roleId,
+                            'permission_id' => $row['id'],
+                        ];
+                    }
+                }
+    
+                ModelHelper::reorderPermissionAdmin();
+                $db->commit();
+            } catch (\Exception $e) {
+                $db->rollBack();
+                return response()->json([
+                    'status' => 'error',
+                    'message' => 'Gagal sync permission',
+                    'error' => $e->getMessage()
+                ], 500);
             }
-
-            ModelHelper::reorderPermissionAdmin();
-
-            $conn->commit();
-
-            $conn->statement("SELECT SETVAL('roles_id_seq', COALESCE((SELECT MAX(id) + 1 FROM roles), 1))");
+    
+            $page++;
+    
+        } while ($page <= ($result['nav']['totalPage'] ?? 1));
+    
+        $db->beginTransaction();
+    
+        try {
+            // hapus permission yang sudah tidak ada di server (setelah semua page terkumpul)
+            if (!empty($allServerIds)) {
+                Permissions::whereNotIn('id', $allServerIds)->delete();
+            }
+    
+            RoleHasPermissions::where('role_id', '!=', 1)->delete();
+    
+            foreach (array_chunk($allRoleHasPermissions, 1000) as $chunk) {
+                RoleHasPermissions::insert($chunk);
+            }
+    
+            $db->statement("SELECT SETVAL('permissions_id_seq', COALESCE((SELECT MAX(id) FROM permissions), 1))");
+    
+            $db->commit();
         } catch (\Exception $e) {
-            $conn->rollBack();
+            $db->rollBack();
             return response()->json([
                 'status' => 'error',
-                'message' => 'Gagal sync role',
+                'message' => 'Gagal sync role has permissions',
                 'error' => $e->getMessage()
             ], 500);
         }
-
+    
         return response()->json([
             'status' => 'success',
-            'message' => 'Sync role berhasil',
+            'message' => 'Sync permission berhasil',
         ]);
     }
 }
