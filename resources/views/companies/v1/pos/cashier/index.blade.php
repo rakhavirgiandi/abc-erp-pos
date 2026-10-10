@@ -748,10 +748,10 @@
             });
         }
 
-        const salesInvoiceSync = (props = {}) => {
+        const salesInvoiceSync = (id, props = {}) => {
             $.ajax({
                 type: 'post',
-                url: BASE_URL + "/api/v1/sync/sales_invoices?order[id]=asc",
+                url: BASE_URL + "/api/v1/sync/sales_invoices/"+id,
                 "headers": {
                     'Authorization': TOKEN,
                     'company-id': COMPANY_ID,
@@ -4924,7 +4924,7 @@
                             printReceipt(res?.data?.ref_number);
                         }
                         if ('{{ config('services.is_onpremise') }}') {
-                            salesInvoiceSync()
+                            salesInvoiceSync(res?.data?.id)
                         }
                         clear({
                             setDefaultCustomer: true
@@ -5004,6 +5004,9 @@
             if (historiesPages[activeTab] == 1) {
                 loadHistories();
             }
+            
+            $('[id^=sales-invoice-sync-check-]').prop('checked', false).trigger('change')
+            $('.sales-invoice-bulk-sync').prop('checked', false).trigger('change')
 
             $('#input-search-histories').focus()
         });
@@ -5109,14 +5112,16 @@
                             const dateMoment = moment(item.date);
                             const dayKey = dateMoment.format('YYYY-MM-DD');
 
+                            let bulkSyncChecked = '<input class="form-check-input me-3 sales-invoice-bulk-sync" data-date="" data-date="'+dayKey+'" type="checkbox" value="">';
+
                             if (prevDay !== dayKey) {
-                                html += '<div data-day="'+dayKey+'" class="bg-body fw-bold text-body-secondary" style="width: 100%; padding: .5rem 1.5rem; font-family: \'Lexend\', sans-serif;">';
+                                html += '<div data-day="'+dayKey+'" class="bg-body fw-bold text-body-secondary" style="width: 100%; padding: .5rem 1.5rem .5rem 1rem; font-family: \'Lexend\', sans-serif;">';
                                 if (dateMoment.isSame(moment(), 'day')) {
-                                    html += 'Today';
+                                    html += `${bulkSyncChecked}<span>Today</span>`;
                                 } else if (dateMoment.isSame(moment().subtract(1, 'day'), 'day')) {
-                                    html += 'Yesterday';
+                                    html += `${bulkSyncChecked}<span>Yesterday</span>`;
                                 } else {
-                                    html += dateMoment.format('DD MMM YYYY');
+                                    html += bulkSyncChecked+'<span>'+dateMoment.format('DD MMM YYYY')+'</span>';
                                 }
                                 html += '</div>';
                                 prevDay = dayKey;
@@ -5131,12 +5136,23 @@
                                 dropdownButtonsHtml += '<li><button class="dropdown-item" id="call-back-sales-invoice-'+item.id+'" data-id="'+item.id+'" type="button">Call Back</button></li>';
                             }
                             
-                            if (activeTab == 'pending') {
+                            if (item.status != 'draft' && item.is_need_sync == 1) {
                                 dropdownButtonsHtml += '<li><button class="dropdown-item" id="sync-sales-invoice-'+item.id+'" data-id="'+item.id+'" type="button">Sinkron</button></li>';
                             }
 
+                            let syncCheck = '';
+
+                            
                             html += '<div class="d-flex border-bottom">';
-                            html +=     '<div class="d-flex flex-fill justify-content-between h-100" style="padding: 1rem 0 1rem 1.25rem">';
+                            html +=     '<div class="d-flex align-items-center" style="padding: 0 1rem;">';
+                            if (item.status != 'draft' && item.is_need_sync == 1) {
+                                html +=     '   <div class="from-check">';
+                                html +=     '       <input class="form-check-input" type="checkbox" value="" data-date="'+dayKey+'" id="sales-invoice-sync-check-'+item.id+'">';
+                                html +=     '   </div>';
+                            }
+
+                            html +=     '</div>';
+                            html +=     '<div class="d-flex flex-fill justify-content-between h-100" style="padding: 1rem 0 1rem 0rem">';
                             html +=         '<div>';
                             html +=             '<h6 class="mb-1 text-secondary">'+item?.customer_name+'</h6>';
                             html +=             '<p class="mb-2 text-body-secondary small">'+item?.ref_number+'</p>';
@@ -5176,6 +5192,27 @@
                 }
             });
         }
+
+        $(document).on('change', '.sales-invoice-bulk-sync', function (e) {
+            const $this = $(this);
+            const dataDate = $this.data('date');
+        });
+
+        $(document).on('click', '[id^=sync-sales-invoice-]', function (e) {
+            const $this = $(this);
+            const dataId = $this.data('id');
+
+            salesInvoiceSync(dataId, {
+                isShowPopUpError: 1,
+                beforeSend: () => {
+                    showLoadingAlert()
+                },
+                success: () => {
+                    Swal.close();
+                    
+                }
+            });
+        });
 
         $(document).on('click', '[id^=histories-edit-transaction-toggle-]', function (e) {
             e.preventDefault();
@@ -5650,9 +5687,9 @@
                     });
         }
 
-        const salesInvoicesSync = () => {
+        const salesInvoicesSync = (id) => {
             return  $.ajax({
-                        url: BASE_URL+'/api/v1/sync/sales_invoices',
+                        url: BASE_URL+'/api/v1/sync/sales_invoices/'+id,
                         method: 'POST',
                         contentType: 'application/json',
                         headers: { 
@@ -5660,8 +5697,6 @@
                             'company-id': COMPANY_ID
                         },
                     });
-
-            
         }
 
         const accountingMastersSync = () => {
@@ -5801,7 +5836,7 @@
                     mediaSync
                 ],
                 transaction: [
-                    salesInvoicesSync
+                    // salesInvoicesSync
                 ],
                 product_stock: [
                     productStockSync
