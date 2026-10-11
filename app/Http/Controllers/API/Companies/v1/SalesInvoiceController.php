@@ -8,6 +8,7 @@ use Illuminate\Support\Facades\DB;
 use App\Http\Controllers\Controller;
 use App\Models\Companies\v1\SalesInvoices;
 use Illuminate\Http\Request;
+use Illuminate\Support\Str;
 use Throwable;
 
 class SalesInvoiceController extends Controller
@@ -119,7 +120,7 @@ class SalesInvoiceController extends Controller
         return json_encode($json_data);
     }
 
-    public function syncToServer()
+    public function syncToServer(Request $request, $id)
     {
         if (!NetworkHelper::isConnected()) {
             return response()->json([
@@ -128,65 +129,84 @@ class SalesInvoiceController extends Controller
             ], 400);
         }
 
-        $lock = Cache::lock('sync_sales_invoices_to_server', 600);
+        if (!$id) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Transaksi tidak ditemukan'
+            ], 400);
+        }
+        
+        $lock = Cache::lock('sync_sales_invoice_to_server:' . $id, 120);
         if (!$lock->get()) {
             return response()->json([
                 'status' => 'error',
-                'message' => 'Sync sedang berjalan'
+                'message' => 'Transaksi sedang disinkronkan'
             ], 409);
         }
 
-        $url = config('services.admin_credentials.server_url') . '/api/v1/sync/sync_sales_invoices';
-        $synced = 0;
-        $failed = [];
-
         try {
-            SalesInvoices::query()
-                ->with([
-                    'sales_invoice_details',
-                    'point_histories',
-                ])
+            $invoice = SalesInvoices::with(['sales_invoice_details', 'point_histories'])
+                ->where('id', $id)
                 ->where('is_need_sync', 1)
                 ->where('status', '!=', 'draft')
-                ->orderBy('id')
-                ->chunkById(50, function ($invoices) use ($url, &$synced, &$failed) {
-                    $response = NetworkHelper::postWithToken($url, $invoices->toArray());
-                    $status = $response['status'] ?? 'error';
+                ->first();
 
-                    $confirmed = collect($response['data'] ?? [])
-                        ->filter(fn ($row) => !empty($row['local_id']) && !empty($row['number']));
+            if (!$invoice) {
+                return response()->json([
+                    'status' => 'error',
+                    'message' => 'Transaksi tidak ditemukan atau masih draft'
+                ], 404);
+            }
 
-                    if ($confirmed->isNotEmpty()) {
-                        DB::connection('pgsql_companies')->transaction(function () use ($confirmed, &$synced) {
-                            foreach ($confirmed as $row) {
-                                $synced += SalesInvoices::where('id', $row['local_id'])->update([
-                                    'number' => $row['number'],
-                                    'is_need_sync' => $row['is_need_sync'] ?? 0,
-                                ]);
-                            }
-                        });
-                    }
+            if (!$invoice->is_need_sync) {
+                return response()->json([
+                    'status' => 'success',
+                    'message' => 'Transaksi sudah tersinkron',
+                    'number' => $invoice->number,
+                ]);
+            }
 
-                    foreach ($response['errors'] ?? [] as $err) {
-                        $failed[] = $err;
-                    }
+            if (!$invoice->uuid) {
+                $invoice->update([
+                    'uuid' => Str::uuid(),
+                ]);
 
-                    if ($status === 'error') {
-                        $failed[] = ['error' => $response['message'] ?? 'Gagal sync ke server'];
-                        return false;
-                    }
-                });
+                $invoice = SalesInvoices::with(['sales_invoice_details', 'point_histories'])
+                    ->where('id', $id)
+                    ->first();
+            }
+
+            $url = config('services.admin_credentials.server_url') . '/api/v1/sync/sync_sales_invoices';
+
+            try {
+                $response = NetworkHelper::postWithToken($url, $invoice->toArray());
+            } catch (\Throwable $e) {
+                $response = ['status' => 'error', 'message' => $e->getMessage()];
+            }
+
+            $confirmed = collect($response['data'] ?? [])
+                ->first(fn ($row) => ($row['local_id'] ?? null) == $invoice->id && !empty($row['number']));
+
+            if (($response['status'] ?? 'error') === 'success' && $confirmed) {
+                $invoice->update([
+                    'number' => $confirmed['number'],
+                    'is_need_sync' => $confirmed['is_need_sync'] ?? 0,
+                ]);
+
+                return response()->json([
+                    'status' => 'success',
+                    'message' => 'Sync berhasil',
+                    'number' => $confirmed['number'],
+                ]);
+            }
+
+            return response()->json([
+                'status' => 'error',
+                'message' => $response['message'] ?? 'Gagal sync ke server',
+                'errors' => $response['errors'] ?? [],
+            ], 500);
         } finally {
-
+            $lock->release();
         }
-
-        $lock->release();
-
-        return response()->json([
-            'status' => empty($failed) ? 'success' : 'partial',
-            'message' => empty($failed) ? 'Sync selesai' : 'Sync selesai sebagian, ada data yang gagal',
-            'synced' => $synced,
-            'errors' => $failed,
-        ]);
     }
 }

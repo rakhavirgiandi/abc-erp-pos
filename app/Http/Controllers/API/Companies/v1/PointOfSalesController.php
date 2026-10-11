@@ -215,7 +215,7 @@ class PointOfSalesController extends Controller
             return response()->json(['status' => 'error', 'message' => 'Receipt Not found'], 404);
         }
 
-        $data = SalesInvoices::getById($find_sales_invoice['id'])->original;
+        $data = SalesInvoices::getById($find_sales_invoice['id'])->original->toArray();
 
         $paper_size = '58';
         

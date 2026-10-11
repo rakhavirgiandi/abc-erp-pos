@@ -614,7 +614,7 @@ Route::middleware('activity-log')->group(function () {
             Route::get('/variants', [VariantController::class, 'syncToLocal'])->name('sync.variants');
             Route::get('/variant_options', [VariantOptionController::class, 'syncToLocal'])->name('sync.variant_options');
             Route::get('/warehouses', [WarehouseController::class, 'syncToLocal'])->name('sync.warehouses');
-            Route::post('/sales_invoices', [SalesInvoiceController::class, 'syncToServer'])->name('sync.post_sales_invoices');
+            Route::post('/sales_invoices/{id}', [SalesInvoiceController::class, 'syncToServer'])->name('sync.post_sales_invoices');
             Route::get('/stock_cards', [ProductClosingController::class, 'getStockCard'])->name('sync.stock_card');
             Route::get('/product_catalogs', [ProductCatalogController::class, 'syncToLocal'])->name('sync.product_catalogs');
             Route::get('/point_histories', [PointHistoryController::class, 'syncToLocal'])->name('sync.point_histories');

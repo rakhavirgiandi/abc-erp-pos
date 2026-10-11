@@ -17,10 +17,15 @@
                         <a class="nav-item nav-link flex-fill text-center fs-5" style="padding: 1.4rem 1rem" id="histories-done-tab" data-bs-toggle="tab" href="#histories-done-tab-content" aria-selected="false" role="tab" tabindex="-1" data-name="done">Done</a>
                         <a class="nav-item nav-link flex-fill text-center fs-5" style="padding: 1.4rem 1rem" id="histories-hold-tab" data-bs-toggle="tab" href="#histories-hold-tab-content" aria-selected="false" role="tab" tabindex="-1" data-name="hold">Hold</a>
                     </div>
-                    <div style="padding: .75rem 1rem">
-                        <div class="position-relative w-100">
-                            <input type="text" class="form-control" id="input-search-histories" placeholder="Cari Transaksi">
-                            <i class="mdi mdi-magnify position-absolute top-50 end-0 translate-middle-y me-3 text-muted fs-3"></i>
+                    <div class="w-100 d-flex">
+                        <div style="padding: .75rem .5rem .75rem 1rem" class="d-flex">
+                            <input class="form-check-input align-self-center" type="checkbox" id="sync-all-transaction-check" data-bs-toggle="tooltip" data-bs-original-title="Transaksi terbaru (Maks 20)">
+                        </div>
+                        <div style="padding: .75rem 1rem .75rem .5rem" class="flex-1">
+                            <div class="position-relative w-100">
+                                <input type="text" class="form-control" id="input-search-histories" placeholder="Cari Transaksi">
+                                <i class="mdi mdi-magnify position-absolute top-50 end-0 translate-middle-y me-3 text-muted fs-3"></i>
+                            </div>
                         </div>
                     </div>
                 </div>

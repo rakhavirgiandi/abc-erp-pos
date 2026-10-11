@@ -5,6 +5,7 @@ namespace App\Models\Companies\v1;
 use App\Helpers\AutoNumberHelper;
 use App\Helpers\GlobalHelper;
 use App\Helpers\ModelDetailHelper;
+use App\Http\Controllers\API\Companies\v1\SalesInvoiceController;
 use DB;
 use Illuminate\Support\Str;
 use App\Helpers\ModelHelper;
@@ -164,6 +165,7 @@ class SalesInvoices extends Model
 		'created_at',
 		'updated_at',
 		'deleted_at',
+        'uuid'
     ];
 
     /**
@@ -307,6 +309,7 @@ class SalesInvoices extends Model
                 'is_from_pos' => ['column' => $model->table.'.is_from_pos', 'alias' => 'is_from_pos', 'type' => 'int'],
                 'bank_account_id' => ['column' => $model->table.'.bank_account_id', 'alias' => 'bank_account_id', 'type' => 'int'],
                 'is_need_sync' => ['column' => $model->table.'.is_need_sync', 'alias' => 'is_need_sync', 'type' => 'int'],
+                'uuid' => ['column' => $model->table.'.uuid', 'alias' => 'uuid', 'type' => 'string'],
             ],
             'join' => [
                 ['table' => 'contacts as contact_customer', 'type' => 'left', 'on' => ['contact_customer.id', '=', $model->table . '.customer_id']],
