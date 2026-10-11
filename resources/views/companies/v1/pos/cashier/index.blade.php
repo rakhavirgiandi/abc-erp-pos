@@ -5079,7 +5079,7 @@
                         $('#input-search-product').focus();
 
                         if ('{{ config('services.is_onpremise') }}') {
-                            // await startSyncInvoices([res.data?.id]);
+                            await startSyncInvoices([res.data?.id]);
                         }
                     });
                 },
