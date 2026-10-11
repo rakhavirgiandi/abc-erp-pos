@@ -2,8 +2,13 @@
     <div class="modal-dialog modal-fullscreen modal-dialog-centered">
         <div class="modal-content" style="max-height: 100vh">
             <div class="modal-header">
-                <button type="button" class="btn btn-icon btn-label-light me-3" style="border: 0px !important" data-bs-dismiss="modal"><i class="fa fa-arrow-left"></i></button>
-                <h5 class="modal-title fs-4" id="histories-modal-title">Riwayat</h5>
+                <div class="d-flex justify-content-between w-100">
+                    <div class="d-flex">
+                        <button type="button" class="btn btn-icon btn-label-light me-3" style="border: 0px !important" data-bs-dismiss="modal"><i class="fa fa-arrow-left"></i></button>
+                        <h5 class="modal-title fs-4" id="histories-modal-title">Riwayat</h5>
+                    </div>
+                    <button class="btn btn-icon btn-label-light d-none" id="bulk-sync-button"><i class="fa fa-cloud-upload-alt"></i></button>
+                </div>
             </div>
             <div class="modal-body p-0" style="overflow: hidden; display: flex; flex-direction: column">
                 <div>

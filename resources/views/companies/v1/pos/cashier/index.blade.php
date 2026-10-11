@@ -501,6 +501,25 @@
     @include('companies.v1.pos.cashier.modal.stock')
     @include('companies.v1.pos.cashier.modal.sync')
     @include('companies.v1.pos.cashier.modal.access_denied')
+    <div class="toast-container position-fixed bottom-0 start-0 p-3">
+        <div id="transaction-sync-toast" class="toast align-items-center text-white bg-secondary border-0" role="alert" aria-live="assertive" aria-atomic="true">
+            <div class="d-flex">
+                <div class="toast-body w-100">
+                    <span>Sedang melakukan sinkron...</span>
+                </div>
+                <span id="transaction-sync-progress" class="align-self-center me-3"></span>
+            </div>
+        </div>
+    </div>
+    <div class="toast-container position-fixed bottom-0 start-0 p-3">
+        <div id="transaction-sync-notification-toast" class="toast align-items-center text-white bg-success border-0" role="alert" aria-live="assertive" aria-atomic="true">
+            <div class="d-flex">
+                <div class="toast-body w-100">
+                </div>
+                <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast" aria-label="Close"></button>
+            </div>
+        </div>
+    </div>
 @endsection
 
 @section('script')
@@ -515,6 +534,7 @@
     <script src="{{ asset('assets/libs/datatables.net-buttons/js/dataTables.buttons.min.js')}}"></script>
     <script src="{{ asset('assets/libs/datatables.net-buttons-bs5/js/buttons.bootstrap5.min.js')}}"></script>
     <script src="{{ asset('assets/libs/bootstrap-touchspin/jquery.bootstrap-touchspin.min.js')}}"></script>
+    <script src="{{ asset('assets/js/ui/toaster.init.js') }}"></script>
 
 <script>
     $(function() {
@@ -748,6 +768,12 @@
             });
         }
 
+        function clearSelectedHistories() {
+            $('[id^=sales-invoice-sync-check-]:checked').prop('checked', false);
+            $('.sales-invoice-bulk-sync:checked').prop('checked', false);
+            $('#bulk-sync-button').addClass('d-none')
+        }
+
         const salesInvoiceSync = (id, props = {}) => {
             $.ajax({
                 type: 'post',
@@ -782,6 +808,123 @@
                 }
             })
         }
+
+        const salesInvoiceSyncAsync = (id, props = {}) => {
+            return new Promise((resolve) => {
+                salesInvoiceSync(id, {
+                    ...props,
+                    success: (res) => resolve({ id, ok: true, res }),
+                    error: (jqXHR) => resolve({ id, ok: false, error: jqXHR }),
+                })
+            })
+        }
+
+        const salesInvoiceSyncBulk = async (ids, { onProgress, onDone, ...props } = {}) => {
+            const total = ids.length
+            const results = []
+                
+            for (let i = 0; i < total; i++) {
+                const result = await salesInvoiceSyncAsync(ids[i], props)
+                results.push(result)
+            
+                if (typeof onProgress === 'function') {
+                    onProgress(i + 1, total, result)   // 3/10
+                }
+            }
+        
+            if (typeof onDone === 'function') {
+                onDone(results)
+            }
+        
+            return results
+        }
+        
+        $(document).on('click', '#bulk-sync-button', async function () {
+
+            $(this).prop('disabled', true);
+
+            const salesInvoiceIds = $('[id^=sales-invoice-sync-check-]');
+            const ids = $('[id^=sales-invoice-sync-check-]:checked')
+                .map(function () {
+                    return $(this).data('id');
+                }).get();
+
+            if (!ids.length) {
+                Swal.fire('Perhatian', 'Silahkan pilih transaksi', 'warning');
+                return;
+            }
+
+            const toast = bootstrap.Toast.getOrCreateInstance(
+                document.getElementById('transaction-sync-toast'),
+                {
+                    autohide: false,
+                    delay: 3000
+                }
+            );
+            
+            toast.show();
+
+            const results = await salesInvoiceSyncBulk(ids, {
+                onProgress: (current, total) => {
+                    $('#transaction-sync-progress').html(`${current}/${total}`);
+                },
+            });
+
+            const failed = results.filter(r => !r.ok);
+
+            toast.hide();
+
+            const resultToast = bootstrap.Toast.getOrCreateInstance(
+                document.getElementById('transaction-sync-notification-toast'),
+                {
+                    autohide: false,
+                    delay: 3000
+                }
+            );
+
+            resultToast.show();
+
+            const successLength = results.length - failed.length;
+
+            if (failed.length == 0) {
+                $('#transaction-sync-notification-toast').removeClass('bg-danger');
+                $('#transaction-sync-notification-toast').removeClass('bg-warning');
+                $('#transaction-sync-notification-toast').addClass('bg-success');
+            } else if (successLength == 0) {
+                $('#transaction-sync-notification-toast').removeClass('bg-success');
+                $('#transaction-sync-notification-toast').removeClass('bg-warning');
+                $('#transaction-sync-notification-toast').addClass('bg-danger');
+            } else  {
+                $('#transaction-sync-notification-toast').removeClass('bg-success');
+                $('#transaction-sync-notification-toast').addClass('bg-warning');
+                $('#transaction-sync-notification-toast').removeClass('bg-danger');
+            }
+
+            $('#transaction-sync-notification-toast .toast-body').html(`${successLength} berhasil, ${failed.length} gagal`
+            + (failed.length ? `<br><small>ID gagal: ${failed.map(f => f.id).join(', ')}</small>` : ''))
+
+            $(this).prop('disabled', false);
+            $(this).addClass('d-none');
+
+            loadHistories({
+                refresh: true
+            });
+                
+            // Swal.fire({
+            //     title: 'Mohon Tunggu',
+            //     html: `
+            //         <div style="margin-bottom: 1rem;">Sedang memproses permintaan anda</div>
+            //         <div id="sync-progress-text" class="mb-2">0/${ids.length}</div>
+            //         <div class="progress">
+            //             <div class="progress-bar bg-secondary" id="sync-progress-bar" style="width: 0%"></div>
+            //         </div>`,
+            //     showConfirmButton: false,
+            //     allowOutsideClick: false,
+            //     allowEscapeKey: false,
+            // });
+
+
+        });
 
         const sync = (props = {}) => {
             $.ajax({
@@ -4923,9 +5066,9 @@
                         if (result.isConfirmed) {
                             printReceipt(res?.data?.ref_number);
                         }
-                        if ('{{ config('services.is_onpremise') }}') {
-                            salesInvoiceSync(res?.data?.id)
-                        }
+                        // if ('{{ config('services.is_onpremise') }}') {
+                        //     salesInvoiceSync(res?.data?.id)
+                        // }
                         clear({
                             setDefaultCustomer: true
                         });
@@ -4972,7 +5115,11 @@
         });
 
         $(document).on('shown.bs.modal', '#histories-modal', function () {
-            $('#input-search-histories').focus()
+            $('#input-search-histories').focus();
+        });
+
+        $(document).on('hidden.bs.modal', '#histories-modal', function () {
+            clearSelectedHistories();
         });
 
         $('.histories-container').on('scroll', function () {
@@ -5112,7 +5259,7 @@
                             const dateMoment = moment(item.date);
                             const dayKey = dateMoment.format('YYYY-MM-DD');
 
-                            let bulkSyncChecked = '<input class="form-check-input me-3 sales-invoice-bulk-sync" data-date="" data-date="'+dayKey+'" type="checkbox" value="">';
+                            let bulkSyncChecked = '<input class="form-check-input me-3 sales-invoice-bulk-sync" data-tab="'+activeTab+'" data-date="'+dayKey+'" type="checkbox" value="">';
 
                             if (prevDay !== dayKey) {
                                 html += '<div data-day="'+dayKey+'" class="bg-body fw-bold text-body-secondary" style="width: 100%; padding: .5rem 1.5rem .5rem 1rem; font-family: \'Lexend\', sans-serif;">';
@@ -5147,7 +5294,7 @@
                             html +=     '<div class="d-flex align-items-center" style="padding: 0 1rem;">';
                             if (item.status != 'draft' && item.is_need_sync == 1) {
                                 html +=     '   <div class="from-check">';
-                                html +=     '       <input class="form-check-input" type="checkbox" value="" data-date="'+dayKey+'" id="sales-invoice-sync-check-'+item.id+'">';
+                                html +=     '       <input class="form-check-input" type="checkbox" value="" data-date="'+dayKey+'" data-id="'+item.id+'" id="sales-invoice-sync-check-'+item.id+'">';
                                 html +=     '   </div>';
                             }
 
@@ -5196,6 +5343,53 @@
         $(document).on('change', '.sales-invoice-bulk-sync', function (e) {
             const $this = $(this);
             const dataDate = $this.data('date');
+            const dataTab = $this.data('tab');
+
+            const isChecked = $this.is(':checked');
+
+            const totalChecked = $('[id^=sales-invoice-sync-check-]:checked').length;
+
+            if (totalChecked > 20) {
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Gagal',
+                    html: 'Tidak boleh melebihi 20 transaksi'
+                });
+
+                $this.prop('checked', false);
+
+                return
+            }
+
+            $('#histories-'+dataTab+'-tab-content').find('[id^=sales-invoice-sync-check-][data-date="'+dataDate+'"]').prop('checked', isChecked).trigger('change');
+        });
+
+        $(document).on('change', '[id^=sales-invoice-sync-check-]', function () {
+            const $this = $(this);
+            const activeHistoriesTab = getActiveHistoriesTab();
+
+            const totalChecked = $('[id^=sales-invoice-sync-check-]:checked').length;
+
+            if (totalChecked > 20) {
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Gagal',
+                    html: 'Tidak boleh melebihi 20 transaksi'
+                });
+
+                $this.prop('checked', false);
+
+                return
+            }
+
+            const allNotChecked = $('#histories-'+activeHistoriesTab+'-tab-content [id^=sales-invoice-sync-check-]').length == $('#histories-'+activeHistoriesTab+'-tab-content [id^=sales-invoice-sync-check-]:not(:checked)').length
+
+            if (allNotChecked) {
+                $('#bulk-sync-button').addClass('d-none');
+                return
+            }
+
+            $('#bulk-sync-button').removeClass('d-none');
         });
 
         $(document).on('click', '[id^=sync-sales-invoice-]', function (e) {
@@ -5209,7 +5403,7 @@
                 },
                 success: () => {
                     Swal.close();
-                    
+
                 }
             });
         });
