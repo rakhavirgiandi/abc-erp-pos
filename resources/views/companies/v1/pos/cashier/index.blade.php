@@ -861,7 +861,7 @@
             const failed = results.filter(r => !r.ok);
             
             let errors = failed.map((err) => {
-                return '#'+loadHistoriesMap.get(err.id)?.ref_number+' '+err.error.responseJSON?.message;
+                return (loadHistoriesMap.get(err.id)?.ref_number ? '#'+loadHistoriesMap.get(err.id)?.ref_number : '')+' '+err.error.responseJSON?.message;
             });
 
             toast.hide();
@@ -922,6 +922,7 @@
                 loadHistories({
                     refresh: true
                 });
+                resetHistoriesState();
             } else {
                 resetHistoriesState();
             }
@@ -5078,7 +5079,7 @@
                         $('#input-search-product').focus();
 
                         if ('{{ config('services.is_onpremise') }}') {
-                            await startSyncInvoices([res.data?.id]);
+                            // await startSyncInvoices([res.data?.id]);
                         }
                     });
                 },
@@ -5134,7 +5135,13 @@
             const docHeight = el.scrollHeight;
         
             if (scrollTop + windowHeight >= docHeight - 100) {
-                loadHistories();
+                loadHistories({
+                    callback: () => {
+                        if ($('#sync-all-transaction-check').is(':checked') && $('[id^=sales-invoice-sync-check-]').length <= 20) {
+                            $('[id^=sales-invoice-sync-check-]').slice(0, 20).prop('checked', true)
+                        }
+                    }
+                });
             }
         });
 
@@ -5190,8 +5197,11 @@
                 page: historiesPages[activeTab],
                 is_active: 1,
                 is_from_pos: 1,
-                created_by: '{{ config('user_companies.id') }}',
                 ...props?.params
+            }
+
+            if ('{{ !config('user_companies.is_supervisor') && !config('user_companies.details')->hasRole('SuperAdmin') }}') {
+                req.created_by = '{{ config('user_companies.id') }}';
             }
 
             if (activeTab === 'pending') {
@@ -5297,15 +5307,8 @@
                             html += '<div class="d-flex border-bottom">';
                             html +=     '<div class="d-flex align-items-center" style="padding: 0 1rem;">';
                             if (item.status != 'draft' && item.is_need_sync == 1) {
-
-                                let isCheckedSync = false;
-
-                                if ($('#sync-all-transaction-check').is(':checked') && $('[id^=sales-invoice-sync-check-]:checked').length <= 20) {
-                                    isCheckedSync = true;
-                                }
-
                                 html +=     '   <div class="from-check">';
-                                html +=     '       <input class="form-check-input" type="checkbox" value="" data-date="'+dayKey+'" data-id="'+item.id+'" id="sales-invoice-sync-check-'+item.id+'" '+(isCheckedSync ? 'checked' : '')+'>';
+                                html +=     '       <input class="form-check-input" type="checkbox" value="" data-date="'+dayKey+'" data-id="'+item.id+'" id="sales-invoice-sync-check-'+item.id+'">';
                                 html +=     '   </div>';
                             }
 
@@ -5314,7 +5317,7 @@
                             html +=         '<div>';
                             html +=             '<h6 class="mb-1 text-secondary">'+item?.customer_name+'</h6>';
                             html +=             '<p class="mb-2 text-body-secondary small">'+item?.ref_number+'</p>';
-                            html +=             '<p class="mb-0 text-body-secondary" style="font-size: 0.7rem;">'+dateMoment.format('DD MMM YYYY')+'</p>';
+                            html +=             '<p class="mb-0 text-body-secondary" style="font-size: 0.7rem;">'+dateMoment.format('DD MMM YYYY')+' • Dibuat oleh '+item?.created_by_name+'</p>';
                             html +=         '</div>';
                             html +=         '<div class="text-end">';
                             html +=             '<h5 style="font-size: .95rem;">'+parseFloat(item?.total).toLocaleString('en')+'</h5>';
@@ -5346,7 +5349,6 @@
                     
                     loadHistoriesIsLoadings[activeTab] = false;
                     
-
                     if (props?.callback && typeof props?.callback === 'function') {
                         props.callback(res);
                     }
@@ -5363,7 +5365,7 @@
 
             const totalChecked = $('[id^=sales-invoice-sync-check-]:checked').length;
 
-            if (totalChecked > 20) {
+            if (isChecked && totalChecked > 20) {
                 Swal.fire({
                     icon: 'error',
                     title: 'Gagal',
@@ -5372,10 +5374,17 @@
 
                 $this.prop('checked', false);
 
-                return
-            }
+                console.log('hello world');
+                
 
-            $('#histories-'+dataTab+'-tab-content').find('[id^=sales-invoice-sync-check-][data-date="'+dataDate+'"]').prop('checked', isChecked).trigger('change');
+                return;
+            } else {
+                if (isChecked) {
+                    $('#histories-'+dataTab+'-tab-content').find('[id^=sales-invoice-sync-check-][data-date="'+dataDate+'"]').slice(0, 20).prop('checked', true).trigger('change');
+                } else {
+                    $('#histories-'+dataTab+'-tab-content').find('[id^=sales-invoice-sync-check-][data-date="'+dataDate+'"]').prop('checked', false).trigger('change');
+                }
+            }
         });
 
         $(document).on('change', '[id^=sales-invoice-sync-check-]', function () {
@@ -5398,11 +5407,11 @@
             }
 
             const allNotChecked = $('#histories-'+activeHistoriesTab+'-tab-content [id^=sales-invoice-sync-check-]').length == $('#histories-'+activeHistoriesTab+'-tab-content [id^=sales-invoice-sync-check-]:not(:checked)').length
-            const allChecked = $('#histories-'+activeHistoriesTab+'-tab-content [id^=sales-invoice-sync-check-]').length == $('#histories-'+activeHistoriesTab+'-tab-content [id^=sales-invoice-sync-check-]:checked').length
+            // const allChecked = $('#histories-'+activeHistoriesTab+'-tab-content [id^=sales-invoice-sync-check-]').length == $('#histories-'+activeHistoriesTab+'-tab-content [id^=sales-invoice-sync-check-]:checked').length
             const allDateChecked = $('#histories-'+activeHistoriesTab+'-tab-content [id^=sales-invoice-sync-check-][data-date='+dataDate+']').length == $('#histories-'+activeHistoriesTab+'-tab-content [id^=sales-invoice-sync-check-][data-date='+dataDate+']:checked').length
             
             $('.sales-invoice-bulk-sync[data-date='+dataDate+']').prop('checked', allDateChecked);
-            $('#sync-all-transaction-check').prop('checked', allChecked);
+            $('#sync-all-transaction-check').prop('checked', $('#histories-'+activeHistoriesTab+'-tab-content [id^=sales-invoice-sync-check-]:checked').length <= 20);
 
             if (allNotChecked) {
                 $('#bulk-sync-button').addClass('d-none');

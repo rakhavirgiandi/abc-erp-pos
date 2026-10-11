@@ -801,7 +801,9 @@ class SalesInvoices extends Model
                         $sales_invoice_detail['qty'] = GlobalHelper::convertSeparator($sales_invoice_detail['qty'] ?? 0, ',');
                         $sales_invoice_detail['discount_amount'] = GlobalHelper::convertSeparator($sales_invoice_detail['discount_amount'] ?? 0, ',');
                         $sales_invoice_detail['tax_amount'] = GlobalHelper::convertSeparator($sales_invoice_detail['tax_amount'] ?? 0, ',');
-    
+                        $sales_invoice_detail['created_at'] = now();
+                        $sales_invoice_detail['updated_at'] = now();
+
                         if (isset($sales_invoice_detail['id']) && $sales_invoice_detail['id']) {
                             $sales_invoice_detail['deleted_at'] = null;
                             unset($sales_invoice_detail['created_at']);
@@ -905,7 +907,9 @@ class SalesInvoices extends Model
                     $sales_invoice_detail['unit_price'] = GlobalHelper::convertSeparator($sales_invoice_detail['unit_price'] ?? 0, ',');
                     $sales_invoice_detail['discount_amount'] = GlobalHelper::convertSeparator($sales_invoice_detail['discount_amount'] ?? 0, ',');
                     $sales_invoice_detail['tax_amount'] = GlobalHelper::convertSeparator($sales_invoice_detail['tax_amount'] ?? 0, ',');
-    
+                    $sales_invoice_detail['created_at'] = now();
+                    $sales_invoice_detail['updated_at'] = now();
+                    
                     $generate_reward_point_items[] = [
                         "price" => GlobalHelper::convertSeparator($sales_invoice_detail['unit_price'] ?? 0, ','),
                         "unit_id" => $sales_invoice_detail["unit_id"],
@@ -1003,5 +1007,5 @@ class SalesInvoices extends Model
             DB::connection('pgsql_companies')->rollBack();
             throw $th;
         }
-    }    
+    }
 }
