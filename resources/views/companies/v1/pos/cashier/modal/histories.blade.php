@@ -7,7 +7,7 @@
                         <button type="button" class="btn btn-icon btn-label-light me-3" style="border: 0px !important" data-bs-dismiss="modal"><i class="fa fa-arrow-left"></i></button>
                         <h5 class="modal-title fs-4" id="histories-modal-title">Riwayat</h5>
                     </div>
-                    <button class="btn btn-icon btn-label-light d-none" id="bulk-sync-button"><i class="fa fa-cloud-upload-alt"></i></button>
+                    <button class="btn btn-icon btn-label-light d-none" id="bulk-sync-button" data-bs-toggle="tooltip" data-bs-original-title="Sinkron ke server"><i class="fa fa-cloud-upload-alt"></i></button>
                 </div>
             </div>
             <div class="modal-body p-0" style="overflow: hidden; display: flex; flex-direction: column">

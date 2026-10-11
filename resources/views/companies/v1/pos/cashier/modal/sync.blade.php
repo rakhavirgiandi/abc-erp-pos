@@ -24,13 +24,6 @@
                     <div class="col-4">
                         <div class="mb-3">
                             <div class="form-check">
-                                <input class="form-check-input sync-check" value="transaction" type="checkbox" id="sync-transaction-check"><label class="form-check-label" for="sync-transaction-check">Transaksi</label>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="col-4">
-                        <div class="mb-3">
-                            <div class="form-check">
                                 <input class="form-check-input sync-check" value="customer" type="checkbox" id="sync-customer-check"><label class="form-check-label" for="sync-customer-check">Pelanggan</label>
                             </div>
                         </div>

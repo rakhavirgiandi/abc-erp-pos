@@ -5431,20 +5431,25 @@
             }
         });
 
-        $(document).on('click', '[id^=sync-sales-invoice-]', function (e) {
+        $(document).on('click', '[id^=sync-sales-invoice-]', async function (e) {
             const $this = $(this);
             const dataId = $this.data('id');
 
-            salesInvoiceSync(dataId, {
-                isShowPopUpError: 1,
-                beforeSend: () => {
-                    showLoadingAlert()
-                },
-                success: () => {
-                    Swal.close();
+            await startSyncInvoices([dataId]);
 
-                }
-            });
+            $(this).prop('disabled', false);
+            clearSelectedHistories();
+
+            if ($('#histories-modal').hasClass('show')) {
+                $('#histories-done-tab').tab('show');
+    
+                loadHistories({
+                    refresh: true
+                });
+                resetHistoriesState();
+            } else {
+                resetHistoriesState();
+            }
         });
 
         $(document).on('click', '[id^=histories-edit-transaction-toggle-]', function (e) {
