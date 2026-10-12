@@ -190,6 +190,7 @@ class PostgresWindowsService
         $originalPort = $this->pgPort;
 
         if (! $this->isPortUsedByOther($this->pgPort)) {
+            localSettings()->set('database.port', $this->pgPort);
             return [$this->pgPort, false, $originalPort];
         }
 
