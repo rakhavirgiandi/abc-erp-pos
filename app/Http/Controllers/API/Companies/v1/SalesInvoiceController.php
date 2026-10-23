@@ -227,6 +227,13 @@ class SalesInvoiceController extends Controller
             'ids.*' => 'required',
         ])['ids'];
 
+        if (!NetworkHelper::isConnected()) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Tidak ada koneksi'
+            ], 400);
+        }
+
         $device_token = config('device_token');
         $db_company = config('companies.db_database');
 
