@@ -17,8 +17,16 @@ class SyncInvoice implements ShouldQueue
 {
     use Dispatchable, InteractsWithQueue, Queueable;
 
-    public $tries = 3;
+    public $tries = 0;
+
+    public $maxExceptions = 3;
+
     public $backoff = [10, 60, 300];
+
+    public function retryUntil(): \DateTimeInterface
+    {
+        return now()->addMinutes(30);
+    }
 
     public function __construct(public $id, public $company_db, public $access_token)
     {
@@ -27,7 +35,7 @@ class SyncInvoice implements ShouldQueue
 
     public function middleware(): array
     {
-        return [(new WithoutOverlapping($this->id))->releaseAfter(10)];
+        return [(new WithoutOverlapping($this->id))->releaseAfter(10)->expireAfter(120)];
     }
 
     public function handle(): void
@@ -65,13 +73,11 @@ class SyncInvoice implements ShouldQueue
             $this->log('info', 'Sync invoice berhasil', ['number' => $confirmed['number']]);
         } catch (Throwable $e) {
             // Percobaan gagal tapi masih akan di-retry
-            if ($this->attempts() < $this->tries) {
-                $this->log('warning', 'Sync invoice gagal, akan di-retry', [
-                    'error' => $e->getMessage(),
-                    'file'  => $e->getFile(),
-                    'line'  => $e->getLine(),
-                ]);
-            }
+            $this->log('warning', 'Sync invoice gagal, akan di-retry', [
+                'error' => $e->getMessage(),
+                'file'  => $e->getFile(),
+                'line'  => $e->getLine(),
+            ]);
 
             throw $e;
         }
