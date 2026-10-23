@@ -314,12 +314,18 @@
     z-index: 1001;
     background: var(--bs-secondary-bg);
     position: fixed;
-    top: calc(var(--bs-app-header-height) + 38px);
+    top: var(--bs-app-header-height);
     bottom: 0;
     margin-top: 0;
     left: 0;
     height: 100%;
 }
+
+[data-platform='desktop'][data-mode="pos-settings"] #sidebar-settings {
+    top: calc(var(--bs-app-header-height) + 38px);
+}
+
+
 
 [data-mode="pos-settings"] #sidebar-settings .user-information {
     padding: .5rem 1rem;

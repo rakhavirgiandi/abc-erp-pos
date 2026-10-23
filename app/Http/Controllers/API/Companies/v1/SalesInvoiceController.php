@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\API\Companies\v1;
 
 use App\Helpers\NetworkHelper;
+use App\Jobs\SyncInvoice;
 use Cache;
 use Illuminate\Support\Facades\DB;
 use App\Http\Controllers\Controller;
@@ -10,6 +11,7 @@ use App\Models\Companies\v1\SalesInvoices;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
 use Throwable;
+use Illuminate\Support\Facades\Artisan;
 
 class SalesInvoiceController extends Controller
 {
@@ -135,6 +137,14 @@ class SalesInvoiceController extends Controller
                 'message' => 'Transaksi tidak ditemukan'
             ], 400);
         }
+
+        if ($request->is_running_in_background == 1) {
+            // return
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Transaksi tidak ditemukan'
+            ], 400);
+        }
         
         $lock = Cache::lock('sync_sales_invoice_to_server:' . $id, 120);
         if (!$lock->get()) {
@@ -208,5 +218,33 @@ class SalesInvoiceController extends Controller
         } finally {
             $lock->release();
         }
+    }
+
+    public function syncToServerJob(Request $request)
+    {
+        $ids = $request->validate([
+            'ids'   => 'required|array|min:1',
+            'ids.*' => 'required',
+        ])['ids'];
+
+        $device_token = config('device_token');
+        $db_company = config('companies.db_database');
+
+        foreach (array_unique($ids) as $id) {
+            SyncInvoice::dispatch($id, $db_company, $device_token['token']);
+        }
+
+        return response()->json(['status' => 'queued', 'count' => count(array_unique($ids))]);
+    }
+
+    public function syncStatus(Request $request)
+    {
+        $ids = (array) $request->input('ids', []);
+    
+        return response()->json([
+            'pending_ids' => SalesInvoices::whereIn('id', $ids)
+                ->where('is_need_sync', 1)
+                ->pluck('id'),
+        ]);
     }
 }

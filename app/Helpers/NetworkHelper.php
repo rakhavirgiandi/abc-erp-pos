@@ -36,7 +36,7 @@ class NetworkHelper
 
     public static function getAccessToken()
     {
-        $token = config('device_token.token');
+        $token = config('device_token.token') ?? (cache()->get('auth_context') ? cache()->get('auth_context')['access_token'] : null);
 
         if ($token) {
             return $token;
@@ -142,16 +142,16 @@ class NetworkHelper
         return $response;
     }
 
-    public static function postWithToken($url, $payload)
+    public static function postWithToken($url, $payload, $token = null)
     {
-        $token = self::getAccessToken();
+        $access_token = $token ? $token : self::getAccessToken();
 
-        $response = self::executePost($url, $payload, $token, $httpCode);
+        $response = self::executePost($url, $payload, $access_token, $httpCode);
 
-        if ($httpCode === 401) {
-            $token = self::requestNewToken();
-            $response = self::executePost($url, $payload, $token, $httpCode);
-        }
+        // if ($httpCode === 401) {
+        //     $access_token = self::requestNewToken();
+        //     $response = self::executePost($url, $payload, $access_token, $httpCode);
+        // }
 
         return json_decode($response, true);
     }
@@ -230,6 +230,6 @@ class NetworkHelper
 
     private static function getCompanyId()
     {
-        return config('company_id') ?? Session::get('_company_id') ?? (request()->header('company-id') ? request()->header('company-id')[0] : null);
+        return config('company_id') ?? Session::get('_company_id') ?? (request()->header('company-id') ? request()->header('company-id')[0] : null) ?? (cache()->get('auth_context') ? cache()->get('auth_context')['company_id'] : null);
     }
 }

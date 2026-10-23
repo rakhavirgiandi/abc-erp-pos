@@ -95,8 +95,17 @@ class APICompanies {
             //     'schema' => 'public',
             //     'sslmode' => 'prefer',
             // ]]);
-
+    
             config(['database.connections.pgsql_companies.database' => $company['db_database']]);
+
+            if (!config('services.is_onpremise')) {
+                config([
+                    'database.connections.pgsql_companies.host' => $company['db_host'],
+                    'database.connections.pgsql_companies.port' => $company['db_port'],
+                    'database.connections.pgsql_companies.username' => $company['db_username'],
+                    'database.connections.pgsql_companies.password' => $company['db_password'],
+                ]);
+            }
 
             $user = Users::select('users.*', 'roles.name as role_name')->where('email', $user_central->email)->join('roles', 'roles.id', '=', 'users.role_id')->first();
 
@@ -158,10 +167,12 @@ class APICompanies {
                 config(['default_accounts.'.$row['key'] => $row['value']]);
             }
 
-            $user_settings = UserSettings::where('user_id', '=', $user['id'])->get();
-
-            foreach ($user_settings->toArray() as $row) {
-                config(['local_user_settings.' . $row['key'] => $row['value']]);
+            if (config('services.is_onpremise')) {
+                $user_settings = UserSettings::where('user_id', '=', $user['id'])->get();
+    
+                foreach ($user_settings->toArray() as $row) {
+                    config(['local_user_settings.' . $row['key'] => $row['value']]);
+                }
             }
 
             config(['company_id' => $company_id]);

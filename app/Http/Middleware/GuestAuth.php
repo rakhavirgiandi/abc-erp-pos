@@ -13,8 +13,10 @@ class GuestAuth {
      * @return mixed
      */
     public function handle($request, Closure $next)
-    {
-        if ($request->session()->get('_login')) {
+    {   
+        cache()->forget('auth_context');
+        
+        if ($request->session()->has('_login')) {
             return redirect('/choose-company');
         }
             

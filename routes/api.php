@@ -495,6 +495,7 @@ Route::middleware('activity-log')->group(function () {
         Route::controller(SalesInvoiceController::class)->group(function() {
             Route::get('sales_invoices/{id?}', 'get')->name('v1.get.sales_invoices');
             Route::post('sales_invoices', 'post')->name('v1.post.sales_invoices');
+            Route::post('sales_invoices/sync_status', 'syncStatus')->name('v1.sync_status.sales_invoices');
             Route::patch('sales_invoices/{id}', 'patch')->name('v1.patch.sales_invoices');
             Route::put('sales_invoices/{id}', 'put')->name('v1.put.sales_invoices');
             Route::delete('sales_invoices/{id}', 'delete')->name('v1.delete.sales_invoices');
@@ -614,6 +615,7 @@ Route::middleware('activity-log')->group(function () {
             Route::get('/variants', [VariantController::class, 'syncToLocal'])->name('sync.variants');
             Route::get('/variant_options', [VariantOptionController::class, 'syncToLocal'])->name('sync.variant_options');
             Route::get('/warehouses', [WarehouseController::class, 'syncToLocal'])->name('sync.warehouses');
+            Route::post('/sales_invoices', [SalesInvoiceController::class, 'syncToServerJob'])->name('sync.job_sales_invoices');
             Route::post('/sales_invoices/{id}', [SalesInvoiceController::class, 'syncToServer'])->name('sync.post_sales_invoices');
             Route::get('/stock_cards', [ProductClosingController::class, 'getStockCard'])->name('sync.stock_card');
             Route::get('/product_catalogs', [ProductCatalogController::class, 'syncToLocal'])->name('sync.product_catalogs');

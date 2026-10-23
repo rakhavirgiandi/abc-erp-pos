@@ -14,11 +14,13 @@ use App\Models\Companies\v1\Projects;
 use App\Models\Companies\v1\UserSettings;
 use App\Models\Companies\v1\Warehouses;
 use App\Models\CompanyCredentials;
+use App\Models\DeviceTokens;
 use App\Models\Users as ModelsUsers;
 use App\Services\PostgresWindowsService;
 use Closure;
 use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Cache;
 
 class Companies
 {
@@ -48,16 +50,6 @@ class Companies
                 'schema' => 'public',
                 'sslmode' => 'prefer',
             ]]);
-
-            if (!config('services.is_onpremise') && config('database.connection_mode') == 'service') {
-                $pg_service = app(PostgresWindowsService::class);
-                $connection_info = $pg_service->getConnectionInfo();
-
-                config(['database.connections.pgsql_companies.host' => $connection_info['host']]);
-                config(['database.connections.pgsql_companies.port' => $connection_info['port']]);
-                config(['database.connections.pgsql_companies.username' => $connection_info['username']]);
-                config(['database.connections.pgsql_companies.password' => $connection_info['password']]);
-            }
 
             $settings = GeneralSettings::get();
             foreach ($settings->toArray() as $row) {
@@ -142,9 +134,26 @@ class Companies
                 return redirect('/choose-company');
             }
 
-            foreach ($company->toArray() as $k_company => $v_company) {
+            $company = $company->toArray();
+
+            foreach ($company as $k_company => $v_company) {
                 config(['companies.'.$k_company => $v_company]);
             }
+
+            $device_token = null;
+
+            if (config('services.is_onpremise')) {
+                $device_token = DeviceTokens::where('user_id', $request->session()->get('_id'))->where('expires_at', '>', now())->first();
+                
+                if (!$device_token) {
+                    return redirect('/login');
+                }
+
+                $device_token = $device_token->toArray();
+                
+                config(['device_token' => $device_token]);
+            }
+            
 
             $settings = GeneralSettings::get();
 
@@ -215,6 +224,13 @@ class Companies
                     'data' => null
                 ], 400);
             }
+            
+            Cache::store('file')->forever('auth_context', [
+                'user_id' => $user['id'],
+                'company_id' => $company['company_id'],
+                'access_token' => $device_token['token'],
+                'company_db' => $company['db_database']
+            ]);
 
             $skip_route_names = [
                 'pos.authorize',

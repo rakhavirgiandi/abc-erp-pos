@@ -2223,12 +2223,17 @@ body.sidebar-enable .sidebar-left {
 }
 #page-topbar {
     position: fixed;
-    top: calc(0px + 38px);
+    top: 0;
     right: 0;
     left: 0;
     z-index: 1002;
     background-color: var(--bs-secondary-bg);
 }
+
+[data-platform="desktop"] #page-topbar {
+    top: calc(0px + 38px);
+}
+
 #page-topbar .navbar-header {
     display: flex;
     align-items: center;
@@ -6643,7 +6648,7 @@ s .rich-list-append {
 
 #win-close:hover { background: #e81123; color: #fff; }
 
-.modal {
+[data-platform=desktop] .modal {
     margin-top: 38px;
     height: calc(100% - 38px);
 }

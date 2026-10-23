@@ -10,20 +10,20 @@ use App\Http\Controllers\Web\ConfigController;
 use App\Http\Controllers\Web\Companies\v1\PointOfSalesController;
 use Illuminate\Support\Facades\Route;
 
-Route::get('/login', [AuthController::class, 'login'])->name('web.login')->middleware('auth.guest');
-Route::get('/startup', [StartupController::class, 'index'])->name('startup');
-Route::post('/sessions', [AuthController::class, 'session']);
-Route::get('/register', [AuthController::class, 'register']);
-Route::get('/forgot-password', [AuthController::class, 'forgotPassword']);
-Route::get('/new-password/{code}', [AuthController::class, 'newPassword']);
-Route::get('/logout', [AuthController::class, 'logout']);
-Route::get('/delete-request', [AuthController::class, 'deleteRequest']);
-
 Route::prefix('config')->group(function () {
     Route::get('/', [ConfigController::class, 'index']);
     Route::get('/database', [ConfigController::class, 'database']);
     Route::get('/activity-log', [ConfigController::class, 'activityLog']);
 });
+
+Route::group(['middleware' => ['auth.guest']], function () {
+    Route::get('/login', [AuthController::class, 'login'])->name('web.login');
+    Route::get('/startup', [StartupController::class, 'index'])->name('startup');
+});
+
+Route::get('/logout', [AuthController::class, 'logout']);
+Route::get('/delete-request', [AuthController::class, 'deleteRequest']);
+Route::post('/sessions', [AuthController::class, 'session']);
 
 Route::group(['middleware' => ['auth.primary']], function () {
     Route::get('/', [ChooseCompanyController::class, 'index']);

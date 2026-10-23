@@ -153,7 +153,7 @@ return [
      */
     'queue_workers' => [
         'default' => [
-            'queues' => ['default'],
+            'queues' => ['default', 'sync'],
             'memory_limit' => 128,
             'timeout' => 60,
             'sleep' => 3,

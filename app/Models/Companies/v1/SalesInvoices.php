@@ -232,7 +232,7 @@ class SalesInvoices extends Model
     {
         $model = new self;
 
-        return [
+        $schema = [
             'field' => [
                 'id' => ['column' => $model->table.'.id', 'alias' => 'id', 'type' => 'int'],
 				'number' => ['column' => $model->table.'.number', 'alias' => 'number', 'type' => 'string'],
@@ -308,7 +308,6 @@ class SalesInvoices extends Model
                 'total_change' => ['column' => $model->table.'.total_change', 'alias' => 'total_change', 'type' => 'int'],
                 'is_from_pos' => ['column' => $model->table.'.is_from_pos', 'alias' => 'is_from_pos', 'type' => 'int'],
                 'bank_account_id' => ['column' => $model->table.'.bank_account_id', 'alias' => 'bank_account_id', 'type' => 'int'],
-                'is_need_sync' => ['column' => $model->table.'.is_need_sync', 'alias' => 'is_need_sync', 'type' => 'int'],
                 'uuid' => ['column' => $model->table.'.uuid', 'alias' => 'uuid', 'type' => 'string'],
             ],
             'join' => [
@@ -326,6 +325,12 @@ class SalesInvoices extends Model
 
             ]
         ];
+
+        if (config('services.is_onpremise')) {
+            $schema['field']['is_need_sync'] = ['column' => $model->table.'.is_need_sync', 'alias' => 'is_need_sync', 'type' => 'int'];
+        }
+
+        return $schema;
     }
 
     public static function datatables($start, $length, $order, $dir, $search, $filter = [])

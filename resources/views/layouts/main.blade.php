@@ -8,10 +8,16 @@
             $layout_mode = 'pos-settings';
         }
     }
+
+    $platform = 'default';
+    
+    if (config('services.is_onpremise') == true) {
+        $platform = 'desktop';
+    }
 @endphp
 
 <!DOCTYPE html>
-<html lang="en" data-layout="vertical" data-content-width="default" data-bs-theme="light" data-sidebar-color="light" data-topbar-color="light" data-theme-colors="default" dir="ltr" data-mode="{{ $layout_mode }}" data-platform="desktop">
+<html lang="en" data-layout="vertical" data-content-width="default" data-bs-theme="light" data-sidebar-color="light" data-topbar-color="light" data-theme-colors="default" dir="ltr" data-mode="{{ $layout_mode }}" data-platform="{{ $platform }}">
 <head>
     <meta charset="utf-8">
     <title>@yield('title') - {{ config('app.name') }}</title>

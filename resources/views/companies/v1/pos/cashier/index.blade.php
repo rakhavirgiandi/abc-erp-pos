@@ -553,6 +553,8 @@
         
         const IS_DISPLAY_CATALOG_MODE = '{{ config('general_settings.is_use_product_catalog') }}' == 'true' ? true : false;
 
+        const isOnpremise = '{{ config('services.is_onpremise') }}';
+
         $("#input-product-qty").TouchSpin({
             buttondown_class: "btn-sm btn-icon btn btn-secondary",
             buttonup_class: "btn-sm btn-icon btn btn-secondary",
@@ -776,157 +778,114 @@
             $('#sync-all-transaction-check').prop('checked', false)
         }
 
-        const salesInvoiceSync = (id, props = {}) => {
-            $.ajax({
-                type: 'post',
-                url: BASE_URL + "/api/v1/sync/sales_invoices/"+id,
-                "headers": {
-                    'Authorization': TOKEN,
-                    'company-id': COMPANY_ID,
-                },
-                beforeSend: function () {
-                    if (props?.beforeSend && typeof props?.beforeSend == 'function') {
-                        props.beforeSend()
-                    }
-                },
-                success: function (res) {
-                    if (props?.success && typeof props?.success == 'function') {
-                        props.success(res)
-                    }
-                },
-                complete: function (res) {
-                    if (props?.complete && typeof props?.complete == 'function') {
-                        props.complete(res)
-                    }
-                },
-                error: function (jqXHR, textStatus, errorThrown) {
-                    if (props?.error && typeof props?.error == 'function') {
-                        props.error(jqXHR, textStatus, errorThrown)
-                    }
+        const syncRequest = (ids) => $.ajax({
+            type: 'post',
+            url: BASE_URL + '/api/v1/sync/sales_invoices',
+            headers: { 'Authorization': TOKEN, 'company-id': COMPANY_ID },
+            data: { ids },
+        });
 
-                    if (props.isShowPopUpError) {
-                        generalAjaxErrorHandler(jqXHR, textStatus, errorThrown)
-                    }
-                }
-            })
-        }
 
-        const salesInvoiceSyncAsync = (id, props = {}) => {
-            return new Promise((resolve) => {
-                salesInvoiceSync(id, {
-                    ...props,
-                    success: (res) => resolve({ id, ok: true, res }),
-                    error: (jqXHR) => resolve({ id, ok: false, error: jqXHR }),
-                })
-            })
-        }
+        const waitSync = async (ids, onProgress, { interval = 2000, timeout = 120000 } = {}) => {
+            const start = Date.now();
+            let pending = ids;
+        
+            while (pending.length && Date.now() - start < timeout) {
+                await new Promise(r => setTimeout(r, interval));
+                try {
+                    const res = await $.ajax({
+                        type: 'POST',
+                        url: BASE_URL + '/api/v1/sales_invoices/sync_status',
+                        headers: { 'Authorization': TOKEN, 'company-id': COMPANY_ID },
+                        data: { ids },
+                    });
 
-        const salesInvoiceSyncBulk = async (ids, { onProgress, onDone, ...props } = {}) => {
-            const total = ids.length
-            const results = []
-                
-            for (let i = 0; i < total; i++) {
-                const result = await salesInvoiceSyncAsync(ids[i], props)
-                results.push(result)
-            
-                if (typeof onProgress === 'function') {
-                    onProgress(i + 1, total, result)   // 3/10
+                    pending = res.pending_ids.map(String);
+                    onProgress(ids.length - pending.length, ids.length);
+                } catch (e) {
+                    // gangguan sesaat, coba lagi di putaran berikutnya
                 }
             }
+            return pending; // id yang belum tersinkron
+        };
         
-            if (typeof onDone === 'function') {
-                onDone(results)
-            }
+        const setResultToast = (type) => {
+            $('#transaction-sync-notification-toast')
+                .removeClass('bg-success bg-warning bg-danger')
+                .addClass(type);
+        };
         
-            return results
-        }
-
         const startSyncInvoices = async (ids) => {
             const toast = bootstrap.Toast.getOrCreateInstance(
                 document.getElementById('transaction-sync-toast'),
-                {
-                    autohide: false,
-                    delay: 3000
-                }
+                { autohide: false }
             );
-            
             toast.show();
-
-            const results = await salesInvoiceSyncBulk(ids, {
-                onProgress: (current, total) => {
-                    $('#transaction-sync-progress').html(`${current}/${total}`);
-                },
-            });
-
-            const failed = results.filter(r => !r.ok);
-            
-            let errors = failed.map((err) => {
-                return (loadHistoriesMap.get(err.id)?.ref_number ? '#'+loadHistoriesMap.get(err.id)?.ref_number : '')+' '+err.error.responseJSON?.message;
-            });
-
-            toast.hide();
-
-            const resultToast = bootstrap.Toast.getOrCreateInstance(
-                document.getElementById('transaction-sync-notification-toast'),
-                {
-                    autohide: true,
-                    delay: 3000
-                }
-            );
-
-            resultToast.show();
-
-            const successLength = results.length - failed.length;
-
-            if (failed.length == 0) {
-                $('#transaction-sync-notification-toast').removeClass('bg-danger');
-                $('#transaction-sync-notification-toast').removeClass('bg-warning');
-                $('#transaction-sync-notification-toast').addClass('bg-success');
-            } else if (successLength == 0) {
-                $('#transaction-sync-notification-toast').removeClass('bg-success');
-                $('#transaction-sync-notification-toast').removeClass('bg-warning');
-                $('#transaction-sync-notification-toast').addClass('bg-danger');
-            } else  {
-                $('#transaction-sync-notification-toast').removeClass('bg-success');
-                $('#transaction-sync-notification-toast').addClass('bg-warning');
-                $('#transaction-sync-notification-toast').removeClass('bg-danger');
+            $('#transaction-sync-progress').html(`0/${ids.length}`);
+        
+            let pending = ids.map(String);
+            let queueError = null;
+        
+            try {
+                await syncRequest(ids); // masuk antrian (202)
+                pending = await waitSync(ids, (cur, total) => {
+                    $('#transaction-sync-progress').html(`${cur}/${total}`);
+                });
+            } catch (jqXHR) {
+                queueError = jqXHR?.responseJSON?.message || 'Gagal memasukkan ke antrian';
             }
-
-            $('#transaction-sync-notification-toast .toast-body').html(`${successLength} berhasil, ${failed.length} gagal <br>`
-            + (errors.length ? `${errors.join('<br>')}` : ''))
-        } 
+        
+            toast.hide();
+        
+            const successLength = ids.length - pending.length;
+            const failedLength = pending.length;
+        
+            setResultToast(
+                failedLength === 0 ? 'bg-success' : successLength === 0 ? 'bg-danger' : 'bg-warning'
+            );
+        
+            const errors = queueError
+                ? [queueError]
+                : pending.map(id => {
+                    const ref = loadHistoriesMap.get(Number(id))?.ref_number;
+                    return `${ref ? '#' + ref : 'ID ' + id} masih dalam antrian, dicoba ulang otomatis`;
+                });
+            
+            $('#transaction-sync-notification-toast .toast-body').html(
+                `${successLength} berhasil, ${failedLength} belum selesai` +
+                (errors.length ? `<br>${errors.join('<br>')}` : '')
+            );
+            
+            bootstrap.Toast.getOrCreateInstance(
+                document.getElementById('transaction-sync-notification-toast'),
+                { autohide: true, delay: 3000 }
+            ).show();
+        };
         
         $(document).on('click', '#bulk-sync-button', async function () {
-
-            $(this).prop('disabled', true);
-
-            const salesInvoiceIds = $('[id^=sales-invoice-sync-check-]');
             const ids = $('[id^=sales-invoice-sync-check-]:checked')
-                .map(function () {
-                    return $(this).data('id');
-                }).get();
-
+                .map(function () { return $(this).data('id'); }).get();
+        
             if (!ids.length) {
                 Swal.fire('Perhatian', 'Silahkan pilih transaksi', 'warning');
                 return;
             }
-
-            await startSyncInvoices(ids);
-
-            $(this).prop('disabled', false);
+        
+            $(this).prop('disabled', true);
+        
+            try {
+                await startSyncInvoices(ids);
+            } finally {
+                $(this).prop('disabled', false);
+            }
+        
             clearSelectedHistories();
-
+        
             if ($('#histories-modal').hasClass('show')) {
                 $('#histories-done-tab').tab('show');
-    
-                loadHistories({
-                    refresh: true
-                });
-                resetHistoriesState();
-            } else {
-                resetHistoriesState();
+                loadHistories({ refresh: true });
             }
-
+            resetHistoriesState();
         });
 
         const sync = (props = {}) => {
@@ -1510,7 +1469,7 @@
                             separator: ','
                         });
                     }
-
+                           
                     if (!params?.inputDiscount && params?.discount_value) {
                         $('#input-discount-value-'+id).numericInput('setValue', discountValue);
                     }
@@ -1523,7 +1482,7 @@
                         selectOrderItem(id);
                     }
                 } else {
-                    
+
                     $('#order-list-container').append(`
                         <div class="order-item d-flex" data-id="${id}">
                             <div class="p-3 d-flex gap-3 flex-grow-1">
@@ -1580,8 +1539,12 @@
                     } else {
                         $('#input-discount-value-'+id).numericInput({
                             allowNegative: false,
-                            separator: ','
+                            separator: ',',
                         });
+                    }
+
+                    if (discountValue) {
+                        $('#input-discount-value-'+id).numericInput('setValue', discountValue);
                     }
 
                     if (params?.select_item === true) {
@@ -5205,14 +5168,19 @@
             }
 
             if (activeTab === 'pending') {
-                req.number = 'null';
-                req.status = 'paid';
+                if (isOnpremise) {
+                    req.number = 'null';
+                    req.status = 'paid';
+                }
             } else if (activeTab === 'done') {
-                req['number[$not]'] = 'null';
+                if (isOnpremise) {
+                    req['number[$not]'] = 'null';
+                }
                 req.status = 'paid';
             } else if (activeTab === 'hold') {
                 req.status = 'draft';
             }
+
             
             if (searchHistoriesValue) {
                 req.or = {
@@ -5275,6 +5243,10 @@
 
                             let bulkSyncChecked = '<input class="form-check-input me-3 sales-invoice-bulk-sync" data-tab="'+activeTab+'" data-date="'+dayKey+'" type="checkbox" value="">';
 
+                            if (!isOnpremise) {
+                                bulkSyncChecked = '';
+                            }
+
                             if (prevDay !== dayKey) {
                                 html += '<div data-day="'+dayKey+'" class="bg-body fw-bold text-body-secondary" style="width: 100%; padding: .5rem 1.5rem .5rem 1rem; font-family: \'Lexend\', sans-serif;">';
                                 if (dateMoment.isSame(moment(), 'day')) {
@@ -5336,6 +5308,7 @@
 
                             loadHistoriesMap.set(item.id, item);
                         });
+
 
                         $container.append(html);
 
@@ -5552,8 +5525,9 @@
                                         tax: parseFloat(item?.tax_percentage),
                                         tax_id: parseFloat(item?.tax_id),
                                         discount_type: item?.discount_type,
-                                        discount_value: parseFloat(item?.discount_value),
-                                        is_other_item: true,
+                                        discount_value: parseFloat(item.discount_amount) > 0 ? parseFloat(item?.discount_amount) : 0,
+                                        inputDiscount: false,
+                                        is_other_item: 1,
                                         unit_convertion: item.unit_detail
                                     });
 
