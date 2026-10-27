@@ -12,6 +12,7 @@ use Illuminate\Queue\Middleware\WithoutOverlapping;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Throwable;
+use Illuminate\Support\Str;
 
 class SyncInvoice implements ShouldQueue
 {
@@ -55,6 +56,12 @@ class SyncInvoice implements ShouldQueue
                 return;
             }
 
+            if (!$invoice->uuid) {
+                $invoice->update([
+                    'uuid' => Str::uuid(),
+                ]);
+            }
+
             $url = config('services.admin_credentials.server_url') . '/api/v1/sync/sync_sales_invoices';
             $response = NetworkHelper::postWithToken($url, $invoice->toArray(), $this->access_token);
 
@@ -62,7 +69,7 @@ class SyncInvoice implements ShouldQueue
                 ->first(fn ($row) => ($row['local_id'] ?? null) == $invoice->id && !empty($row['number']));
 
             if (($response['status'] ?? 'error') !== 'success' || !$confirmed) {
-                throw new \RuntimeException("Sync invoice {$invoice->id} gagal");
+                throw new \RuntimeException(isset($response['message']) ?  : "Sync invoice {$invoice->ref_number} gagal");
             }
 
             $invoice->update([
@@ -73,10 +80,12 @@ class SyncInvoice implements ShouldQueue
             $this->log('info', 'Sync invoice berhasil', ['number' => $confirmed['number']]);
         } catch (Throwable $e) {
             // Percobaan gagal tapi masih akan di-retry
-            $this->log('warning', 'Sync invoice gagal, akan di-retry', [
+            $this->log('error', 'Sync invoice gagal', [
                 'error' => $e->getMessage(),
-                'file'  => $e->getFile(),
-                'line'  => $e->getLine(),
+                'exception' => get_class($e),
+                'file' => $e->getFile(),
+                'line' => $e->getLine(),
+                'trace' => $e->getTraceAsString(),
             ]);
 
             throw $e;
