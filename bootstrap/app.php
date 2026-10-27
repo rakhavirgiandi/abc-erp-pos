@@ -71,9 +71,7 @@ return Application::configure(basePath: dirname(__DIR__))
 
                 return response()->json([
                     'status' => 'error',
-                    'message' => $status === 500
-                        ? config('app.debug') ? $e->getMessage() : 'Terjadi kesalahan pada server.' 
-                        : $e->getMessage(),
+                    'message' => $e->getMessage(),
                     'data' => null,
                 ], $status);
             }
@@ -115,6 +113,8 @@ return Application::configure(basePath: dirname(__DIR__))
                 'file'      => $e->getFile(),
                 'line'      => $e->getLine(),
                 'exception' => $e, // stacktrace otomatis ditulis oleh JsonFormatter
+                'trace'     => $e->getTraceAsString(),
+                'message'   => $e->getMessage()
             ];
 
             if ($request) {
@@ -130,7 +130,7 @@ return Application::configure(basePath: dirname(__DIR__))
                 ];
             }
             
-            Log::channel('activity')->error($e->getMessage(), $context);
+            Log::channel('activity')->error(get_class($e) . ': '.$e->getMessage(), $context);
         });
 
         // Reportable (logging) handler
