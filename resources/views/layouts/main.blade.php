@@ -35,7 +35,7 @@
 </head>
 
 <script type="text/javascript">
-    let BASE_URL = '{{ config('app.url') }}';
+    let BASE_URL = '{{ url('/') }}';
     window.i18n = @json(__('language'));
 </script>
 
