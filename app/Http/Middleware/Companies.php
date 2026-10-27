@@ -102,28 +102,31 @@ class Companies
             //     'sslmode' => 'prefer',
             // ]]);
 
-            config(['database.connections.pgsql_companies' => [
-                'driver' => 'pgsql',
-                'host' => $company['db_host'],
-                'port' => $company['db_port'],
-                'database' => $company['db_database'],
-                'username' => $company['db_username'],
-                'password' => $company['db_password'],
-                'charset' => 'utf8',
-                'prefix' => '',
-                'prefix_indexes' => true,
-                'schema' => 'public',
-                'sslmode' => 'prefer',
-            ]]);
+            // config(['database.connections.pgsql_companies' => [
+            //     'driver' => 'pgsql',
+            //     'host' => $company['db_host'],
+            //     'port' => $company['db_port'],
+            //     'database' => $company['db_database'],
+            //     'username' => $company['db_username'],
+            //     'password' => $company['db_password'],
+            //     'charset' => 'utf8',
+            //     'prefix' => '',
+            //     'prefix_indexes' => true,
+            //     'schema' => 'public',
+            //     'sslmode' => 'prefer',
+            // ]]);
 
-            if (!config('services.is_onpremise') && config('database.connection_mode') == 'service') {
-                $pg_service = app(PostgresWindowsService::class);
-                $connection_info = $pg_service->getConnectionInfo();
+            config([
+                'database.connections.pgsql_companies.database' => $company['db_database'],
+            ]);
 
-                config(['database.connections.pgsql_companies.host' => $connection_info['host']]);
-                config(['database.connections.pgsql_companies.port' => $connection_info['port']]);
-                config(['database.connections.pgsql_companies.username' => $connection_info['username']]);
-                config(['database.connections.pgsql_companies.password' => $connection_info['password']]);
+            if (config('database.connection_mode') != 'service') {
+                config([
+                    'database.connections.pgsql_companies.host' => $company['db_host'],
+                    'database.connections.pgsql_companies.port' => $company['db_port'],
+                    'database.connections.pgsql_companies.username' => $company['db_username'],
+                    'database.connections.pgsql_companies.password' => $company['password'],
+                ]);
             }
 
             $user = Users::select('users.*', 'roles.name as role_name')->where('email', $request->session()->get('_email'))->join('roles', 'roles.id', '=', 'users.role_id')->first();

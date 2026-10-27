@@ -29,19 +29,19 @@ class AppServiceProvider extends ServiceProvider
             $pgService = app(PostgresWindowsService::class);
 
             $coneection_info = $pgService->getConnectionInfo();
-
+    
             config([
                 'database.connections.pgsql.host' => $coneection_info['host'],
-                'database.connections.pgsql.port' => localSettings()->get('dataabase.port', $coneection_info['port']),
-                'database.connections.pgsql.username' => localSettings()->get('dataabase.username', $coneection_info['username']),
-                'database.connections.pgsql.password' => localSettings()->get('dataabase.password', $coneection_info['password']),
+                'database.connections.pgsql.port' => localSettings()->get('database.port', $coneection_info['port']),
+                'database.connections.pgsql.username' => localSettings()->get('database.username', $coneection_info['username']),
+                'database.connections.pgsql.password' => localSettings()->get('database.password', $coneection_info['password']),
             ]);
 
             config([
                 'database.connections.pgsql_companies.host' => $coneection_info['host'],
-                'database.connections.pgsql_companies.port' => localSettings()->get('dataabase.port', $coneection_info['port']),
-                'database.connections.pgsql_companies.username' => localSettings()->get('dataabase.username', $coneection_info['username']),
-                'database.connections.pgsql_companies.password' => localSettings()->get('dataabase.password', $coneection_info['password']),
+                'database.connections.pgsql_companies.port' => localSettings()->get('database.port', $coneection_info['port']),
+                'database.connections.pgsql_companies.username' => localSettings()->get('database.username', $coneection_info['username']),
+                'database.connections.pgsql_companies.password' => localSettings()->get('database.password', $coneection_info['password']),
             ]);
         }
     }
