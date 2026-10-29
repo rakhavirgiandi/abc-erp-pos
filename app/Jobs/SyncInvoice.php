@@ -40,55 +40,57 @@ class SyncInvoice implements ShouldQueue
     }
 
     public function handle(): void
-    {
-        try {
-            config(['database.connections.pgsql_companies.database' => $this->company_db]);
-            DB::purge('pgsql_companies');
-
-            $invoice = SalesInvoices::with(['sales_invoice_details', 'point_histories'])
-                ->where('id', $this->id)
-                ->where('is_need_sync', 1)
-                ->where('status', '!=', 'draft')
-                ->first();
-
-            if (!$invoice) {
-                $this->log('info', 'Sync invoice dilewati: tidak ditemukan / sudah sync / draft');
-                return;
-            }
-
-            if (!$invoice->uuid) {
+    {   
+        if (NetworkHelper::isConnected()) {
+            try {
+                config(['database.connections.pgsql_companies.database' => $this->company_db]);
+                DB::purge('pgsql_companies');
+    
+                $invoice = SalesInvoices::with(['sales_invoice_details', 'point_histories'])
+                    ->where('id', $this->id)
+                    ->where('is_need_sync', 1)
+                    ->where('status', '!=', 'draft')
+                    ->first();
+    
+                if (!$invoice) {
+                    $this->log('info', 'Sync invoice dilewati: tidak ditemukan / sudah sync / draft');
+                    return;
+                }
+    
+                if (!$invoice->uuid) {
+                    $invoice->update([
+                        'uuid' => Str::uuid(),
+                    ]);
+                }
+    
+                $url = config('services.admin_credentials.server_url') . '/api/v1/sync/sync_sales_invoices';
+                $response = NetworkHelper::postWithToken($url, $invoice->toArray(), $this->access_token);
+    
+                $confirmed = collect($response['data'] ?? [])
+                    ->first(fn ($row) => ($row['local_id'] ?? null) == $invoice->id && !empty($row['number']));
+    
+                if (($response['status'] ?? 'error') !== 'success' || !$confirmed) {
+                    throw new \RuntimeException(isset($response['message']) ?  : "Sync invoice {$invoice->ref_number} gagal");
+                }
+    
                 $invoice->update([
-                    'uuid' => Str::uuid(),
+                    'number'       => $confirmed['number'],
+                    'is_need_sync' => $confirmed['is_need_sync'] ?? 0,
                 ]);
+    
+                $this->log('info', 'Sync invoice berhasil', ['number' => $confirmed['number']]);
+            } catch (Throwable $e) {
+                // Percobaan gagal tapi masih akan di-retry
+                $this->log('error', 'Sync invoice gagal', [
+                    'error' => $e->getMessage(),
+                    'exception' => get_class($e),
+                    'file' => $e->getFile(),
+                    'line' => $e->getLine(),
+                    'trace' => $e->getTraceAsString(),
+                ]);
+    
+                throw $e;
             }
-
-            $url = config('services.admin_credentials.server_url') . '/api/v1/sync/sync_sales_invoices';
-            $response = NetworkHelper::postWithToken($url, $invoice->toArray(), $this->access_token);
-
-            $confirmed = collect($response['data'] ?? [])
-                ->first(fn ($row) => ($row['local_id'] ?? null) == $invoice->id && !empty($row['number']));
-
-            if (($response['status'] ?? 'error') !== 'success' || !$confirmed) {
-                throw new \RuntimeException(isset($response['message']) ?  : "Sync invoice {$invoice->ref_number} gagal");
-            }
-
-            $invoice->update([
-                'number'       => $confirmed['number'],
-                'is_need_sync' => $confirmed['is_need_sync'] ?? 0,
-            ]);
-
-            $this->log('info', 'Sync invoice berhasil', ['number' => $confirmed['number']]);
-        } catch (Throwable $e) {
-            // Percobaan gagal tapi masih akan di-retry
-            $this->log('error', 'Sync invoice gagal', [
-                'error' => $e->getMessage(),
-                'exception' => get_class($e),
-                'file' => $e->getFile(),
-                'line' => $e->getLine(),
-                'trace' => $e->getTraceAsString(),
-            ]);
-
-            throw $e;
         }
     }
 

@@ -23,10 +23,24 @@
                             <div style="flex: 2">
                                 <div class="card mb-0 h-100">
                                     <div class="p-4">
-                                        <h5 class="mb-0">Bonus yang Digunakan</h5>
+                                        <h5 class="mb-0">Daftar Pesanan</h5>
                                     </div>
                                     <div class="px-4 h-100 overflow-y-auto">
-                                        <div class="d-flex flex-column gap-3 h-100" id="reward-point-applied-list">
+                                        <div class="d-flex flex-column h-100" id="payment-order-list">
+                                            {{-- <div class="w-100 py-3 rounded-0">
+                                                <div class="d-flex justify-content-between mb-1">
+                                                    <h6 class="fw-bold mb-0 text-primary">Teh Botol Sosro</h6>
+                                                    <h6 class="fw-bold mb-0">49,563</h6>
+                                                </div>
+                                                <div class="d-flex justify-content-between mb-1">
+                                                    <p class="fw-normal mb-0 text-primary">PRD-00001</p>
+                                                    <p class="fw-normal mb-0 text-primary">12 Pcs x 12,432</p>
+                                                </div>
+                                                <div class="d-flex justify-content-between mb-1">
+                                                    <p class="fw-bold mb-0 text-primary">330ml, Original</p>
+                                                    <p class="fw-normal mb-0 text-primary"><span class="text-danger">-0</span>&nbsp; Tidak ada pajak</p>
+                                                </div>
+                                            </div> --}}
                                         </div>
                                     </div>
                                     <div class="p-4 pt-0">

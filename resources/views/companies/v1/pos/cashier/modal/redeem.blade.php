@@ -1,5 +1,5 @@
 <div class="modal fade" id="redeem-modal" tabindex="-1" aria-labelledby="redeemModalLabel">
-    <div class="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable">
+    <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable">
         <div class="modal-content">
             <div class="modal-header">
                 <div>
@@ -24,15 +24,42 @@
                             </div>
                         </div>
                     </div>
-                        <div class="row w-100 h-100 p-4">
-                            <div class="col-6">
-                                <h5 class="mb-3">Tukar Jadi Diskon</h5>
-                                <label for="#" class="form-label">Jumlah Poin</label>
-                                <input type="text" class="form-control form-control-lg mb-3" id="input-point">
-                                <input type="hidden" id="input-discount-point">
-                                <div class="w-100 p-3 bg-success-subtle text-success fw-bold fs-5 rounded-2 d-flex justify-content-between">
-                                    <span>Total Diskon</span>
-                                    <span id="redeem-total-discount-placeholder">0</span>
+                        <div class="w-100 h-100 p-4">
+                            <div class="nav nav-pills" id="exchange-point-type-tabs" role="tablist">
+                                <a class="nav-item nav-link active" id="exchange-point-discount-tab-toggle" data-bs-toggle="tab" href="#exchange-point-discount-tab" aria-selected="true" role="tab">Diskon</a>
+                                <a class="nav-item nav-link" id="exchange-point-product-tab-toggle" data-bs-toggle="tab" href="#exchange-point-product-tab" aria-selected="false" tabindex="-1" role="tab">Produk</a>
+                            </div>
+                            <div class="tab-content flex-fill d-flex flex-column" id="exchange-point-discount-tab-content">
+                                <div class="tab-pane fade show active" id="exchange-point-discount-tab" role="tabpanel" aria-labelledby="#exchange-point-discount-tab">
+                                <div class="mt-3">
+                                        <h6 class="mb-2">Tukar Jadi Diskon</h6>
+                                        <label for="#" class="form-label">Jumlah Poin</label>
+                                        <input type="text" class="form-control form-control-lg mb-3" id="input-point">
+                                        <input type="hidden" id="input-discount-point">
+                                        <div class="w-100 p-3 bg-success-subtle text-success fw-bold fs-5 rounded-2 d-flex justify-content-between">
+                                            <span>Total Diskon</span>
+                                            <span id="redeem-total-discount-placeholder">0</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="tab-content flex-fill d-flex flex-column" id="exchange-point-product-tab-content">
+                                <div class="tab-pane" id="exchange-point-product-tab" role="tabpanel" aria-labelledby="#exchange-point-product-tab">
+                                    <div class="d-flex flex-column gap-2 mt-3 overflow-y-auto" style="max-height: 400px;" id="exchange-point-product-list">
+                                        {{-- <div class="card border m-0 pe-auto">
+                                            <div class="card-body" style="padding: .75rem;">
+                                                <div class="d-flex justify-content-between mb-1">
+                                                    <h6 class="mb-0">Product Name</h6>
+                                                </div>
+                                                <div class="d-flex justify-content-between mb-1">
+                                                    <p class="m-0">CODE-0001</p>
+                                                </div>
+                                                <div class="d-flex justify-content-between mb-1">
+                                                    <p class="m-0">variant, variant 2</p>
+                                                </div>
+                                            </div>
+                                        </div> --}}
+                                    </div>
                                 </div>
                             </div>
                             {{-- <div class="flex-fill row">

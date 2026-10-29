@@ -254,4 +254,18 @@ class SalesInvoiceController extends Controller
                 ->pluck('id'),
         ]);
     }
+
+    public function pendingStatusTotal(Request $request)
+    {   
+        $q = SalesInvoices::where('is_need_sync', 1)->where('status', '!=', 'draft');
+        
+        if (config('user_companies.is_supervisor') && !config('user_companies.details')->hasRole('SuperAdmin')) {
+            $q->where('created_by', config('user_companies.id'));
+        }
+
+        return response()->json([
+            'data' => $q->count(),
+            'get' => $q->get()
+        ]);
+    }
 }

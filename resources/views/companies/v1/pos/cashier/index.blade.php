@@ -630,6 +630,7 @@
         let selectedRewardPointProductId = null;
         let selectedRewardPointProduct = {};
         let rewardPointModalHasBeenOpen = false;
+        let exchangePointProductTabHasBeenOpen = false;
 
         let rewardPointPage = 1;
         let loadRewardPointIsLoading = false;
@@ -1047,6 +1048,7 @@
             $('.apply-point-toggle').removeClass('selected');
             calculateTotalItemBadge();
             authenticateSupervisorOnSuccess = null;
+            exchangePointProductTabHasBeenOpen = false;
             if ($('#input-search-product').val()?.length >  0) {
                 $('#input-search-product').val('').trigger('input');
             }
@@ -3248,7 +3250,6 @@
                             refresh: true
                         })
                     }
-        
                     
                     if (selectedCustomer.id !== selectedCustomerIdRewardPoint) {
                         $('#input-point').numericInput('clear');
@@ -3264,39 +3265,8 @@
                         $('#redeem-total-discount-placeholder').html('Rp 0');
                     } else {
                         
-                        // $('#input-point').numericInput({
-                        //     allowNegative: false,
-                        //     maxValue: parseFloat(selectedCustomer.point_balance)
-                        // });
                         $('#input-point').numericInput('setValue', totalPointApplied);
-                        // $('#redeem-total-discount-placeholder').html('Rp '+(totalPointApplied * pointCalculate));
                     }
-        
-                    // if (selectedCustomer.id !== selectedCustomerIdRewardPoint) {
-                        // loadRewardPointProducts({
-                        //     refresh: true
-                        // });
-                    // } else {
-                        // const rewardPointsApplied = [...rewardPointsAppliedMap.values()];
-                        // if (rewardPointsApplied?.length > 0) {
-                        //     rewardPointsApplied.forEach((item, idx) => {
-                                
-                        //         if (item?.is_applied == true) {
-                                    
-                        //             if (item?.benefit_type === 'discount') {
-                        //             }
-                        //             putRewardPoint(item?.id, item);
-                                    
-                        //         } else {
-                        //             rewardPointsAppliedMap.delete(item?.id);
-                        //             if (item?.benefit_type === 'discount') {
-                        //                 clearRewardPointDiscount()
-                        //             }
-                        //         }
-                        //     });
-                        // }
-                    // }
-        
                     $('#redeem-modal').modal('show');
                     
                     selectedCustomerIdRewardPoint = selectedCustomer?.id;
@@ -3313,7 +3283,7 @@
 
         });
 
-        $('#reward-point-product-item-wrapper').on('scroll', function () {
+        $('#exchange-point-product-list').on('scroll', function () {
             const el = this;
         
             const scrollTop = el.scrollTop;
@@ -3323,6 +3293,23 @@
             if (scrollTop + windowHeight >= docHeight - 100) {
                 loadRewardPointProducts();
             }
+        });
+
+        // $(document).on('shown.bs.modal', '#redeem-modal', function () {
+
+        //     loadRewardPointProducts({
+        //         refresh: 1
+        //     })
+        // });
+
+        $(document).on('shown.bs.tab', '#exchange-point-product-tab-toggle', function () {
+            if (!exchangePointProductTabHasBeenOpen) {
+                loadRewardPointProducts({
+                    refresh: 1
+                });
+            }
+
+            exchangePointProductTabHasBeenOpen = true;
         });
 
         const loadRewardPointProducts = (props) => {
@@ -3357,50 +3344,85 @@
                     'company-id': COMPANY_ID
                 },
                 beforeSend: function() {
+                    const spinner = `<div class="w-100 d-flex justify-content-center py-4 spinner-container">
+                        <div class="spinner-border" role="status">
+                            <span class="sr-only">Loading...</span>
+                        </div>
+                    </div>`;
+
                     if (props?.refresh) {
-                        $('#reward-point-product-item-container').html('')
+                        $(`#exchange-point-product-list`).html(spinner);
+                    } else {
+                        $(`#exchange-point-product-list`).append(spinner);
                     }
                 },
                 success: function(res) {
                     if (res?.data?.length > 0) {
                         if (selectedCustomer?.id) {
-                            const pointBalance = Number(selectedCustomer?.point_balance) ?? 0;
+                            let html = '';
                             res?.data?.forEach((item, idx) => {
-                                if (rewardPointsAppliedMap.get(item?.id)) {
-                                    return;
-                                }
-                                let productItem = '';
-                                let isDisabled = false;
-                            
-                                if (item?.total_point > pointBalance) {
-                                    isDisabled = true;
-                                }
-    
-                                let discountHtml = '';
-                                
-                                if (item?.discount_type === 'percentage') {
-                                    discountHtml = '<span class="fw-normal text-body" style="font-size: 10px">('+item?.discount_percentage+'%)</span>';
-                                } else {
-                                    discountHtml = '<span class="fw-normal text-body" style="font-size: 10px">(-'+item?.discount_amount+')</span>';
-                                }
-                            
-                                productItem += '<div class="col-6">'
-                                productItem +=      '<div class="reward-point-product-item '+(isDisabled ? 'disabled' : '')+'" data-total_point="'+item?.total_point+'" data-id="'+item?.id+'">'
-                                productItem +=          '<h6 class="name-placeholder">'+item?.product_name+'</h6>'
-                                productItem +=          '<h6 class="total-point-placeholder">'+item?.total_point+' Poin '+discountHtml+'</h6>'
-                                productItem +=      '</div>'
-                                productItem +=  '</div>'
+                                if (item?.product) {
+                                    
+                                    const product = item.product;
+                                    const note = product?.product_variants
+                                        ?.map(item => item.option_value)
+                                        .join(', ') || '';
 
-                                rewardPointProductListMap.set(item.id, item)
+                                    let productItem = {
+                                        price: parseFloat(product?.sale_price),
+                                        qty: item.qty,
+                                        tax: product.tax_percentage,
+                                        discount_type: item.discount_type,
+                                        discount_value: 0,
+                                        // discount_value: item.discount_type == 'percentage' ? item.discount_percentage : item.discount_amount
+                                    }
 
-                                $('#reward-point-product-item-container').append(productItem);
+                                    let priceCalculate = getCalculateItemformula(productItem);
+                                    
+                                    productItem.discount_value = item.discount_type == 'percentage' ? item.discount_percentage : item.discount_amount;
+                                    
+                                    let afterPriceCalculate = getCalculateItemformula(productItem);
+                                    
+                                    html += '<div class="card border m-0 product-reward-point-card" data-point="'+item.total_point+'">'
+                                    html += '    <div class="card-body" style="padding: .75rem;">'
+                                    html += '       <div class="d-flex gap-3">'
+                                    html += '           <div>'
+                                    html += '               <div class="point-box d-flex align-items-center justify-content-center fw-bold">'
+                                    html += item.total_point;
+                                    html += '               </div>'
+                                    html += '           </div>'
+                                    html += '           <div class="flex-1">'
+                                    html += '               <div class="d-flex justify-content-between mb-0">'
+                                    html += '                   <h6 class="mb-0">'+product.name+'<span class="fw-normal"> - '+item.qty+' '+product.unit_name+'</span></h6>'
+                                    html += '                   <p class="m-0 text-decoration-line-through">'+parseFloat(priceCalculate.total)?.toLocaleString('en')+'</p>'
+                                    html += '               </div>'
+                                    html += '               <div class="d-flex justify-content-between mb-0">'
+                                    html += '                   <p class="m-0">'+product.code+'</p>'
+                                    html += '                   <p class="m-0 text-danger">-'+parseFloat(item.discount_type == 'percentage' ? item.discount_percentage : item.discount_amount)?.toLocaleString('en')+(item.discount_type == 'percentage' ? '%' : '')+'</span></p>'
+                                    html += '               </div>'
+                                    html += '               <div class="d-flex justify-content-between mb-0">'
+                                    html += '                   <p class="m-0">'+note+'</p>'
+                                    html += '                   <p class="m-0 fw-bold">'+afterPriceCalculate?.total?.toLocaleString('en')+'</p>'
+                                    html += '               </div>'
+                                    html += '           </div>'
+                                    html += '       </div>'
+                                    html += '    </div>'
+                                    html += '</div>'
+
+                                    productListMap.set(item?.product_id, item?.product);
+                                    rewardPointProductListMap.set(item.id, item);
+                                }
                             });
+
+                            $('#exchange-point-product-list .spinner-container').remove();
+                            $('#exchange-point-product-list').append(html)
                         
                             rewardPointProductPage++;
                         }
                     
                     } else {
                         loadRewardPointProductIsLast = true;
+                        $('#exchange-point-product-list .spinner-container').remove();
                     }
                 },
                 error: () => {
@@ -3413,6 +3435,20 @@
                 }
             });
         }
+
+        $(document).on('click', '.product-reward-point-card', function () {
+            const $this = $(this);
+
+            if ($this.hasClass('selected')) {
+                $this.removeClass('selected')
+            } else {
+                $this.addClass('selected')
+            }
+        });
+
+        // const resetProductRewardPointState = () => {
+
+        // }
 
         const setRewardPointDiscountInfo = (rewardPointDiscountId) => {
 
@@ -3491,7 +3527,7 @@
                 }
             }
 
-            validateTotalPointExchange();
+            // validateTotalPointExchange();
             
         }
 
@@ -3508,48 +3544,67 @@
         });
 
         $(document).on('click', '#submit-redeem-toggle', function () {
+            // totalDiscountPoint = getCalculateTotal().total - parseFloat($('#input-discount-point').val() ? $('#input-discount-point').val() : 0);
+            const productOrder = [...productOrderListMap.values()];
+
+            console.log(productOrder);
+            
+
+            // const getCalculateItemsFormula();
+
             if (applyPointIsValid()) {
-                totalPointApplied = $('#input-point').numericInput('getRaw');
-            } else {
-                totalPointApplied = 0;
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Gagal',
+                    html: 'Jumlah poin yang ditukarkan tidak sah'
+                });
             }
 
-            totalDiscountPoint = getCalculateTotal().total - parseFloat($('#input-discount-point').val() ? $('#input-discount-point').val() : 0);
-            
-            for (const [key, val] of rewardPointsAppliedMap) {
-                rewardPointsAppliedMap.set(key, { ...val, is_applied: true });
-                // if (val?.benefit_type === 'product') {
-                //     let productDetail = val?.product_detail;
-                //     let params = {}
+            withShortcutSwal({
+                title: "Dibutuhkan konfirmasi",
+                icon: 'warning',
+                html: `Apakah anda yakin ingin menukarkan poin dengan jumlah ${totalPoint} pada transakasi ini?`,
+                showCancelButton: true,
+                confirmButtonColor: 'var(--bs-success)',
+                cancelButtonColor: 'var(--bs-danger)',
+                confirmButtonText: '{{ __('language.yes') }}',
+                cancelButtonText: '{{ __('language.cancel') }}',
+                reverseButtons: true
+            }).then((result) => {
+                if (result.isConfirmed) {
                     
-                //     if (productDetail?.id) {
-                //         params.discount_type = val?.discount_type;
-                //         params.discount_value = val?.discount_type == 'percentage' ? val?.discount_percentage : val?.discount_amount;
-                //         params.qty = val?.qty;
-                //         params.detail = productDetail;
-                //         params.price = productDetail?.sale_price;
-                //         params.tax = productDetail?.sale_tax;
-                //         params.is_reward_item = true;
-                //         params.reward_point_id = key;
-                //         params.is_other_item = true;
-                //         putProductToOrderList(generateOrderId(), params);
-                //     }
-                // }
-            }
+                }
 
-            // deletedRewardPointIds.forEach((item) => {
-            //     removeProductFromOrderList('redeem_id-'+item)
-            // });
+                Swal.close()
+            })
+
+            // if (applyPointIsValid()) {
+            //     totalPointApplied = $('#input-point').numericInput('getRaw');
+            // } else {
+            //     totalPointApplied = 0;
+            // }
+
+            // totalDiscountPoint = getCalculateTotal().total - parseFloat($('#input-discount-point').val() ? $('#input-discount-point').val() : 0);
             
-            // deletedRewardPointIds = []
-            $('#redeem-modal').modal('hide')
-            setTotalInfo()
+            // for (const [key, val] of rewardPointsAppliedMap) {
+            //     rewardPointsAppliedMap.set(key, { ...val, is_applied: true });
+            // }
+
+            // $('#redeem-modal').modal('hide')
+            // setTotalInfo()
             
         });
 
         const applyPointIsValid = () => {
-            if (getCalculateTotal().total > 0 && $('#input-point').numericInput('getRaw') <= Number(selectedCustomer?.point_balance)) {
-                return true
+            let totalPoint = 0;
+            totalPoint += $('#input-point').numericInput('getRaw');
+
+            $('.product-reward-point-card.selected').each((idx, e) => {
+                totalPoint += parseFloat($(e).attr('data-point') ?? 0);
+            })
+
+            if (totalPoint > 0 && totalPoint <= Number(selectedCustomer?.point_balance)) {
+                return true;
             }
 
                 // if (($('#input-point').numericInput('getRaw') * pointCalculate) > getCalculateTotal().total) {
@@ -3575,13 +3630,13 @@
             return false;
         }
 
-        const validateTotalPointExchange = () => {
-            if (applyPointIsValid()) {
-                $('#submit-redeem-toggle').prop('disabled', false)
-            } else {
-                $('#submit-redeem-toggle').prop('disabled', true)
-            }
-        }
+        // const validateTotalPointExchange = () => {
+        //     if (applyPointIsValid()) {
+        //         $('#submit-redeem-toggle').prop('disabled', false)
+        //     } else {
+        //         $('#submit-redeem-toggle').prop('disabled', true)
+        //     }
+        // }
 
         const getMatchedMultiPrice = (id) => {
             const productOrderList = productOrderListMap.get(id);
@@ -4613,29 +4668,60 @@
             }
         })
 
-        const setRewardPointList = () => {
-            const data = [...rewardPointsAppliedMap.values()]?.filter((item) => item?.is_applied == true);
-            $('#reward-point-applied-list').html('');
+        const setPaymentOrderList = () => {
+            // const data = [...rewardPointsAppliedMap.values()]?.filter((item) => item?.is_applied == true);
+            // $('#reward-point-applied-list').html('');
+            // if (data?.length > 0) {
+            //     let html = '';
+            //     data.forEach((item, idx) => {
+            //         html += '<div class="w-100 p-3 bg-success-subtle border border-success rounded-2" style="--bs-border-opacity: 0.3;">'
+            //         html +=     '<h6 class="mb-1">Redeem Poin</h6>'
+            //         if (item?.benefit_type === 'discount') {
+            //             html +=     '<p class="mb-0 text-body-secondary" style="font-size: 11px">'+item?.total_point?.toString()?.replace(/\B(?=(\d{3})+(?!\d))/g, '.')+' Poin digunakan</p>'
+            //         } else {
+            //             html +=     '<p class="mb-0 text-body-secondary" style="font-size: 11px">'+item?.total_point?.toString()?.replace(/\B(?=(\d{3})+(?!\d))/g, '.')+' Poin digunakan untuk '+item?.qty+' '+item?.product_detail?.unit_name+' '+item?.product_detail?.name+'</p>'
+            //         }
+            //         html += '</div>'
+            //     });
+
+            //     $('#reward-point-applied-list').html(html);
+            // } else {
+            //     $('#reward-point-applied-list').html(`
+            //         <div class="h-100 d-flex align-self-center">
+            //             <p class="mb-0 text-muted fs-6 align-self-center text-center">Tidak Ada Bonus Yang Digunakan</p>
+            //         </div>
+            //     `)
+            // }
+
+            const data = [...productOrderListMap.values()];
+            $('#payment-order-list').html('');
+
             if (data?.length > 0) {
                 let html = '';
+
                 data.forEach((item, idx) => {
-                    html += '<div class="w-100 p-3 bg-success-subtle border border-success rounded-2" style="--bs-border-opacity: 0.3;">'
-                    html +=     '<h6 class="mb-1">Redeem Poin</h6>'
-                    if (item?.benefit_type === 'discount') {
-                        html +=     '<p class="mb-0 text-body-secondary" style="font-size: 11px">'+item?.total_point?.toString()?.replace(/\B(?=(\d{3})+(?!\d))/g, '.')+' Poin digunakan</p>'
-                    } else {
-                        html +=     '<p class="mb-0 text-body-secondary" style="font-size: 11px">'+item?.total_point?.toString()?.replace(/\B(?=(\d{3})+(?!\d))/g, '.')+' Poin digunakan untuk '+item?.qty+' '+item?.product_detail?.unit_name+' '+item?.product_detail?.name+'</p>'
-                    }
+
+                    const calculateItem = getCalculateItemformula(item);
+
+                    console.log(item);
+                    
+                    html += '<div class="w-100 py-3 rounded-0">'
+                    html += '    <div class="d-flex justify-content-between mb-1">'
+                    html += '        <h6 class="fw-bold mb-0 text-primary">'+item.detail.name+'</h6>'
+                    html += '        <h6 class="fw-bold mb-0">'+parseFloat(calculateItem.total)?.toLocaleString('en')+'</h6>'
+                    html += '    </div>'
+                    html += '    <div class="d-flex justify-content-between mb-1">'
+                    html += '        <p class="fw-normal mb-0 text-primary">'+item.detail.code+'</p>'
+                    html += '        <p class="fw-normal mb-0 text-primary">'+item.qty+' '+item.unit_name+' x '+parseFloat(item.price)?.toLocaleString('en')+'</p>'
+                    html += '    </div>'
+                    html += '    <div class="d-flex justify-content-between mb-1">'
+                    html += '        <p class="fw-bold mb-0 text-primary">'+(item?.note ? item?.note : '')+'</p>'
+                    html += '        <p class="fw-normal mb-0 text-primary"><span class="text-danger">-'+(parseFloat(item?.discount_value ?? 0)?.toLocaleString('en')+(item?.discount_type == 'percentage' ? '%' : ''))+'</span>&nbsp; '+(item?.tax_code ? (item?.tax_code +' '+item?.tax+'%' ) : 'Tidak ada pajak')+'</p>'
+                    html += '    </div>'
                     html += '</div>'
                 });
 
-                $('#reward-point-applied-list').html(html);
-            } else {
-                $('#reward-point-applied-list').html(`
-                    <div class="h-100 d-flex align-self-center">
-                        <p class="mb-0 text-muted fs-6 align-self-center text-center">Tidak Ada Bonus Yang Digunakan</p>
-                    </div>
-                `)
+                $('#payment-order-list').html(html);
             }
         }
 
@@ -4651,38 +4737,49 @@
             return Array.from(suggestions).sort((a, b) => a - b);
         }
 
-        const getCalculateItemFormula = (items) => {
+        const getCalculateItemformula = (item) => {
+                const price = Number(item.price);
+                const qty = Number(item.qty);
+                const taxPercent = Number(item.tax ?? 0);                
+                
+                const subtotalBeforeTax = price * qty;
+                const taxTotal = subtotalBeforeTax * taxPercent / 100;
+                const itemSubtotal = subtotalBeforeTax;
+
+                let discount = 0;
+
+                const discountValue = isNaN(Number(item?.discount_value)) ? 0 : parseFloat(item.discount_value);
+            
+                if (item.discount_type === 'percentage') {
+                    discount = itemSubtotal * (discountValue / 100);
+                }
+            
+                if (item.discount_type === 'amount') {
+                    discount = discountValue;
+                }
+            
+                let total = itemSubtotal - discount;
+
+                return {
+                    total: total,
+                    tax: taxTotal,
+                    discount: discount
+                }
+        }
+
+        const getCalculateItemsFormula = (items) => {
 
             let subtotal = 0;
             let totalDiscount = 0;
             let totalTax = 0;
             
             for (const item of items) {
-                const price = Number(item.price);
-                const qty = Number(item.qty);
-                const taxPercent = Number(item.tax ?? 0);                
-                
-                const subtotalBeforeTax = price * qty;
-                const itemTax = subtotalBeforeTax * taxPercent / 100;
-                const itemSubtotal = subtotalBeforeTax;
-            
-                let itemDiscount = 0;
 
-                const discountValue = isNaN(Number(item?.discount_value)) ? 0 : parseFloat(item.discount_value);
+                const calculateItem = getCalculateItemformula(item);
             
-                if (item.discount_type === 'percentage') {
-                    itemDiscount = itemSubtotal * (discountValue / 100);
-                }
-            
-                if (item.discount_type === 'amount') {
-                    itemDiscount = discountValue;
-                }
-            
-                itemDiscount = Math.min(itemDiscount, itemSubtotal);
-            
-                subtotal += itemSubtotal;
-                totalTax += itemTax;
-                totalDiscount += itemDiscount;
+                subtotal += calculateItem.total;
+                totalTax += calculateItem.tax;
+                totalDiscount += calculateItem.discount;
                 
             }
 
@@ -4700,8 +4797,8 @@
             let discountRewardPoint = [...rewardPointsAppliedMap.values()]?.find((item) => item?.benefit_type === 'discount' && item?.is_applied === true);
             let items = [...productOrderListMap.values()];
 
-            const calculateItem = getCalculateItemFormula(items);
-            const calculateRewardItem = getCalculateItemFormula(items?.filter((item) => item?.is_reward_item == true));
+            const calculateItem = getCalculateItemsFormula(items);
+            const calculateRewardItem = getCalculateItemsFormula(items?.filter((item) => item?.is_reward_item == true));
             let totalPointExchange = 0;
 
             [...rewardPointsAppliedMap.values()]?.forEach((item, idx) => {
@@ -4742,7 +4839,7 @@
 
             let items = [...productOrderListMap.values()];
 
-            const calculateItemFormula = getCalculateItemFormula(items);
+            const calculateItemFormula = getCalculateItemsFormula(items);
 
             const calculateRewardPoint = getCalculateRewardPoint()
 
@@ -4818,7 +4915,7 @@
 
         $(document).on('click', '#payment-step-toggle', function () {
             setTotalInfo();
-            setRewardPointList()
+            setPaymentOrderList()
             showPaymentStep();
         });
 
@@ -5019,6 +5116,13 @@
                 },
                 success: function (res) {
                     Swal.close();
+
+                    if (res?.data?.is_need_sync == 1) {
+                        const uncyncedInvoiceTotal = parseFloat($('#uncynced-invoice-total').attr('data-total') ?? 0);
+                        $('#uncynced-invoice-total').attr('data-total', uncyncedInvoiceTotal + 1);
+                        $('#uncynced-invoice-total').html((uncyncedInvoiceTotal + 1)+' Transaksi belum sinkron');
+                    }
+
                     withShortcutSwal({
                         title: "Transaksi Telah Dibayar!",
                         icon: 'success',
@@ -5168,15 +5272,18 @@
             }
 
             if (activeTab === 'pending') {
-                if (isOnpremise) {
-                    req.number = 'null';
-                    req.status = 'paid';
-                }
+                req.is_need_sync = 1;
+                req['status[$not]'] = 'draft';
+                // if (isOnpremise) {
+                //     req.status = 'paid';
+                // }
             } else if (activeTab === 'done') {
-                if (isOnpremise) {
-                    req['number[$not]'] = 'null';
-                }
-                req.status = 'paid';
+                // if (isOnpremise) {
+                //     req['number[$not]'] = 'null';
+                // }
+                // req.status = 'paid';
+                req.is_need_sync = 0;
+                req['status[$not]'] = 'draft';
             } else if (activeTab === 'hold') {
                 req.status = 'draft';
             }
@@ -6326,7 +6433,7 @@
                 const val = $this.numericInput('getRaw');
     
                 const calculateTotal = getCalculateTotal();
-                $('#submit-redeem-toggle').prop('disabled', true)
+                // $('#submit-redeem-toggle').prop('disabled', true)
     
                 let req = {
                     point: val,
@@ -6354,7 +6461,7 @@
                     error: function () {
                     },
                     complete: function () {
-                        validateTotalPointExchange();
+                        // validateTotalPointExchange();
                     }
                 });
 
@@ -6449,6 +6556,28 @@
             $('[data-bs-toggle="tooltip"]').each(function () {
                 new bootstrap.Tooltip(this);
             });
+
+            setInterval(function () {
+                $.ajax({
+                    url: BASE_URL + '/api/v1/sales_invoices_pending_status_total',
+                    type: "GET",
+                    dataType: "json",
+                    headers: {
+                        'Authorization': TOKEN,
+                        'company-id': COMPANY_ID
+                    },
+                    beforeSend: function () {
+                        $('#uncynced-invoice-total').html('');
+                        $('#uncynced-invoice-total').attr('data-total', '0');
+                    },
+                    success: function (res) {
+                        if (res.data > 0) {
+                            $('#uncynced-invoice-total').html(res.data+' Transaksi belum sinkron');
+                        }
+                        $('#uncynced-invoice-total').attr('data-total', res.data);
+                    }
+                });
+            }, 15000);
         });
     });
 </script>

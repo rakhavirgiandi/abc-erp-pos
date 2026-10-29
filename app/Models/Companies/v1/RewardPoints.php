@@ -108,6 +108,10 @@ class RewardPoints extends Model
     // Functions ...
 
     // Relations ...
+    public function product()
+    { 
+        return $this->hasOne(Products::class, 'id', 'product_id');
+    }
 
     public static function mapSchema($params = [], $user = [])
     {
@@ -212,6 +216,70 @@ class RewardPoints extends Model
 
         $db = ModelHelper::select($schema['field'], $request, __CLASS__);
         ModelHelper::join($schema['join'], $request, $db);
+
+        if (isset($params['with_product_detail']) && $params['with_product_detail']) {
+            $db->with(['product' => function ($q)  {
+                $q->where('products.is_active', '=', 1);
+                $q->leftJoin('units', 'products.unit_id', '=', 'units.id');
+                $q->leftJoin('product_categories', 'products.product_category_id', '=', 'product_categories.id');
+                $q->leftJoin('taxes as sale_tax', 'products.sale_tax_id', '=', 'sale_tax.id');
+                $q->select([
+                    'products.id as id',
+                    'products.name as name',
+                    'products.code as code',
+                    'products.product_category_id',
+                    'product_categories.name as category_name',
+                    'product_categories.code as category_code',
+                    'products.unit_id',
+                    'units.name as unit_name',
+                    'units.code as unit_code',
+                    'products.sale_price',
+                    'products.product_catalog_id',
+                    'products.is_active as is_active',
+                    'sale_tax_id',
+                    'sale_tax.name as sale_tax_name',
+                    'sale_tax.code as sale_tax_code',
+                    'sale_tax.percentage as tax_percentage',
+                ]);
+                $q->with(['product_variants' => function($product_variant_query) {
+                    $product_variant_query->leftJoin('variants', 'variants.id', '=', 'product_variants.variant_id')
+                      ->leftJoin('variant_options', 'variant_options.id', '=', 'product_variants.variant_option_id')
+                      ->select(
+                        'product_variants.*',
+                        'variants.name as variant_name',
+                        'variant_options.value as option_value',
+                        'product_variants.sequence as sequence'
+                      );
+                }]);
+
+                $q->with(['multi_prices' => function ($multi_price_query) {
+                    $multi_price_query->leftJoin('contact_groups', 'contact_groups.id', '=', 'product_multi_prices.contact_group_id')
+                    ->leftJoin('branches', 'branches.id', '=', 'product_multi_prices.branch_id')
+                    ->leftJoin('units', 'units.id', '=', 'product_multi_prices.unit_id')
+                    ->leftJoin('product_skus', 'product_skus.id', '=', 'product_multi_prices.product_sku_id')
+                    ->select(
+                      'product_multi_prices.*',
+                      'branches.name as branch_name',
+                      'branches.code as branch_code',
+                      'contact_groups.name as contact_group_name',
+                      'units.name as unit_name',
+                      'product_skus.alias as product_sku_name',
+                      'product_skus.sku_code as product_sku_code',
+                    );
+                }]);
+
+                $q->with(['unit_conversions' => function ($unit_convertions_query) {
+                    $unit_convertions_query->leftJoin('units as form_unit', 'form_unit.id', '=', 'product_unit_conversions.from_unit_id')
+                    ->leftJoin('units as to_unit', 'to_unit.id', '=', 'product_unit_conversions.to_unit_id')
+                    ->select(
+                      'product_unit_conversions.*',
+                      'form_unit.name as from_unit_name',
+                      'to_unit.name as to_unit_name',
+                    );
+                }]);
+                $q->with('media');
+            }]);
+        }
 
         if ($params) {
             ModelHelper::dynamicFilterAnd($params, $request, $db, __CLASS__);

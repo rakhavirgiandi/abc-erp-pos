@@ -387,3 +387,27 @@
     overflow: auto;
     height: calc(100% - var(--bs-app-header-height) - 65px);
 }
+
+.product-reward-point-card {
+    cursor: pointer;
+}
+
+.product-reward-point-card.selected {
+    background-color: rgba(var(--bs-secondary-rgb), 0.15);
+    border: 1px solid var(--bs-secondary) !important;
+}
+
+.product-reward-point-card .point-box {
+    padding: 0 .5rem;
+    width: auto;
+    min-width: 32px;
+    height: 32px;
+    border-radius: 0.375rem;
+    background: var(--bs-light);
+    position: relative;
+}
+
+.product-reward-point-card.selected .point-box {
+    background: var(--bs-secondary);
+    color: #fff;
+}

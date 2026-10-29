@@ -5,7 +5,9 @@ namespace App\Models\Companies\v1;
 use App\Helpers\AutoNumberHelper;
 use App\Helpers\GlobalHelper;
 use App\Helpers\ModelDetailHelper;
+use App\Helpers\NetworkHelper;
 use App\Http\Controllers\API\Companies\v1\SalesInvoiceController;
+use App\Jobs\SyncInvoice;
 use DB;
 use Illuminate\Support\Str;
 use App\Helpers\ModelHelper;
@@ -15,6 +17,7 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Validation\Rule;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
+use Throwable;
 
 
 /**
@@ -226,6 +229,10 @@ class SalesInvoices extends Model
     public function accounting_journals()
     {
         return $this->hasMany(AccountingJournals::class, 'model_id', 'id')->where('model', self::class);
+    }
+
+    public function product () {
+        return $this->hasOne(Products, 'product_id', 'id');
     }
 
     public static function mapSchema($params = [], $user = [])
@@ -889,7 +896,9 @@ class SalesInvoices extends Model
                         'companies' => config('user_companies.details')
                     ],
                 ]);
-    
+                
+                SyncInvoice::dispatch($data['id'], config('database.connections.pgsql_companies.database'), config('device_token')['token']);
+
                 DB::connection('pgsql_companies')->commit();
                 
                 return response()->json([
@@ -998,9 +1007,12 @@ class SalesInvoices extends Model
                 ]);
     
                 $save->load('sales_invoice_details');
+                
+                SyncInvoice::dispatch($data['id'], config('database.connections.pgsql_companies.database'), config('device_token')['token']);
             }
     
             DB::connection('pgsql_companies')->commit();
+
 
             return response()->json([
                 'status' => 'success',

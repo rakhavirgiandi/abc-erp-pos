@@ -494,6 +494,7 @@ Route::middleware('activity-log')->group(function () {
         });
         Route::controller(SalesInvoiceController::class)->group(function() {
             Route::get('sales_invoices/{id?}', 'get')->name('v1.get.sales_invoices');
+            Route::get('sales_invoices_pending_status_total', 'pendingStatusTotal')->name('v1.get.sales_invoices_pending_status_total');
             Route::post('sales_invoices', 'post')->name('v1.post.sales_invoices');
             Route::post('sales_invoices/sync_status', 'syncStatus')->name('v1.sync_status.sales_invoices');
             Route::patch('sales_invoices/{id}', 'patch')->name('v1.patch.sales_invoices');

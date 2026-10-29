@@ -8,6 +8,7 @@
                 <div class="counter-info-item">No. Ref: <span id="header-ref-number-info"></span></div>
                 <div class="counter-info-item">Tanggal: <span id="realtime-date">00-00-0000</span></div>
                 <div class="counter-info-item">Waktu: <span id="realtime-clock">00:00:00</span></div>
+                <span class="badge badge-danger align-self-center" id="uncynced-invoice-total"></span>
             </div>
         </div>
         <div class="w-50 gap-4 d-flex justify-content-end align-items-center">
