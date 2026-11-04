@@ -10,6 +10,11 @@ Route::post('window/minimize', fn (Request $request) => Window::minimize($reques
 Route::post('window/maximize', fn (Request $request) => Window::maximize($request->input('window_id', 'main')));
 Route::post('window/restore', fn (Request $request) => Window::unmaximize($request->input('window_id', 'main')));
 Route::post('window/close', fn (Request $request) => Window::close($request->input('window_id', 'main')));
+Route::post('window/refresh', function (Request $request) {
+    Artisan::call('config:clear');
+
+    return response()->json(['message' => 'Config refreshed']);
+});
 
 Route::post('window/devtools/toggle', function () {
     $window = Window::current();

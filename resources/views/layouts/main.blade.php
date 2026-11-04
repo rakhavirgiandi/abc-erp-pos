@@ -51,6 +51,7 @@
                     <div class="win-menu-dropdown">
                         <button type="button" class="win-menu-item" id="menu-print">Print</button>
                         <button type="button" class="win-menu-item" id="menu-reload">Reload</button>
+                        <button type="button" class="win-menu-item" id="config-reload">Config Reload</button>
                         @if (config('database.connection_mode') == 'service')
                         <button type="button" class="win-menu-item" id="menu-reload-db">Reload Database</button>
                         @endif
@@ -275,6 +276,12 @@
 
         $(document).on('click', '#menu-reload', function () {
             location.reload();
+        });
+
+        $(document).on('click', '#menu-config-reload', function () {
+            $.post(BASE_URL+'/native/window/refresh').then(() => {
+                location.reload();
+            });
         });
 
         $(document).on('click', '#menu-exit', function () {

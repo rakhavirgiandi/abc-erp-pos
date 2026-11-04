@@ -1,6 +1,3 @@
-
-
-
 @extends('companies.v1.layouts.guest.index')
 
 @section('title', isset($title))
@@ -125,6 +122,8 @@
         const csrf      = document.querySelector('meta[name="csrf-token"]').content;
 
         let pollTimer = null;
+        let polling   = false;
+        let pollGen   = 0; // naik tiap stopPolling(), respons generasi lama diabaikan
 
         // Urutan pesan yang berganti saat proses berjalan
         const steps = [
@@ -167,21 +166,38 @@
             stepTimer = setInterval(cycleStep, 1800);
         }
 
+        // Polling berurutan: request berikutnya dikirim setelah yang sebelumnya selesai
         function startPolling() {
             stopPolling();
-            checkStatus();
-            pollTimer = setInterval(checkStatus, 1500);
+            polling = true;
+            poll(pollGen);
         }
 
-        function stopPolling() { clearInterval(pollTimer); pollTimer = null; }
+        function stopPolling() {
+            polling = false;
+            pollGen++;
+            clearTimeout(pollTimer);
+            pollTimer = null;
+        }
 
-        async function checkStatus() {
+        async function poll(gen) {
+            if (!polling || gen !== pollGen) return;
+
             try {
-                const res  = await fetch(statusUrl);
+                const res  = await fetch(statusUrl, { headers: { 'Accept': 'application/json' } });
                 const data = await res.json();
+
+                // Respons dari generasi lama (mis. setelah retry) diabaikan
+                if (gen !== pollGen) return;
+
                 handle(data, res.ok);
             } catch {
+                if (gen !== pollGen) return;
                 setStatus('', 'Menunggu server...');
+            }
+
+            if (polling && gen === pollGen) {
+                pollTimer = setTimeout(() => poll(gen), 1500);
             }
         }
 
@@ -221,6 +237,8 @@
         }
 
         async function retry() {
+            stopPolling(); // pastikan tidak ada status yang jalan bersamaan dengan retry
+
             document.getElementById('error-panel').classList.add('d-none');
             document.getElementById('port-notif').classList.add('d-none');
             setStatus('', 'Mencoba ulang...', 8);
@@ -235,7 +253,10 @@
                 handle(data, res.ok);
                 if (data.status === 'starting') startPolling();
             } catch {
-                setStatus('error', 'Tidak dapat terhubung ke server.');
+                stopCycling();
+                setStatus('error', 'Tidak dapat terhubung ke server.', -1);
+                document.getElementById('error-msg').textContent = 'Tidak dapat terhubung ke server.';
+                document.getElementById('error-panel').classList.remove('d-none');
             }
         }
 

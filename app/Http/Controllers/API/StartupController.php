@@ -8,6 +8,7 @@ use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Log;
 use App\Http\Controllers\Controller;
+use Illuminate\Support\Facades\DB;
 
 class StartupController extends Controller
 {
@@ -17,13 +18,21 @@ class StartupController extends Controller
 
         try {
             if (Cache::has($cacheKey . '_ready')) {
-                return response()->json([
-                    'status'       => 'ready',
-                    'step'         => 'Database siap.',
-                    'port'         => Cache::get($cacheKey . '_port', config('database.connections.pgsql.port')),
-                    'port_changed' => false,
-                    'redirect'     => route('web.login'),
-                ]);
+                $port = Cache::get($cacheKey . '_port', config('database.connections.pgsql.port'));
+                try {
+                    $this->assertDatabaseConnectable((int) $port);
+            
+                    return response()->json([
+                        'status'       => 'ready',
+                        'step'         => 'Database siap.',
+                        'port'         => $port,
+                        'port_changed' => false,
+                        'redirect'     => route('web.login'),
+                    ]);
+                } catch (\Throwable $e) {
+                    Cache::forget($cacheKey . '_ready');
+                    Cache::forget($cacheKey . '_port');
+                }
             }
             
 
@@ -136,5 +145,27 @@ class StartupController extends Controller
         } else {
             Log::warning('[Startup] Post-install ada yang gagal — akan dicoba lagi di startup berikutnya.');
         }
+    }
+
+    protected function assertDatabaseConnectable(int $port): void
+    {
+        config(['database.connections.pgsql.port' => $port]);
+        DB::purge('pgsql');
+
+        $lastError = null;
+        for ($i = 0; $i < 5; $i++) {
+            try {
+                DB::connection('pgsql')->getPdo();
+                return;
+            } catch (\Throwable $e) {
+                $lastError = $e;
+                DB::purge('pgsql');
+                sleep(1);
+            }
+        }
+
+        throw new \RuntimeException(
+            "Port {$port} terbuka tetapi database tidak bisa diakses:\n" . $lastError->getMessage()
+        );
     }
 }
