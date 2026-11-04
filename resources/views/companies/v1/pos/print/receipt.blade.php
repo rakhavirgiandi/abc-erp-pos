@@ -5,10 +5,11 @@
         <title>Struk - {{ $data['ref_number'] }}</title>
         <style>
             @php
-                $paper = isset($paper_size) ? (int) $paper_size : (int) config('local_user_settings.pos_printer_paper_size', 80);
+                $paper = isset($paper_size) ? (int) $paper_size : (int) localSettings('printer.paper_size', 80);
                 if (!in_array($paper, [58, 75, 80])) {
                     $paper = 80;
                 }
+
             @endphp
 
             * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -25,9 +26,9 @@
                 font-weight: bold;
             }
 
-            .paper-58 .receipt { width: 58mm; font-size: 10.5px; }
+            .paper-58 .receipt { width: 58mm; font-size: 8.5px; }
             .paper-75 .receipt { width: 75mm; font-size: 11.5px; }
-            .paper-80 .receipt { width: 80mm; font-size: 12.5px; }
+            .paper-80 .receipt { width: 72mm; font-size: 12.5px; }
 
             .receipt {
                 margin: 0 auto;
@@ -134,10 +135,21 @@
                     background: #fff;
                     padding: 0;
                 }
+                
                 .receipt {
                     border: 0;
                     box-shadow: none;
                     max-width: none;
+                }
+                .paper-58 .receipt {
+                    padding-right: 15mm;
+                },
+                .paper-75 .receipt,
+                .paper-80 .receipt {
+                    width: 100%;
+                    max-width: 100%;
+                    margin: 0;
+                    padding-right: 6mm;
                 }
             }
         </style>
@@ -280,7 +292,7 @@
               window.print();
         
               window.onafterprint = function () {
-                //   window.close();
+                /* window.close(); */
               };
           }
         </script>

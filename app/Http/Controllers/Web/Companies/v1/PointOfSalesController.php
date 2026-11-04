@@ -25,15 +25,9 @@ class PointOfSalesController extends Controller
             abort(404);
         }
 
-        $paper_size = 80;
-        
-        if ($request->paper_size) {
-            $paper_size = $request->paper_size;
-        }
-
         $data = SalesInvoices::getById($find_sales_invoice['id'])->original;
 
-        return view('companies.v1.pos.print.receipt', ['data' => $data->toArray(), 'paper_size' => $paper_size]);
+        return view('companies.v1.pos.print.receipt', ['data' => $data->toArray(), 'paper_size' => localSettings('printer.paper_size', 80)]);
 
     }
 
